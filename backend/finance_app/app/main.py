@@ -1,7 +1,11 @@
 from fastapi import FastAPI
+
+from backend.finance_app.app.admin.admin import create_admin
 from backend.finance_app.app.routers import categories, transactions, accounts, auth, user
 
 app = FastAPI(title="Finance API")
+
+create_admin(app)
 
 app.include_router(auth.router, prefix='/auth', tags=["auth"])
 

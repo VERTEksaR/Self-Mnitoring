@@ -13,10 +13,14 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
 
     categories: Mapped[List["Category"]] = relationship("Category", back_populates="user")
     accounts: Mapped[List["Account"]] = relationship("Account", back_populates="user")
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", back_populates="user")
+
+    def __str__(self):
+        return self.email
 
 
 class Category(Base):
@@ -32,6 +36,9 @@ class Category(Base):
 
     __table_args__ = (UniqueConstraint("name", "user_id"),)
 
+    def __str__(self):
+        return self.name
+
 
 class Account(Base):
     __tablename__ = "accounts"
@@ -45,6 +52,9 @@ class Account(Base):
     user: Mapped["User"] = relationship("User", back_populates="accounts")
 
     __table_args__ = (UniqueConstraint("name", "user_id"),)
+
+    def __str__(self):
+        return self.name
 
 
 class Transaction(Base):
@@ -65,3 +75,6 @@ class Transaction(Base):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="transactions")
+
+    def __str__(self):
+        return f"{self.amount} {self.replenishment} {self.transaction_date}"

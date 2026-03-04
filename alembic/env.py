@@ -10,7 +10,6 @@ from backend.finance_app.app.db.base import Base
 from backend.finance_app.app.db.models import User, Category, Account, Transaction  # noqa
 
 config = context.config
-print(11, settings.database_url)
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
 if config.config_file_name is not None:

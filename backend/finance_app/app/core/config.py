@@ -16,7 +16,6 @@ class Settings(BaseSettings):
     password: str
 
     model_config = SettingsConfigDict(
-        # env_file='D:\Programming\PTHN\Self-Monitoring\.env',
         env_file=ENV_PATH,
         env_file_encoding='utf-8',
         extra="ignore",

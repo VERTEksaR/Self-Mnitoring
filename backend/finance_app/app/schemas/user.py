@@ -6,6 +6,7 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+    is_admin: bool
 
 
 class UserLogin(BaseModel):
@@ -17,6 +18,7 @@ class UserRead(BaseModel):
     id: int
     email: EmailStr
     is_active: bool
+    is_admin: bool
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -31,3 +33,4 @@ class Token(BaseModel):
 class UserFilter(BaseModel):
     email: Optional[EmailStr] = None
     is_active: Optional[bool] = None
+    is_admin: Optional[bool] = None
