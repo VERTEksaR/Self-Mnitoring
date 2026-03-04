@@ -1,3 +1,4 @@
+import logging
 from math import ceil
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -11,6 +12,14 @@ from backend.finance_app.app.schemas.common import Page
 
 router = APIRouter()
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s - %(name)s - %(asctime)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+
+
 
 @router.get("/{transaction_id}", response_model=TransactionRead, status_code=200)
 async def get_transaction(transaction_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
@@ -20,8 +29,10 @@ async def get_transaction(transaction_id: int, session: AsyncSession = Depends(g
     transaction = result.scalar_one_or_none()
 
     if not transaction:
-        raise HTTPException(status_code=404, detail=f"Транзакций с id {transaction_id} не была найдена")
+        logger.error(f"Транзакция с id {transaction_id} не была найдена")
+        raise HTTPException(status_code=404, detail=f"Транзакция с id {transaction_id} не была найдена")
 
+    logger.info(f"Транзакция с id {transaction_id} была найдена")
     return transaction
 
 
@@ -30,10 +41,12 @@ async def delete_transaction(transaction_id: int, session: AsyncSession = Depend
     transaction = await session.get(Transaction, transaction_id)
 
     if not transaction:
-        raise HTTPException(status_code=404, detail=f"Транзакций с id {transaction_id} не была найдена")
+        logger.error(f"Транзакция с id {transaction_id} не была найдена")
+        raise HTTPException(status_code=404, detail=f"Транзакция с id {transaction_id} не была найдена")
 
     await session.delete(transaction)
     await session.commit()
+    logger.info(f"Транзакция с id {transaction_id} была удалена")
     return None
 
 
@@ -42,6 +55,7 @@ async def create_transaction(transaction_data: TransactionCreate, session: Async
     transaction = Transaction(**transaction_data.model_dump())
     session.add(transaction)
     await session.commit()
+    logger.info(f"Транзакция с id {transaction.id} была создана")
     return transaction
 
 
@@ -97,6 +111,7 @@ async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFi
     )
     transactions = result.scalars().all()
     pages = ceil(total / size) if total > 0 else 1
+    logger.info(f"Всего было найдено {total} транзакций")
     return {
         'items': transactions,
         'total': total,

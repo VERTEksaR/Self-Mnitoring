@@ -1,3 +1,4 @@
+import logging
 from math import ceil
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -11,14 +12,24 @@ from backend.finance_app.app.schemas.common import Page
 
 router = APIRouter()
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s - %(name)s - %(asctime)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+
+
 
 @router.get('/{user_id}', response_model=UserRead, status_code=200)
 async def get_user(user_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
     user = await session.get(User, user_id)
 
     if not user:
+        logger.error(f"Пользователь с id {user_id} не был найден")
         raise HTTPException(status_code=404, detail=f"Пользователь с id {user_id} не был найден")
 
+    logger.info(f"Пользователь с id {user_id} был найден")
     return user
 
 
@@ -44,6 +55,7 @@ async def get_users(page: int = 1, size: int = 10, filters: UserFilter = Depends
     )
     users = result.scalars().all()
     pages = ceil(total / size) if total > 0 else 1
+    logger.info(f"Всего было найдено {total} пользователей")
     return {
         'items': users,
         'total': total,

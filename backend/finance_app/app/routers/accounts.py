@@ -1,3 +1,4 @@
+import logging
 from math import ceil
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -11,16 +12,26 @@ from backend.finance_app.app.schemas.common import Page
 
 router = APIRouter()
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s - %(name)s - %(asctime)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+
 
 @router.get("/{account_id}", response_model=AccountRead, status_code=200)
 async def get_account(account_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
-    account = await session.execute(
+    result = await session.execute(
         select(Account).where((Account.id == account_id) & (Account.user_id == current_user.id))
     )
+    account = result.scalar_one_or_none()
 
     if not account:
+        logger.error(f"Счет с id {account_id} не был найден")
         raise HTTPException(status_code=404, detail=f"Счет с id {account_id} не был найден")
 
+    logger.info(f"Счет с id {account_id} был найден")
     return account
 
 
@@ -29,10 +40,12 @@ async def delete_account(account_id: int, session: AsyncSession = Depends(get_se
     account = await session.get(Account, account_id)
 
     if not account:
+        logger.error(f"Счет с id {account_id} не был найден")
         raise HTTPException(status_code=404, detail=f"Счет с id {account_id} не был найден")
 
     await session.delete(account)
     await session.commit()
+    logger.info(f"Счет с id {account_id} был удален")
     return None
 
 
@@ -41,6 +54,7 @@ async def create_account(account_data: AccountCreate, session: AsyncSession = De
     account = Account(**account_data.model_dump())
     session.add(account)
     await session.commit()
+    logger.info(f"Счет с id {account.id} был создан")
     return account
 
 
@@ -56,6 +70,7 @@ async def get_accounts(page: int = 1, size: int = 10, name: str = '', session: A
     )
     accounts = result.scalars().all()
     pages = ceil(total / size) if total > 0 else 1
+    logger.info(f"Всего было найдено {total} счетов")
     return {
         'items': accounts,
         'total': total,
