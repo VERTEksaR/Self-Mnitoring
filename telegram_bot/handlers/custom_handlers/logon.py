@@ -56,6 +56,10 @@ async def logon(message: Message, state: FSMContext):
                 'telegram_id': str(message.from_user.id)
             }
         ) as response:
-            print(response.text)
+            if response.status == 201:
+                await message.answer('Вы успешно зарегистрировались!')
+            else:
+                data = await response.json()
+                await message.answer(data['detail'])
             await state.clear()
 

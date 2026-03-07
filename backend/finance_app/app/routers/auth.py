@@ -3,14 +3,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from backend.finance_app.app.db.session import get_session
-from backend.finance_app.app.db.models import User
+from backend.finance_app.app.db.models import User, TelegramUser
 from backend.finance_app.app.schemas.user import UserLogin, UserCreate, UserRead, Token
 from backend.finance_app.app.core.security import hash_password, verify_password, create_access_token
 
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserRead, status_code=201)
+@router.post("/register", status_code=201)
 async def register_user(user_data: UserCreate, session: AsyncSession = Depends(get_session)):
     is_user_new = await session.execute(
         select(User).where(User.email == user_data.email)
@@ -25,11 +25,23 @@ async def register_user(user_data: UserCreate, session: AsyncSession = Depends(g
         hashed_password=hash_password(user_data.password),
         nickname=user_data.nickname,
         is_admin=user_data.is_admin,
-        telegram_id=user_data.telegram_id,
     )
     session.add(new_user)
     await session.commit()
-    return new_user
+
+    access_token = create_access_token({'sub': new_user.email})
+
+    if user_data.telegram_id:
+        telegram_user = TelegramUser(
+            telegram_id=user_data.telegram_id,
+            user_id=new_user.id,
+            access_token=access_token,
+        )
+        session.add(telegram_user)
+        await session.commit()
+        return telegram_user
+    else:
+        return new_user
 
 
 @router.post("/login", response_model=Token, status_code=200)

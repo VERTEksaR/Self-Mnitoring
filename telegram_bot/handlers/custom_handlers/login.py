@@ -38,5 +38,9 @@ async def login(message: Message, state: FSMContext):
                 'password': password
             }
         ) as response:
-            print(response.text)
+            if response.status == 200:
+                await message.answer('Вы успешно вошли!')
+            else:
+                data = await response.json()
+                await message.answer(data['detail'])
             await state.clear()
