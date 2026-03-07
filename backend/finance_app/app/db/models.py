@@ -10,6 +10,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    nickname: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -18,9 +19,21 @@ class User(Base):
     categories: Mapped[List["Category"]] = relationship("Category", back_populates="user")
     accounts: Mapped[List["Account"]] = relationship("Account", back_populates="user")
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", back_populates="user")
+    telegram_users: Mapped[List["TelegramUser"]] = relationship("TelegramUser", back_populates="user")
 
     def __str__(self):
         return self.email
+
+
+class TelegramUser(Base):
+    __tablename__ = "telegram_users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    telegram_id: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    access_token: Mapped[str] = mapped_column(String, nullable=False)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="telegram_users")
 
 
 class Category(Base):
