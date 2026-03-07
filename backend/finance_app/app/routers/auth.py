@@ -23,6 +23,9 @@ async def register_user(user_data: UserCreate, session: AsyncSession = Depends(g
     new_user = User(
         email=user_data.email,
         hashed_password=hash_password(user_data.password),
+        nickname=user_data.nickname,
+        is_admin=user_data.is_admin,
+        telegram_id=user_data.telegram_id,
     )
     session.add(new_user)
     await session.commit()
