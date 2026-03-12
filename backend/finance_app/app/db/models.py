@@ -30,7 +30,7 @@ class TelegramUser(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     telegram_id: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    access_token: Mapped[str] = mapped_column(String, nullable=False)
+    # access_token: Mapped[str] = mapped_column(String, nullable=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="telegram_users")
