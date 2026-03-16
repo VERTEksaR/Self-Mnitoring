@@ -70,9 +70,10 @@ async def login_user(
             status_code=401,
             detail="Неверная почта или пароль"
         )
-
+    print(111, user_data.app_id)
     access_token = create_access_token({
-        "sub": str(user.id)
+        "sub": str(user.id),
+        "app": str(user_data.app_id),
     })
 
     return {

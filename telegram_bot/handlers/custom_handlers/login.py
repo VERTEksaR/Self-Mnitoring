@@ -35,7 +35,8 @@ async def login(message: Message, state: FSMContext):
         async with session.post(
             APP_API + '/auth/login', json={
                 'email': email,
-                'password': password
+                'password': password,
+                'app_id': 2
             }
         ) as response:
             if response.status == 200:

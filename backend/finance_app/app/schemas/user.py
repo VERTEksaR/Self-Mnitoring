@@ -14,6 +14,7 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+    app_id: int
 
 
 class UserRead(BaseModel):

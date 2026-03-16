@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.get('/', status_code=200)
-async def telegram_auth(telegram_id: int, session: AsyncSession = Depends(get_session)):
+async def telegram_auth(telegram_id: int, app_id: int, session: AsyncSession = Depends(get_session)):
     result = await session.execute(
         select(TelegramUser).where(TelegramUser.telegram_id == str(telegram_id))
     )
@@ -33,6 +33,7 @@ async def telegram_auth(telegram_id: int, session: AsyncSession = Depends(get_se
 
     access_token = create_access_token({
         "sub": str(tg_user.telegram_id),
+        "app": str(app_id)
     })
     return {
         "access_token": access_token,
