@@ -31,7 +31,7 @@ async def finance_callback_choice(callback: CallbackQuery, state: FSMContext):
                 params={"telegram_id": callback.from_user.id, 'app_id': 2}
             ) as response:
                 data = await response.json()
-                token = data['access_token']
+                token = data.get('access_token', '')
 
             async with session.get(
                 APP_API + '/categories',
