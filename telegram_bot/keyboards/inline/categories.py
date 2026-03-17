@@ -5,6 +5,7 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from telegram_bot.config_data.config import APP_API
 from telegram_bot.loader import my_router
 from telegram_bot.states.data import Category
 
@@ -33,3 +34,18 @@ async def categories_callback(callback: CallbackQuery, state:FSMContext):
         msg = await callback.message.answer("Введите название:")
         await state.update_data(category_msg_id=msg.message_id)
         await state.set_state(Category.name)
+    else:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                APP_API + '/telegram',
+                params={"telegram_id": callback.from_user.id, 'app_id': 2}
+            ) as response:
+                data = await response.json()
+                token = data.get('access_token', '')
+
+            async with session.get(
+                APP_API + f'/categories/{callback.data.split("_")[1]}',
+                headers={'Authorization': f'Bearer {token}'}
+            ) as response:
+                data = await response.json()
+                print(data)
