@@ -6,14 +6,14 @@ from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from telegram_bot.config_data.config import APP_API
+from telegram_bot.keyboards.inline import category
 from telegram_bot.loader import my_router
 from telegram_bot.states.data import Category
+from telegram_bot.utils.misc.first_connect import first_connect
 
 
 async def categories(message: Message, data: dict):
     categories_button = InlineKeyboardBuilder()
-    # button_add = InlineKeyboardButton(text='| Добавить |', callback_data='add_category')
-    # categories_button.row(button_add)
 
     for element in data['items'][:5]:
         button = InlineKeyboardButton(text=f"{element['id']} | {element['name']}", callback_data='category_{}'.format(element['id']))
@@ -34,18 +34,35 @@ async def categories_callback(callback: CallbackQuery, state:FSMContext):
         msg = await callback.message.answer("Введите название:")
         await state.update_data(category_msg_id=msg.message_id)
         await state.set_state(Category.name)
+    elif 'delete' in callback.data:
+        async with aiohttp.ClientSession() as session:
+            token = await first_connect(callback.from_user.id)
+
+            if token:
+                async with session.delete(
+                    APP_API + f'/categories/{callback.data.split("_")[1]}',
+                    headers={'Authorization': f'Bearer {token}'}
+                ) as response:
+                    if response.status == 200:
+                        async with session.get(
+                                APP_API + '/categories',
+                                headers={'Authorization': f'Bearer {token}'}
+                        ) as response_other:
+                            data = await response_other.json()
+                            await categories(callback.message, data)
+            else:
+                await callback.message.answer("Срок токена истек. Необходимо войти заново")
     else:
         async with aiohttp.ClientSession() as session:
-            async with session.get(
-                APP_API + '/telegram',
-                params={"telegram_id": callback.from_user.id, 'app_id': 2}
-            ) as response:
-                data = await response.json()
-                token = data.get('access_token', '')
+            token = await first_connect(callback.from_user.id)
 
-            async with session.get(
-                APP_API + f'/categories/{callback.data.split("_")[1]}',
-                headers={'Authorization': f'Bearer {token}'}
-            ) as response:
-                data = await response.json()
-                print(data)
+            if token:
+                async with session.get(
+                    APP_API + f'/categories/{callback.data.split("_")[1]}',
+                    headers={'Authorization': f'Bearer {token}'}
+                ) as response:
+                    data = await response.json()
+                    print(data)
+                    await category.category(callback.message, data)
+            else:
+                await callback.message.answer("Срок токена истек. Необходимо войти заново")

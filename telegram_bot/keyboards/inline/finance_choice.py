@@ -9,6 +9,7 @@ from telegram_bot.config_data.config import APP_API
 from telegram_bot.loader import bot, my_router
 from telegram_bot.states.data import Choice, Finance
 from telegram_bot.keyboards.inline import categories
+from telegram_bot.utils.misc.first_connect import first_connect
 
 
 async def choice_finance(message: Message):
@@ -26,20 +27,18 @@ async def choice_finance(message: Message):
 async def finance_callback_choice(callback: CallbackQuery, state: FSMContext):
     if callback.data == 'Categories':
         async with aiohttp.ClientSession() as session:
-            async with session.get(
-                APP_API + '/telegram',
-                params={"telegram_id": callback.from_user.id, 'app_id': 2}
-            ) as response:
-                data = await response.json()
-                token = data.get('access_token', '')
+            token = await first_connect(callback.from_user.id)
 
-            async with session.get(
-                APP_API + '/categories',
-                headers={'Authorization': f'Bearer {token}'}
-            ) as response:
-                data = await response.json()
-                print(data)
-                await categories.categories(callback.message, data)
+            if token:
+                async with session.get(
+                    APP_API + '/categories',
+                    headers={'Authorization': f'Bearer {token}'}
+                ) as response:
+                    data = await response.json()
+                    print(data)
+                    await categories.categories(callback.message, data)
+            else:
+                await callback.message.answer("Срок токена истек. Необходимо войти заново")
 
 
 
