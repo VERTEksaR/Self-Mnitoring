@@ -7,11 +7,12 @@ from aiogram.types import Message
 from telegram_bot.loader import my_router
 from telegram_bot.states.data import Choice
 from telegram_bot.config_data.config import APP_API
+from telegram_bot.handlers.custom_handlers.finance.distributor import finance_choice
 
 
 @my_router.message(Command(commands=["finance"]))
 async def choice_finance(message: Message, state: FSMContext):
-    await state.set_state(Choice.finance)
+    await finance_choice.choice_finance(message)
 
 
 @my_router.message(Command(commands=["training"]))
