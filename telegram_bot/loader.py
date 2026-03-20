@@ -6,8 +6,6 @@ from telegram_bot.config_data import config
 
 my_router = Router(name=__name__)
 
-session = AiohttpSession(proxy='http://proxy.server:3128') # в proxy указан прокси сервер pythonanywhere, он нужен для подключения
-
 storage = MemoryStorage()
-bot = Bot(token=config.BOT_TOKEN, session=session)
+bot = Bot(token=config.BOT_TOKEN)
 dp = Dispatcher(storage=storage)
