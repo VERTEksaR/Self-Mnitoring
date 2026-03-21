@@ -12,7 +12,7 @@ from telegram_bot.keyboards.inline import categories
 from telegram_bot.utils.misc.first_connect import first_connect
 
 
-async def choice_finance(message: Message):
+async def choice_finance(message: Message, is_created: bool = False):
     choices = InlineKeyboardBuilder()
 
     btn1 = InlineKeyboardButton(text='Категории', callback_data='Categories')
@@ -20,7 +20,10 @@ async def choice_finance(message: Message):
     btn3 = InlineKeyboardButton(text='Транзакции', callback_data='Transactions')
     choices.add(btn1, btn2, btn3)
 
-    await message.answer(text='Выбери один из пунктов:', reply_markup=choices.as_markup())
+    if not is_created:
+        await message.answer(text='Выбери один из пунктов:', reply_markup=choices.as_markup())
+    else:
+        await message.edit_text(text='Выбери один из пунктов:', reply_markup=choices.as_markup())
 
 
 @my_router.callback_query(F.data.in_(('Categories', 'Accounts', 'Transactions')))

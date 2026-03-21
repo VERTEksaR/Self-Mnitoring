@@ -17,4 +17,4 @@ async def category(message:Message, data: dict):
     btn2 = InlineKeyboardButton(text="Назад", callback_data='Categories')
     category_button.row(btn1, btn2)
 
-    await message.answer(text=f'Название: {data["name"]}', reply_markup=category_button.as_markup())
+    await message.edit_text(text=f'Название: {data["name"]}', reply_markup=category_button.as_markup())

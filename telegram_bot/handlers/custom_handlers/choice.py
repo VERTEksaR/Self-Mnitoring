@@ -7,7 +7,7 @@ from aiogram.types import Message
 from telegram_bot.loader import my_router
 from telegram_bot.states.data import Choice
 from telegram_bot.config_data.config import APP_API
-from telegram_bot.handlers.custom_handlers.finance.distributor import finance_choice
+from telegram_bot.keyboards.inline import finance_choice
 
 
 @my_router.message(Command(commands=["finance"]))

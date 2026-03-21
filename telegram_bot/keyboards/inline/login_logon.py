@@ -8,15 +8,21 @@ from telegram_bot.loader import my_router
 from telegram_bot.states.data import Auth, Register
 
 
-async def login_logon(message: Message):
+async def login_logon(message: Message, is_created: bool = False):
     login_logon_button = InlineKeyboardBuilder()
 
     btn1 = InlineKeyboardButton(text='Зарегистрироваться', callback_data='logon')
     btn2 = InlineKeyboardButton(text='Войти', callback_data='login')
     login_logon_button.add(btn1, btn2)
-    await message.answer(text="Привет!\n"
-        "Для использования бота необходимо авторизоваться\n",
-                         reply_markup=login_logon_button.as_markup())
+
+    if is_created:
+        await message.edit_text(text="Привет!\n"
+            "Для использования бота необходимо авторизоваться\n",
+                             reply_markup=login_logon_button.as_markup())
+    else:
+        await message.answer(text="Привет!\n"
+                                     "Для использования бота необходимо авторизоваться\n",
+                                reply_markup=login_logon_button.as_markup())
 
 
 @my_router.callback_query(F.data.in_(('logon', 'login')))
