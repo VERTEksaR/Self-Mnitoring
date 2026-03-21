@@ -21,3 +21,8 @@ class Choice(StatesGroup):
 
 class Finance(StatesGroup):
     categories = State()
+
+
+class Category(StatesGroup):
+    name = State()
+    category_msg_id = State()

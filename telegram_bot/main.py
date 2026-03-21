@@ -1,8 +1,8 @@
 import asyncio
 
-from handlers import my_router
-from loader import bot, dp
-from utils.set_bot_commands import set_default_commands
+from telegram_bot.handlers import my_router
+from telegram_bot.loader import bot, dp
+from telegram_bot.utils.set_bot_commands import set_default_commands
 
 
 async def main():

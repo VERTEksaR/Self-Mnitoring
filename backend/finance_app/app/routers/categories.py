@@ -21,7 +21,8 @@ logger = logging.getLogger(__name__)
 
 
 @router.get('/{category_id}', response_model=CategoryRead, status_code=200)
-async def get_category(category_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_category(category_id: int, session: AsyncSession = Depends(get_session),
+                       current_user: User = Depends(get_current_user)):
     result = await session.execute(
         select(Category).where((Category.id == category_id) & (Category.user_id == current_user.id))
     )
@@ -36,7 +37,8 @@ async def get_category(category_id: int, session: AsyncSession = Depends(get_ses
 
 
 @router.delete('/{category_id}', status_code=204)
-async def delete_category(category_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def delete_category(category_id: int, session: AsyncSession = Depends(get_session),
+                          current_user: User = Depends(get_current_user)):
     category = await session.get(Category, category_id)
 
     if not category:
@@ -50,8 +52,12 @@ async def delete_category(category_id: int, session: AsyncSession = Depends(get_
 
 
 @router.post('/', response_model=CategoryRead, status_code=201)
-async def create_category(category_data: CategoryCreate, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
-    category = Category(**category_data.model_dump())
+async def create_category(category_data: CategoryCreate, session: AsyncSession = Depends(get_session),
+                          current_user: User = Depends(get_current_user)):
+    category = Category(
+        name=category_data.name,
+        user_id=current_user.id
+    )
     session.add(category)
     await session.commit()
     logger.info(f"Категория с id {category.id} была создана")
@@ -59,14 +65,22 @@ async def create_category(category_data: CategoryCreate, session: AsyncSession =
 
 
 @router.get('/', response_model=Page[CategoryRead], status_code=200)
-async def get_all_categories(page: int = 1, size: int = 10, name: str = '', session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_all_categories(page: int = 1, size: int = 6, name: str = '', session: AsyncSession = Depends(get_session),
+                             current_user: User = Depends(get_current_user)):
+    if page < 1:
+        page = 1
+
     total_result = await session.execute(
         select(func.count()).where((Category.name.like(f"%{name}%")) & (Category.user_id == current_user.id))
     )
     total = total_result.scalar_one()
 
+    offset = (page - 1) * size
+
     result = await session.execute(
         select(Category).where((Category.name.like(f"%{name}%")) & (Category.user_id == current_user.id))
+        .offset(offset)
+        .limit(size)
     )
     categories = result.scalars().all()
     pages = ceil(total / size) if total > 0 else 1
