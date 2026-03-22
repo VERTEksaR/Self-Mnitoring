@@ -1,14 +1,8 @@
-import aiohttp
-from aiogram import F
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery, InlineKeyboardButton
+from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from telegram_bot.config_data.config import APP_API
-from telegram_bot.keyboards.inline import login_logon, finance_choice
-from telegram_bot.keyboards.inline.buttons_categories import category
-from telegram_bot.loader import my_router, bot
-from telegram_bot.utils.misc.first_connect import first_connect
+from telegram_bot.loader import bot
 
 
 def create_inline_category():

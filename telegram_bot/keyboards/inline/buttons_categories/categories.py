@@ -16,7 +16,7 @@ async def categories(message: Message, data: dict, is_created=False):
     categories_button = InlineKeyboardBuilder()
 
     for element in data['items']:
-        button = InlineKeyboardButton(text=f"{element['id']} | {element['name']}", callback_data=f"category_{element['id']}")
+        button = InlineKeyboardButton(text=f"{element['name']}", callback_data=f"category_{element['id']}")
         categories_button.row(button)
 
     button_next = InlineKeyboardButton(text='>', callback_data=f'category_next_{data["page"]}')
@@ -41,24 +41,10 @@ async def categories_callback(callback: CallbackQuery, state:FSMContext):
     if 'plus' in callback.data:
         await create_category.create_category(chat=callback.message.chat.id,
                                               message=callback.message.message_id, state=state)
-        # msg = await callback.message.answer("Введите название:")
-        # await state.update_data(category_msg_id=msg.message_id)
-        # await state.set_state(Category.name)
     elif 'name_change' in callback.data:
         msg = await callback.message.answer("Введите название:")
         await state.update_data(category_msg_id=msg.message_id)
         await state.set_state(Category.category_name)
-        # data = await state.get_data()
-
-        # category_msg_id = data['category_msg_id']
-        # category_msg_change = data['category_msg_change']
-        # await callback.message.delete()
-        # await bot.delete_message(callback.message.chat.id, msg.message_id)
-
-        # await state.update_data(category_msg_id=msg.message_id)
-        # await create_category.create_category(chat=callback.message.chat.id,
-        #                                       message=category_msg_change,
-        #                                       state=state, name=callback.message.text)
     elif 'next' in callback.data:
         async with aiohttp.ClientSession() as session:
             token = await first_connect(callback.from_user.id)
