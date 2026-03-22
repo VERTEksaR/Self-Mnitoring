@@ -5,8 +5,9 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from telegram_bot.config_data.config import APP_API
-from telegram_bot.keyboards.inline import category, login_logon, finance_choice
-from telegram_bot.loader import my_router
+from telegram_bot.keyboards.inline import login_logon, finance_choice
+from telegram_bot.keyboards.inline.buttons_categories import category, create_category
+from telegram_bot.loader import my_router, bot
 from telegram_bot.states.data import Category
 from telegram_bot.utils.misc.first_connect import first_connect
 
@@ -15,7 +16,7 @@ async def categories(message: Message, data: dict, is_created=False):
     categories_button = InlineKeyboardBuilder()
 
     for element in data['items']:
-        button = InlineKeyboardButton(text=f"{element['id']} | {element['name']}", callback_data=f"category_{element['id']}")
+        button = InlineKeyboardButton(text=f"{element['name']}", callback_data=f"category_{element['id']}")
         categories_button.row(button)
 
     button_next = InlineKeyboardButton(text='>', callback_data=f'category_next_{data["page"]}')
@@ -38,9 +39,12 @@ async def categories(message: Message, data: dict, is_created=False):
 @my_router.callback_query(F.data.contains("category"))
 async def categories_callback(callback: CallbackQuery, state:FSMContext):
     if 'plus' in callback.data:
+        await create_category.create_category(chat=callback.message.chat.id,
+                                              message=callback.message.message_id, state=state)
+    elif 'name_change' in callback.data:
         msg = await callback.message.answer("Введите название:")
         await state.update_data(category_msg_id=msg.message_id)
-        await state.set_state(Category.name)
+        await state.set_state(Category.category_name)
     elif 'next' in callback.data:
         async with aiohttp.ClientSession() as session:
             token = await first_connect(callback.from_user.id)
@@ -94,6 +98,36 @@ async def categories_callback(callback: CallbackQuery, state:FSMContext):
             await finance_choice.choice_finance(callback.message, is_created=True)
         else:
             await login_logon.login_logon(callback.message, is_created=True)
+    elif 'save' in callback.data:
+        data = await state.get_data()
+        name = data['category_name']
+
+        category_data = {'name': name, 'user_id': callback.message.from_user.id}
+
+        async with aiohttp.ClientSession() as session:
+            token = await first_connect(callback.from_user.id)
+
+            if token:
+                async with session.post(
+                    APP_API + '/categories',
+                    headers={'Authorization': f'Bearer {token}'},
+                    json=category_data
+                ) as response:
+                    if response.status != 400:
+                        await callback.message.answer(text=f'Категория {category_data["name"]} создана')
+                        async with session.get(
+                                APP_API + '/categories',
+                                headers={'Authorization': f'Bearer {token}'}
+                        ) as response_all:
+                            data = await response_all.json()
+                            await state.clear()
+                            await categories(callback.message, data, is_created=True)
+                    else:
+                        await callback.message.answer(text=f'Ошибка: категория с именем {category_data["name"]} уже существует')
+                await state.clear()
+            else:
+                await state.clear()
+                await login_logon.login_logon(callback.message, is_created=True)
     else:
         async with aiohttp.ClientSession() as session:
             token = await first_connect(callback.from_user.id)
