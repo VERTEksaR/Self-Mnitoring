@@ -26,8 +26,9 @@ class Finance(StatesGroup):
 
 
 class Category(StatesGroup):
-    name = State()
+    category_name = State()
     category_msg_id = State()
+    category_msg_change = State()
 
 
 class Account(StatesGroup):
