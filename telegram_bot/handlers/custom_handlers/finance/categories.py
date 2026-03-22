@@ -11,7 +11,7 @@ from telegram_bot.states.data import Category
 from telegram_bot.utils.misc.first_connect import first_connect
 
 
-@my_router.message(Category.name)
+@my_router.message(Category.category_name)
 async def process_category(message: Message, state: FSMContext):
     data = await state.get_data()
 
