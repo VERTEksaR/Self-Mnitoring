@@ -1,14 +1,12 @@
 import aiohttp
 from aiogram import F
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup
-from aiogram.types import InlineKeyboardButton
+from aiogram.types import Message, CallbackQuery, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from telegram_bot.config_data.config import APP_API
-from telegram_bot.loader import bot, my_router
-from telegram_bot.states.data import Choice, Finance
-from telegram_bot.keyboards.inline import categories, accounts
+from telegram_bot.loader import my_router
+from telegram_bot.keyboards.inline import categories, accounts, transactions, login_logon
 from telegram_bot.utils.misc.first_connect import first_connect
 
 
@@ -27,7 +25,7 @@ async def choice_finance(message: Message, is_created: bool = False):
 
 
 @my_router.callback_query(F.data.in_(('Categories', 'Accounts', 'Transactions')))
-async def finance_callback_choice(callback: CallbackQuery, state: FSMContext):
+async def finance_callback_choice(callback: CallbackQuery):
     if callback.data == 'Categories':
         async with aiohttp.ClientSession() as session:
             token = await first_connect(callback.from_user.id)
@@ -40,7 +38,7 @@ async def finance_callback_choice(callback: CallbackQuery, state: FSMContext):
                     data = await response.json()
                     await categories.categories(callback.message, data)
             else:
-                await callback.message.answer("Срок токена истек. Необходимо войти заново")
+                await login_logon.login_logon(callback.message, is_created=True)
     elif callback.data == 'Accounts':
         async with aiohttp.ClientSession() as session:
             token = await first_connect(callback.from_user.id)
@@ -53,5 +51,18 @@ async def finance_callback_choice(callback: CallbackQuery, state: FSMContext):
                     data = await response.json()
                     await accounts.accounts(callback.message, data)
             else:
-                await callback.message.answer("Срок токена истек. Необходимо войти заново")
+                await login_logon.login_logon(callback.message, is_created=True)
+    elif callback.data == 'Transactions':
+        async with aiohttp.ClientSession() as session:
+            token = await first_connect(callback.from_user.id)
+
+            if token:
+                async with session.get(
+                    APP_API + '/transactions',
+                    headers={'Authorization': f'Bearer {token}'}
+                ) as response:
+                    data = await response.json()
+                    await transactions.transactions(callback.message, data)
+            else:
+                await login_logon.login_logon(callback.message, is_created=True)
 
