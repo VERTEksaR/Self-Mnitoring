@@ -28,7 +28,7 @@ async def create_category(chat: int, message: int, state: FSMContext, name: str 
         message_id=message,
         text='Создание категории:\n\n'
              f'Название: {name}\n',
-        reply_markup=create_inline_category
+        reply_markup=create_inline_category()
     )
 
     await state.update_data(category_msg_change=msg.message_id)
