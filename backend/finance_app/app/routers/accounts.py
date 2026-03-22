@@ -50,8 +50,12 @@ async def delete_account(account_id: int, session: AsyncSession = Depends(get_se
 
 
 @router.post("/", response_model=AccountRead, status_code=201)
-async def create_account(account_data: AccountCreate, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
-    account = Account(**account_data.model_dump())
+async def create_account(account_data: AccountCreate, session: AsyncSession = Depends(get_session),
+                         current_user: User = Depends(get_current_user)):
+    account = Account(
+        name=account_data.name,
+        user_id=current_user.id,
+    )
     session.add(account)
     await session.commit()
     logger.info(f"Счет с id {account.id} был создан")
@@ -59,14 +63,22 @@ async def create_account(account_data: AccountCreate, session: AsyncSession = De
 
 
 @router.get("/", response_model=Page[AccountRead], status_code=200)
-async def get_accounts(page: int = 1, size: int = 10, name: str = '', session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_accounts(page: int = 1, size: int = 10, name: str = '', session: AsyncSession = Depends(get_session),
+                       current_user: User = Depends(get_current_user)):
+    if page < 1:
+        page = 1
+
     total_result = await session.execute(
         select(func.count()).where((Account.name.like(f"%{name}%")) & (Account.user_id == current_user.id))
     )
     total = total_result.scalar_one()
 
+    offset = (page - 1) * size
+
     result = await session.execute(
         select(Account).where(Account.name.like(f"%{name}%"))
+        .offset(offset)
+        .limit(size)
     )
     accounts = result.scalars().all()
     pages = ceil(total / size) if total > 0 else 1
