@@ -1,17 +1,13 @@
-import requests
-
-from aiogram.filters import Command, StateFilter
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from telegram_bot.loader import my_router
-from telegram_bot.states.data import Choice
-from telegram_bot.config_data.config import APP_API
 from telegram_bot.keyboards.inline import finance_choice
 
 
 @my_router.message(Command(commands=["finance"]))
-async def choice_finance(message: Message, state: FSMContext):
+async def choice_finance(message: Message):
     await finance_choice.choice_finance(message)
 
 
@@ -28,3 +24,8 @@ async def choice_food(state: FSMContext):
 @my_router.message(Command(commands=["achievements"]))
 async def choice_achievements(state: FSMContext):
     await state.update_data({'achievements': True})
+
+
+@my_router.message(Command(commands=["languages"]))
+async def choice_achievements(state: FSMContext):
+    await state.update_data({'languages': True})
