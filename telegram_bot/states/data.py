@@ -13,11 +13,13 @@ class Auth(StatesGroup):
     password = State()
     prompt_msg_id = State()
 
+
 class Choice(StatesGroup):
     finance = State()
     training = State()
     food = State()
     achievements = State()
+
 
 class Finance(StatesGroup):
     categories = State()
@@ -26,3 +28,8 @@ class Finance(StatesGroup):
 class Category(StatesGroup):
     name = State()
     category_msg_id = State()
+
+
+class Account(StatesGroup):
+    name = State()
+    account_msg_id = State()
