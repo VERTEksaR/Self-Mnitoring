@@ -48,10 +48,10 @@ async def categories_callback(callback: CallbackQuery, state:FSMContext):
         msg = await callback.message.answer("Введите название:")
         data = await state.get_data()
 
-        category_msg_id = data['category_msg_id']
+        # category_msg_id = data['category_msg_id']
         category_msg_change = data['category_msg_change']
         await callback.message.delete()
-        await bot.delete_message(callback.message.chat.id, category_msg_id)
+        await bot.delete_message(callback.message.chat.id, msg.message_id)
 
         await state.update_data(category_msg_id=msg.message_id)
         await create_category.create_category(chat=callback.message.chat.id,
