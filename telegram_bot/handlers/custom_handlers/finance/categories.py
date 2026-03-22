@@ -25,7 +25,7 @@ async def process_category(message: Message, state: FSMContext):
         chat_id=message.chat.id,
         message_id=category_msg_change,
         text='Создание категории:\n\n'
-             f'Название: [{message.text}]\n',
+             f'Название: {message.text}\n',
         reply_markup=create_category.create_inline_category()
     )
 
