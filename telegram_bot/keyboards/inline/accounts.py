@@ -80,7 +80,7 @@ async def accounts_callback(callback: CallbackQuery, state: FSMContext):
                 ) as response:
                     if response.status == 204:
                         async with session.get(
-                            APP_API + 'accounts',
+                            APP_API + '/accounts',
                             headers={'Authorization': f'Bearer {token}'},
                         ) as response_other:
                             data = await response_other.json()
