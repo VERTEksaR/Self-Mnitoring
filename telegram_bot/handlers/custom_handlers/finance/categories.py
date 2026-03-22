@@ -29,4 +29,5 @@ async def process_category(message: Message, state: FSMContext):
         reply_markup=create_category.create_inline_category()
     )
 
+    await state.update_data(category_name=message.text)
 
