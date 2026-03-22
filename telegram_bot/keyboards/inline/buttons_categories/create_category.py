@@ -27,4 +27,4 @@ async def create_category(chat: int, message: int, state: FSMContext, name: str 
         reply_markup=category_button.as_markup()
     )
 
-    await state.update_data(category_msg_change=msg.message_id, category_name=name)
+    await state.update_data(category_msg_change=msg.message_id)
