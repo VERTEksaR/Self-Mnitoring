@@ -1,14 +1,9 @@
-import aiohttp
-
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from telegram_bot.keyboards.inline import login_logon
-from telegram_bot.keyboards.inline.buttons_categories import categories, create_category
+from telegram_bot.keyboards.inline.buttons_categories import create_category
 from telegram_bot.loader import my_router, bot
-from telegram_bot.config_data.config import APP_API
 from telegram_bot.states.data import Category
-from telegram_bot.utils.misc.first_connect import first_connect
 
 
 @my_router.message(Category.category_name)
