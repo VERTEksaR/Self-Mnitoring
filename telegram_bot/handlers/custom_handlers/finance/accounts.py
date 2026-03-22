@@ -10,7 +10,7 @@ from telegram_bot.states.data import Account
 from telegram_bot.utils.misc.first_connect import first_connect
 
 
-@my_router(Account.name)
+@my_router.message(Account.name)
 async def process_account(message: Message, state: FSMContext):
     data = await state.get_data()
 
