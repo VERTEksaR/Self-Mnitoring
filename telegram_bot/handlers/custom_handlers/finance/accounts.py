@@ -3,7 +3,8 @@ import aiohttp
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from telegram_bot.keyboards.inline import accounts, login_logon
+from telegram_bot.keyboards.inline import login_logon
+from telegram_bot.keyboards.inline.buttons_accounts import accounts
 from telegram_bot.loader import my_router, bot
 from telegram_bot.config_data.config import APP_API
 from telegram_bot.states.data import Account
