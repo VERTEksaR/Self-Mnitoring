@@ -59,7 +59,13 @@ async def create_category(category_data: CategoryCreate, session: AsyncSession =
         user_id=current_user.id
     )
     session.add(category)
-    await session.commit()
+
+    try:
+        await session.commit()
+    except Exception:
+        logger.error(f"Категория с наименованием {category_data.name} уже создана")
+        raise HTTPException(status_code=400, detail=f"Категория с наименованием {category_data.name} уже создана")
+
     logger.info(f"Категория с id {category.id} была создана")
     return category
 
