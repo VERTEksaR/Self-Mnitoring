@@ -1,14 +1,14 @@
 import aiohttp
 from aiogram import F
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup
+from aiogram.types import Message, CallbackQuery
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from telegram_bot.config_data.config import APP_API
-from telegram_bot.loader import bot, my_router
-from telegram_bot.states.data import Choice, Finance
-from telegram_bot.keyboards.inline import categories, accounts
+from telegram_bot.loader import my_router
+from telegram_bot.keyboards.inline.buttons_categories import categories
+from telegram_bot.keyboards.inline.buttons_accounts import accounts
 from telegram_bot.utils.misc.first_connect import first_connect
 
 
