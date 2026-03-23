@@ -32,5 +32,6 @@ class Category(StatesGroup):
 
 
 class Account(StatesGroup):
-    name = State()
+    account_name = State()
     account_msg_id = State()
+    account_msg_change = State()

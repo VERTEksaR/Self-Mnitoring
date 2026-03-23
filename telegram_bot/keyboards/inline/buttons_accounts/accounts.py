@@ -6,7 +6,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from telegram_bot.config_data.config import APP_API
 from telegram_bot.keyboards.inline import login_logon, finance_choice
-from telegram_bot.keyboards.inline.buttons_accounts import account
+from telegram_bot.keyboards.inline.buttons_accounts import account, create_account
 from telegram_bot.loader import my_router
 from telegram_bot.states.data import Account
 from telegram_bot.utils.misc.first_connect import first_connect
@@ -39,9 +39,12 @@ async def accounts(message: Message, data: dict, is_created=False):
 @my_router.callback_query(F.data.contains("account"))
 async def accounts_callback(callback: CallbackQuery, state: FSMContext):
     if 'plus' in callback.data:
-        msg = await callback.message.answer('Введите название:')
+        await create_account.create_account(chat=callback.message.chat.id,
+                                              message=callback.message.message_id, state=state)
+    elif 'name_change' in callback.data:
+        msg = await callback.message.answer("Введите название:")
         await state.update_data(account_msg_id=msg.message_id)
-        await state.set_state(Account.name)
+        await state.set_state(Account.account_name)
     elif 'next' in callback.data:
         async with aiohttp.ClientSession() as session:
             token = await first_connect(callback.from_user.id)
@@ -95,6 +98,37 @@ async def accounts_callback(callback: CallbackQuery, state: FSMContext):
             await finance_choice.choice_finance(callback.message, is_created=True)
         else:
             await login_logon.login_logon(callback.message, is_created=True)
+    elif 'save' in callback.data:
+        data = await state.get_data()
+        name = data['account_name']
+
+        account_data = {'name': name, 'user_id': callback.message.from_user.id}
+
+        async with aiohttp.ClientSession() as session:
+            token = await first_connect(callback.from_user.id)
+
+            if token:
+                async with session.post(
+                    APP_API + '/accounts',
+                    headers={'Authorization': f'Bearer {token}'},
+                    json=account_data
+                ) as response:
+                    if response.status != 400:
+                        await callback.message.answer(text=f'Счет {account_data["name"]} создан')
+                        async with session.get(
+                                APP_API + '/accounts',
+                                headers={'Authorization': f'Bearer {token}'}
+                        ) as response_all:
+                            data = await response_all.json()
+                            await state.clear()
+                            await accounts(callback.message, data, is_created=True)
+                    else:
+                        await callback.message.answer(
+                            text=f'Ошибка: счет с именем {account_data["name"]} уже существует')
+                await state.clear()
+            else:
+                await state.clear()
+                await login_logon.login_logon(callback.message, is_created=True)
     else:
         async with aiohttp.ClientSession() as session:
             token = await first_connect(callback.from_user.id)
