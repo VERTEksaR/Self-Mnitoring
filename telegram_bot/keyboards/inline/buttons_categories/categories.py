@@ -12,7 +12,7 @@ from telegram_bot.states.data import Category
 from telegram_bot.utils.misc.first_connect import first_connect
 
 
-async def categories(message: Message, data: dict, is_created=False):
+async def categories(message: Message, data: dict, is_created: bool =False):
     categories_button = InlineKeyboardBuilder()
 
     for element in data['items']:
