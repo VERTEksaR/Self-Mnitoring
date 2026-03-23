@@ -5,7 +5,8 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from telegram_bot.config_data.config import APP_API
-from telegram_bot.keyboards.inline import account, login_logon, finance_choice
+from telegram_bot.keyboards.inline import login_logon, finance_choice
+from telegram_bot.keyboards.inline.buttons_accounts import account
 from telegram_bot.loader import my_router
 from telegram_bot.states.data import Account
 from telegram_bot.utils.misc.first_connect import first_connect
