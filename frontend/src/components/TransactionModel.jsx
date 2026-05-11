@@ -21,14 +21,13 @@ export function AddTransactionModel({ onClose, onSaved }) {
 
     useEffect(() => {
         getAccounts().then(res => {
-            console.log(res.data)
-            setAccounts(res.data);
+            setAccounts(res.data.items ?? []);
         });
     }, []);
 
     useEffect(() => {
         getCategories().then(res => {
-            setCategories(res.data);
+            setCategories(res.data.items ?? []);
         });
     }, []);
 
@@ -44,15 +43,15 @@ export function AddTransactionModel({ onClose, onSaved }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // account_id, category_id, user_id — именно такие поля ждёт TransactionCreate на бэке
         const payload = {
             ...form,
             amount: Number(form.amount),
             cashback: Number(form.cashback),
-            account: Number(accountId),
-            category: Number(categoryId)
+            account_id: Number(accountId),
+            category_id: Number(categoryId),
+            user_id: Number(localStorage.getItem('user_id')),
         };
-
-        console.log('send', payload);
 
         try {
             const res = await createTransaction(payload);
@@ -84,10 +83,11 @@ export function AddTransactionModel({ onClose, onSaved }) {
 export function EditTransactionModel({ transaction, onClose, onSaved }) {
 
     const [categories, setCategories] = useState([]);
-    const [categoryId, setCategoryId] = useState(transaction.category.id);
+    // Бэк возвращает category_id (число), не вложенный объект
+    const [categoryId, setCategoryId] = useState(transaction.category_id);
 
     const [accounts, setAccounts] = useState([]);
-    const [accountId, setAccountId] = useState(transaction.account.id);
+    const [accountId, setAccountId] = useState(transaction.account_id);
 
     const [form, setForm] = useState({
         amount: transaction.amount,
@@ -97,15 +97,15 @@ export function EditTransactionModel({ transaction, onClose, onSaved }) {
         cashback: transaction.cashback,
     });
 
-     useEffect(() => {
-         getAccounts().then(res => {
-             setAccounts(res.data);
+    useEffect(() => {
+        getAccounts().then(res => {
+            setAccounts(res.data.items ?? []);
         });
     }, []);
 
     useEffect(() => {
         getCategories().then(res => {
-            setCategories(res.data);
+            setCategories(res.data.items ?? []);
         });
     }, []);
 
@@ -116,8 +116,9 @@ export function EditTransactionModel({ transaction, onClose, onSaved }) {
             ...form,
             amount: Number(form.amount),
             cashback: Number(form.cashback),
-            account: Number(accountId),
-            category: Number(categoryId)
+            account_id: Number(accountId),
+            category_id: Number(categoryId),
+            user_id: Number(localStorage.getItem('user_id')),
         };
 
         try {
@@ -146,7 +147,7 @@ export function EditTransactionModel({ transaction, onClose, onSaved }) {
 }
 
 
-export function TransactionModel({ transaction, onClose, onDelete, onEdit }) {
+export function TransactionModel({ transaction, onClose, onDelete, onEdit, categoriesMap = {}, accountsMap = {} }) {
 
     useEffect(() => {
         const onEsc = (e) => {
@@ -162,9 +163,9 @@ export function TransactionModel({ transaction, onClose, onDelete, onEdit }) {
             <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
                 <h3>Детали транзакции</h3>
 
-                <p><strong>Счет:</strong> {transaction.account.name}</p>
+                <p><strong>Счет:</strong> {accountsMap[transaction.account_id] ?? transaction.account_id}</p>
                 <p><strong>Сумма:</strong> {transaction.amount}</p>
-                <p><strong>Категория:</strong> {transaction.category.name}</p>
+                <p><strong>Категория:</strong> {categoriesMap[transaction.category_id] ?? transaction.category_id}</p>
                 <p><strong>Описание:</strong> {transaction.destination}</p>
                 <p><strong>Дата:</strong> {transaction.transaction_date}</p>
 
