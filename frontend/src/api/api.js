@@ -1,8 +1,21 @@
 import axios from "axios";
 
 // baseURL — относительный путь, запросы проксируются через Vite на localhost:8000
+// paramsSerializer: массивы сериализуются как ?id=1&id=2, как ожидает FastAPI (не ?id[]=1)
 const api = axios.create({
     baseURL: '/',
+    paramsSerializer: (params) => {
+        const sp = new URLSearchParams();
+        for (const [key, value] of Object.entries(params)) {
+            if (value === undefined || value === null) continue;
+            if (Array.isArray(value)) {
+                value.forEach(v => sp.append(key, v));
+            } else {
+                sp.append(key, value);
+            }
+        }
+        return sp.toString();
+    },
 });
 
 // Автоматически добавляем токен из localStorage в каждый запрос
