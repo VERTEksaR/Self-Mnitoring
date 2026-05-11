@@ -12,7 +12,17 @@ class TransactionCreate(BaseModel):
     transaction_date: date
     category_id: int
     account_id: int
-    user_id: int
+
+
+class TransactionChange(BaseModel):
+    id: int
+    destination: Optional[str] = None
+    amount: Optional[float] = None
+    cashback: Optional[float] = None
+    replenishment: Optional[bool] = None
+    transaction_date: Optional[date] = None
+    category_id: Optional[int] = None
+    account_id: Optional[int] = None
 
 
 class TransactionRead(BaseModel):
