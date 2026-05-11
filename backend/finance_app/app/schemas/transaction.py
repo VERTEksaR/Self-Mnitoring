@@ -1,6 +1,6 @@
 from datetime import date
 from fastapi import Query
-from typing import Optional, List
+from typing import Optional, List, Annotated
 
 from pydantic import BaseModel, ConfigDict
 from pygments.lexer import default
@@ -52,5 +52,5 @@ class TransactionFilter(BaseModel):
     transaction_date_from: Optional[date] = None
     transaction_date_to: Optional[date] = None
     transaction_date: Optional[date] = None
-    category_id: Optional[List[int]] = Query(default=None)
-    account_id: Optional[List[int]] = Query(default=None)
+    category_id: Annotated[Optional[List[int]], Query()] = None
+    account_id: Annotated[Optional[List[int]], Query()] = None
