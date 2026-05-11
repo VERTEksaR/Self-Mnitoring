@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.finance_app.app.dependencies.auth import get_current_user
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Transaction, User
-from backend.finance_app.app.schemas.transaction import TransactionRead, TransactionCreate, TransactionFilter
+from backend.finance_app.app.schemas.transaction import TransactionRead, TransactionCreate, TransactionFilter, \
+    TransactionChange
 from backend.finance_app.app.schemas.common import Page
 
 router = APIRouter()
@@ -52,10 +53,28 @@ async def delete_transaction(transaction_id: int, session: AsyncSession = Depend
 
 @router.post('/', response_model=TransactionRead, status_code=201)
 async def create_transaction(transaction_data: TransactionCreate, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
-    transaction = Transaction(**transaction_data.model_dump())
+    transaction = Transaction(**transaction_data.model_dump(), user_id=current_user.id)
     session.add(transaction)
     await session.commit()
     logger.info(f"Транзакция с id {transaction.id} была создана")
+    return transaction
+
+
+@router.patch("/{transaction_id}", response_model=TransactionRead, status_code=200)
+async def change_transaction(transaction_id: int, transaction_data: TransactionChange, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+    transaction = await session.get(Transaction, transaction_id)
+
+    if not transaction:
+        logger.error(f"Транзакция с id {transaction_id} не была найдена")
+        raise HTTPException(status_code=404, detail=f"Транзакция с id {transaction_id} не была найдена")
+
+    updated_data = transaction_data.model_dump(exclude_unset=True)
+
+    for field, value in updated_data.items():
+        setattr(transaction, field, value)
+
+    await session.commit()
+    await session.refresh(transaction)
     return transaction
 
 

@@ -51,7 +51,7 @@ async def delete_category(category_id: int, session: AsyncSession = Depends(get_
 
 @router.post('/', response_model=CategoryRead, status_code=201)
 async def create_category(category_data: CategoryCreate, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
-    category = Category(**category_data.model_dump())
+    category = Category(**category_data.model_dump(), user_id=current_user.id)
     session.add(category)
     await session.commit()
     logger.info(f"Категория с id {category.id} была создана")
