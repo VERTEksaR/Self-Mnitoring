@@ -11,17 +11,16 @@ export function CategoryPieChart({ data, onClickCategory }) {
     }
 
     return (
-        <PieChart width={300} height={320}>
+        // Legend размещён снизу — подписи не обрезаются и не наезжают на секторы
+        <PieChart width={300} height={300}>
             <Pie
                 data={data}
                 dataKey="total"
                 nameKey="category"
                 cx="50%"
-                cy="45%"
-                outerRadius={100}
-                // label показывает название категории, не числовое значение
-                label={({ name }) => name}
-                labelLine={true}
+                cy="42%"
+                outerRadius={85}
+                label={false}
                 onClick={(e) => onClickCategory?.(e.category)}
             >
                 {data.map((_, index) => (
@@ -29,6 +28,14 @@ export function CategoryPieChart({ data, onClickCategory }) {
                 ))}
             </Pie>
             <Tooltip formatter={(value) => value.toLocaleString('ru-RU')} />
+            <Legend
+                layout="vertical"
+                align="center"
+                verticalAlign="bottom"
+                iconType="circle"
+                iconSize={10}
+                wrapperStyle={{ fontSize: '12px', maxHeight: '80px', overflowY: 'auto' }}
+            />
         </PieChart>
     );
 }
