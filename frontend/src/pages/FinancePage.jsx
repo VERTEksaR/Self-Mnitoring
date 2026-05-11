@@ -37,15 +37,7 @@ export default function FinancePage() {
     const [categoryFilter, setCategoryFilter] = useState('');
     const [accountFilter, setAccountFilter] = useState('');
 
-    const [draftRange, setDraftRange] = useState({
-        from: undefined,
-        to: undefined,
-    });
-
-    const [activeRange, setActiveRange] = useState({
-        from: undefined,
-        to: undefined,
-    });
+    const [dateRange, setDateRange] = useState({ from: undefined, to: undefined });
 
     const loadTransactions = async (params = {}) => {
         const res = await getTransactions(params);
@@ -54,8 +46,7 @@ export default function FinancePage() {
     };
 
     const resetFilter = () => {
-        setDraftRange({ from: null, to: null });
-        setActiveRange({ from: null, to: null });
+        setDateRange({ from: undefined, to: undefined });
         setCategoryFilter('');
         setAccountFilter('');
     };
@@ -90,19 +81,15 @@ export default function FinancePage() {
         setSelectedAccount(null);
     }
 
+    // Любое изменение фильтра сразу перезагружает транзакции
     useEffect(() => {
-        if (!activeRange.from && !activeRange.to) {
-            loadTransactions();
-            return;
-        };
         loadTransactions({
-            // Поля фильтра должны совпадать с TransactionFilter на бэке
-            transaction_date_from: activeRange.from ? SetFormatDate(activeRange.from) : undefined,
-            transaction_date_to: activeRange.to ? SetFormatDate(activeRange.to) : undefined,
+            transaction_date_from: dateRange.from ? SetFormatDate(dateRange.from) : undefined,
+            transaction_date_to: dateRange.to ? SetFormatDate(dateRange.to) : undefined,
             category_id: categoryFilter || undefined,
             account_id: accountFilter || undefined,
         });
-    }, [activeRange, categoryFilter, accountFilter]);
+    }, [dateRange, categoryFilter, accountFilter]);
 
     const totals = getTotals(transactions);
 
@@ -135,16 +122,14 @@ export default function FinancePage() {
                 {/*  тут будет календарь  */}
                 <div style={{ width: "250px", borderRight: "1px solid #ddd" }}>
                     <h3>Просмотр по дате</h3>
-                    <div>
-                        <DateRangeCalendar
-                            draftRange={draftRange}
-                            onChange={setDraftRange}
-                        />
-                    </div>
+                    <DateRangeCalendar
+                        draftRange={dateRange}
+                        onChange={setDateRange}
+                    />
                     <div>
                         <label>Категория:</label>
                         <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
-                            <option value="">Укажите категорию</option>
+                            <option value="">Все категории</option>
                             {categories.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
@@ -153,18 +138,13 @@ export default function FinancePage() {
                     <div>
                         <label>Счет:</label>
                         <select value={accountFilter} onChange={e => setAccountFilter(e.target.value)}>
-                            <option value="">Укажите счет</option>
+                            <option value="">Все счета</option>
                             {accounts.map(a => (
                                 <option key={a.id} value={a.id}>{a.name}</option>
                             ))}
                         </select>
                     </div>
-                    <button onClick={() => setActiveRange(draftRange)}>
-                        Применить
-                    </button>
-                    <button onClick={resetFilter}>
-                        Сбросить
-                    </button>
+                    <button onClick={resetFilter}>Сбросить</button>
                 </div>
                 {/*   тут будут транзакции  */}
                 <div style={{ width: "350px", margin: "20px" }}>
@@ -204,7 +184,7 @@ export default function FinancePage() {
                         </div>
                     </div>
                     <div>
-                        <h4>Топ категорий по тратам</h4>
+                        <h4>Расходы по категориям</h4>
                         {totalByCategories.length === 0 && (
                             <p>Нет данных</p>
                         )}
