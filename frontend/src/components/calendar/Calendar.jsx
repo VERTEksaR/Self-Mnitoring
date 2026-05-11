@@ -8,6 +8,8 @@ export function DateRangeCalendar({ draftRange, onChange }) {
             mode="range"
             selected={draftRange}
             onSelect={onChange}
+            showOutsideDays={false}
+            style={{ fontSize: '12px', margin: 0 }}
         />
     );
 }

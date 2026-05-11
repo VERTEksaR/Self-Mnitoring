@@ -1,51 +1,40 @@
+const round2 = (n) => Math.round(n * 100) / 100;
+
 export function getTotals(transactions) {
-    let income = 0
-    let expense = 0
+    let income = 0;
+    let expense = 0;
 
     for (const t of transactions) {
         if (t.replenishment) {
-            income += Number(t.amount)
+            income += Number(t.amount);
         } else {
-            expense += Number(t.amount)
+            expense += Number(t.amount);
         }
-    };
+    }
 
-    let balance = income - expense
-
-    let isIncome = false
-
-    if (balance >= 0) {
-        isIncome = true
-    };
+    const balance = round2(income - expense);
 
     return {
-        income, expense, balance, isIncome
+        income: round2(income),
+        expense: round2(expense),
+        balance,
+        isIncome: balance >= 0,
     };
-};
+}
 
 
 // categoriesMap: { [id]: name } — передаётся из FinancePage
+// Учитывает только расходы (replenishment === false)
 export function totalByCategory(transactions, categoriesMap = {}) {
-    let resultData = []
+    const categories = transactions
+        .filter(t => !t.replenishment)
+        .reduce((acc, t) => {
+            const name = categoriesMap[t.category_id] ?? `Категория ${t.category_id}`;
+            acc[name] = round2((acc[name] ?? 0) + Number(t.amount));
+            return acc;
+        }, {});
 
-    const categories = transactions.reduce((acc, t) => {
-        const name = categoriesMap[t.category_id] ?? `Категория ${t.category_id}`;
-
-        if (!acc[name]) {
-            acc[name] = 0
-        };
-
-        acc[name] += Number(t.amount)
-
-        return acc;
-    }, {});
-
-    const top3 = Object.entries(categories)
-        .sort(([, a], [, b]) => b - a).slice(0, 3);
-
-    for (const i of top3) {
-        resultData.push({'category': i[0], 'total': i[1]})
-    }
-
-    return resultData
+    return Object.entries(categories)
+        .sort(([, a], [, b]) => b - a)
+        .map(([category, total]) => ({ category, total }));
 }
