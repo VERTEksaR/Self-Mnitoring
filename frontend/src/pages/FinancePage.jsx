@@ -20,7 +20,6 @@ import { deleteTransaction, deleteCategory, deleteAccount } from '../api/api';
 
 export default function FinancePage() {
     const [categories, setCategories] = useState([]);
-    // Все транзакции от API (фильтр только по дате)
     const [allTransactions, setAllTransactions] = useState([]);
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -41,14 +40,8 @@ export default function FinancePage() {
 
     const [dateRange, setDateRange] = useState({ from: undefined, to: undefined });
 
-    // Фильтрация по категориям и счетам — клиентская (бэк поддерживает только один ID)
-    const transactions = useMemo(() => {
-        return allTransactions.filter(t => {
-            if (categoryFilters.length > 0 && !categoryFilters.includes(t.category_id)) return false;
-            if (accountFilters.length > 0 && !accountFilters.includes(t.account_id)) return false;
-            return true;
-        });
-    }, [allTransactions, categoryFilters, accountFilters]);
+    // Серверная фильтрация: бэк принимает List[int] для category_id и account_id
+    const transactions = allTransactions;
 
     const toggleCategory = (id) => {
         setCategoryFilters(prev =>
@@ -62,7 +55,6 @@ export default function FinancePage() {
         );
     };
 
-    // size=500 чтобы получить все транзакции за период, не только первые 10
     const loadTransactions = async (params = {}) => {
         const res = await getTransactions({ ...params, size: 500 });
         setAllTransactions(res.data.items ?? []);
@@ -92,13 +84,14 @@ export default function FinancePage() {
         setSelectedAccount(null);
     };
 
-    // Перезагружаем с бэка только при смене дат
     useEffect(() => {
         loadTransactions({
             transaction_date_from: dateRange.from ? SetFormatDate(dateRange.from) : undefined,
             transaction_date_to: dateRange.to ? SetFormatDate(dateRange.to) : undefined,
+            category_id: categoryFilters.length > 0 ? categoryFilters : undefined,
+            account_id: accountFilters.length > 0 ? accountFilters : undefined,
         });
-    }, [dateRange]);
+    }, [dateRange, categoryFilters, accountFilters]);
 
     useEffect(() => {
         Promise.all([getCategories(), getAccounts()])
