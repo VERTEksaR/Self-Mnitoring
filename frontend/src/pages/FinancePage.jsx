@@ -105,7 +105,6 @@ export default function FinancePage() {
     }, [activeRange, categoryFilter, accountFilter]);
 
     const totals = getTotals(transactions);
-    const totalByCategories = totalByCategory(transactions);
 
     useEffect(() => {
         Promise.all([getCategories(), getAccounts()])
@@ -119,6 +118,9 @@ export default function FinancePage() {
     const categoriesMap = useMemo(() => {
         return Object.fromEntries(categories.map(cat => [cat.id, cat.name]));
     }, [categories]);
+
+    // totalByCategory должен быть после categoriesMap, чтобы иметь актуальные имена
+    const totalByCategories = totalByCategory(transactions, categoriesMap);
 
     const accountsMap = useMemo(() => {
         return Object.fromEntries(accounts.map(acc => [acc.id, acc.name]));

@@ -24,11 +24,12 @@ export function getTotals(transactions) {
 };
 
 
-export function totalByCategory(transactions) {
+// categoriesMap: { [id]: name } — передаётся из FinancePage
+export function totalByCategory(transactions, categoriesMap = {}) {
     let resultData = []
 
     const categories = transactions.reduce((acc, t) => {
-        const name = t.category.name;
+        const name = categoriesMap[t.category_id] ?? `Категория ${t.category_id}`;
 
         if (!acc[name]) {
             acc[name] = 0
