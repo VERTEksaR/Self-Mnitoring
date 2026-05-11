@@ -16,14 +16,19 @@ export default function LoginPage() {
             const res = await loginUser({ email, password });
             localStorage.setItem('access_token', res.data.access_token);
 
-            // Получаем user_id — он нужен при создании транзакций, категорий и счетов
-            const usersRes = await getUsers({ email });
-            const user = usersRes.data.items?.[0];
-            if (user) {
-                localStorage.setItem('user_id', user.id);
+            // Получаем user_id — он нужен при создании транзакций, категорий и счетов.
+            // nickname передаём пустой строкой, т.к. UserFilter на бэке требует это поле.
+            try {
+                const usersRes = await getUsers({ email, nickname: '' });
+                const user = usersRes.data.items?.[0];
+                if (user) {
+                    localStorage.setItem('user_id', user.id);
+                }
+            } catch {
+                // user_id не получили, но это не блокирует вход
             }
 
-            navigate('/finance');
+            navigate('/');
         } catch (err) {
             setError(err.response?.data?.detail || 'Ошибка входа');
         }
