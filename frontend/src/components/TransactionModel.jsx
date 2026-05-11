@@ -43,14 +43,12 @@ export function AddTransactionModel({ onClose, onSaved }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // account_id, category_id, user_id — именно такие поля ждёт TransactionCreate на бэке
         const payload = {
             ...form,
             amount: Number(form.amount),
             cashback: Number(form.cashback),
             account_id: Number(accountId),
             category_id: Number(categoryId),
-            user_id: Number(localStorage.getItem('user_id')),
         };
 
         try {
@@ -118,7 +116,6 @@ export function EditTransactionModel({ transaction, onClose, onSaved }) {
             cashback: Number(form.cashback),
             account_id: Number(accountId),
             category_id: Number(categoryId),
-            user_id: Number(localStorage.getItem('user_id')),
         };
 
         try {
