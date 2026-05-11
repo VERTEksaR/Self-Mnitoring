@@ -40,8 +40,12 @@ export default function FinancePage() {
 
     const [dateRange, setDateRange] = useState({ from: undefined, to: undefined });
 
-    // Серверная фильтрация: бэк принимает List[int] для category_id и account_id
-    const transactions = allTransactions;
+    // Клиентская фильтрация по категориям и счетам (бэк пока не поддерживает List[int] через Depends)
+    const transactions = allTransactions.filter(t => {
+        if (categoryFilters.length > 0 && !categoryFilters.includes(t.category_id)) return false;
+        if (accountFilters.length > 0 && !accountFilters.includes(t.account_id)) return false;
+        return true;
+    });
 
     const toggleCategory = (id) => {
         setCategoryFilters(prev =>
@@ -84,14 +88,13 @@ export default function FinancePage() {
         setSelectedAccount(null);
     };
 
+    // API фильтрует только по дате; категории/счета — клиентски
     useEffect(() => {
         loadTransactions({
             transaction_date_from: dateRange.from ? SetFormatDate(dateRange.from) : undefined,
             transaction_date_to: dateRange.to ? SetFormatDate(dateRange.to) : undefined,
-            category_id: categoryFilters.length > 0 ? categoryFilters : undefined,
-            account_id: accountFilters.length > 0 ? accountFilters : undefined,
         });
-    }, [dateRange, categoryFilters, accountFilters]);
+    }, [dateRange]);
 
     useEffect(() => {
         Promise.all([getCategories(), getAccounts()])
