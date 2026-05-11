@@ -81,6 +81,7 @@ async def change_transaction(transaction_id: int, transaction_data: TransactionC
 @router.get('/', response_model=Page[TransactionRead], status_code=200)
 async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFilter = Depends(), session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
     conditions = [Transaction.user_id == current_user.id]
+    print(1, filters)
 
     if filters.destination:
         conditions.append(Transaction.destination.like(f'%{filters.destination}%'))
