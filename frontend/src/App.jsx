@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import FinancePage from './pages/FinancePage';
 import LoginPage from './pages/LoginPage';
+import StartPage from './pages/StartPage';
 
 // Защищённый роут: без токена отправляет на /login
 function PrivateRoute({ children }) {
@@ -13,12 +14,17 @@ function App() {
         <BrowserRouter>
             <Routes>
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/" element={
+                    <PrivateRoute>
+                        <StartPage />
+                    </PrivateRoute>
+                } />
                 <Route path="/finance" element={
                     <PrivateRoute>
                         <FinancePage />
                     </PrivateRoute>
                 } />
-                <Route path="*" element={<Navigate to="/finance" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </BrowserRouter>
     );
