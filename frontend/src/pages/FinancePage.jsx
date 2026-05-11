@@ -49,7 +49,8 @@ export default function FinancePage() {
 
     const loadTransactions = async (params = {}) => {
         const res = await getTransactions(params);
-        setTransactions(res.data);
+        // Бэк возвращает пагинированный объект { items, total, pages, ... }
+        setTransactions(res.data.items ?? []);
     };
 
     const resetFilter = () => {
@@ -95,9 +96,9 @@ export default function FinancePage() {
             return;
         };
         loadTransactions({
-
-            date_from: activeRange.from ? SetFormatDate(activeRange.from) : undefined,
-            date_to: activeRange.to ? SetFormatDate(activeRange.to) : undefined,
+            // Поля фильтра должны совпадать с TransactionFilter на бэке
+            transaction_date_from: activeRange.from ? SetFormatDate(activeRange.from) : undefined,
+            transaction_date_to: activeRange.to ? SetFormatDate(activeRange.to) : undefined,
             category_id: categoryFilter || undefined,
             account_id: accountFilter || undefined,
         });
@@ -109,16 +110,19 @@ export default function FinancePage() {
     useEffect(() => {
         Promise.all([getCategories(), getAccounts()])
             .then(([categoriesRes, accountsRes]) => {
-                setCategories(categoriesRes.data);
-                setAccounts(accountsRes.data);
+                setCategories(categoriesRes.data.items ?? []);
+                setAccounts(accountsRes.data.items ?? []);
             })
             .finally(() => setLoading(false));
     }, []);
 
     const categoriesMap = useMemo(() => {
-        return Object.fromEntries(
-            categories.map(cat => [cat.id, cat.name]));
-    }, [categories])
+        return Object.fromEntries(categories.map(cat => [cat.id, cat.name]));
+    }, [categories]);
+
+    const accountsMap = useMemo(() => {
+        return Object.fromEntries(accounts.map(acc => [acc.id, acc.name]));
+    }, [accounts]);
 
     if (loading) return <p>Загрузка...</p>
 
@@ -257,6 +261,8 @@ export default function FinancePage() {
                         setSelectedTransaction(null);
                         setEditTransaction(tx);
                     }}
+                    categoriesMap={categoriesMap}
+                    accountsMap={accountsMap}
                     />
             )}
             {addTransaction && (

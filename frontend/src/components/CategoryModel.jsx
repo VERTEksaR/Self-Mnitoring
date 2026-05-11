@@ -21,8 +21,10 @@ export function AddCategoryModel({ onClose, onSaved }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // CategoryCreate на бэке требует user_id
         const payload = {
-            ...form
+            ...form,
+            user_id: Number(localStorage.getItem('user_id')),
         };
 
         try {
