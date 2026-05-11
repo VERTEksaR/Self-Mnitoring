@@ -5,20 +5,26 @@ const COLORS = [
     '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
 ];
 
+const PIE_HEIGHT = 210;
+const LEGEND_ITEM_HEIGHT = 20;
+
 export function CategoryPieChart({ data, onClickCategory }) {
     if (!data || data.length === 0) {
         return <p>Нет данных для диаграмм</p>;
     }
 
+    // Высота растёт под все категории — скролл не нужен
+    const legendHeight = data.length * LEGEND_ITEM_HEIGHT;
+    const chartHeight = PIE_HEIGHT + legendHeight;
+
     return (
-        // Legend размещён снизу — подписи не обрезаются и не наезжают на секторы
-        <PieChart width={300} height={300}>
+        <PieChart width={300} height={chartHeight}>
             <Pie
                 data={data}
                 dataKey="total"
                 nameKey="category"
                 cx="50%"
-                cy="42%"
+                cy={PIE_HEIGHT / 2}
                 outerRadius={85}
                 label={false}
                 onClick={(e) => onClickCategory?.(e.category)}
@@ -34,7 +40,7 @@ export function CategoryPieChart({ data, onClickCategory }) {
                 verticalAlign="bottom"
                 iconType="circle"
                 iconSize={10}
-                wrapperStyle={{ fontSize: '12px', maxHeight: '80px', overflowY: 'auto' }}
+                wrapperStyle={{ fontSize: '12px' }}
             />
         </PieChart>
     );
