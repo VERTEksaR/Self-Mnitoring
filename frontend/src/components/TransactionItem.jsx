@@ -61,7 +61,7 @@ export function TransactionItem({ transaction, onClick, isSelected, categories }
                 {transaction.transaction_date}
             </div>
             <div style={{ color: "#666"}}>
-                {categories[transaction.category.id] || "Без описания"}
+                {categories[transaction.category_id] || "Без описания"}
             </div>
         </div>
     );
