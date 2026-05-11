@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, ConfigDict
 
@@ -50,5 +50,5 @@ class TransactionFilter(BaseModel):
     transaction_date_from: Optional[date] = None
     transaction_date_to: Optional[date] = None
     transaction_date: Optional[date] = None
-    category_id: Optional[int] = None
-    account_id: Optional[int] = None
+    category_id: Optional[List[int]] = None
+    account_id: Optional[List[int]] = None

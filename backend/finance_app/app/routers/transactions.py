@@ -104,10 +104,10 @@ async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFi
         conditions.append(Transaction.cashback == filters.cashback)
 
     if filters.category_id:
-        conditions.append(Transaction.category_id == filters.category_id)
+        conditions.append(Transaction.category_id.in_(filters.category_id))
 
     if filters.account_id:
-        conditions.append(Transaction.account_id == filters.account_id)
+        conditions.append(Transaction.account_id.in_(filters.account_id))
 
     if filters.transaction_date_from:
         conditions.append(Transaction.transaction_date >= filters.transaction_date_from)
