@@ -3,7 +3,6 @@ from fastapi import Query
 from typing import Optional, List, Annotated
 
 from pydantic import BaseModel, ConfigDict
-from pygments.lexer import default
 
 
 class TransactionCreate(BaseModel):
