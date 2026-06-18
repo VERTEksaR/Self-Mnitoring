@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 
-
 const sections = [
     { title: 'Финансы', description: 'Транзакции, счета и категории', path: '/finance' },
 ];
@@ -15,60 +14,24 @@ export default function StartPage() {
     };
 
     return (
-        <div style={pageStyle}>
-            <div style={headerStyle}>
-                <h1 style={{ margin: 0 }}>Self Monitoring</h1>
-                <button onClick={handleLogout} style={logoutStyle}>Выйти</button>
+        <div className="start-page">
+            <div className="start-nav">
+                <span className="start-brand">Сам-Мониторинг</span>
+                <button className="btn btn-secondary" onClick={handleLogout}>Выйти</button>
             </div>
 
-            <div style={gridStyle}>
+            <div className="module-grid">
                 {sections.map((section) => (
                     <div
                         key={section.path}
-                        style={cardStyle}
+                        className="card module-card"
                         onClick={() => navigate(section.path)}
                     >
-                        <h2 style={{ margin: '0 0 8px' }}>{section.title}</h2>
-                        <p style={{ margin: 0, color: '#666' }}>{section.description}</p>
+                        <div className="module-card__title">{section.title}</div>
+                        <div className="module-card__desc">{section.description}</div>
                     </div>
                 ))}
             </div>
         </div>
     );
 }
-
-const pageStyle = {
-    padding: '32px',
-    maxWidth: '960px',
-    margin: '0 auto',
-};
-
-const headerStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '40px',
-};
-
-const gridStyle = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-    gap: '20px',
-};
-
-const cardStyle = {
-    padding: '24px',
-    border: '1px solid #ddd',
-    borderRadius: '12px',
-    cursor: 'pointer',
-    transition: 'box-shadow 0.2s',
-    background: '#fff',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
-};
-
-const logoutStyle = {
-    padding: '8px 16px',
-    cursor: 'pointer',
-    borderRadius: '6px',
-    border: '1px solid #ccc',
-};
