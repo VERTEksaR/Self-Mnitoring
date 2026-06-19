@@ -12,7 +12,7 @@ export function TransactionItem({ transaction, onClick, isSelected, categories }
     return (
         <div
             onClick={onClick}
-            className={`card tx-item${isSelected ? ' tx-item--selected' : ''}`}
+            className={`card tx-item${isIncome ? ' tx-item--income' : ' tx-item--expense'}${isSelected ? ' tx-item--selected' : ''}`}
         >
             <div className="tx-item__left">
                 <span className={`amount ${isIncome ? 'amount-income' : 'amount-expense'}`}>
