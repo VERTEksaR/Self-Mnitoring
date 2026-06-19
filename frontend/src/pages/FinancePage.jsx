@@ -21,6 +21,43 @@ import { getTotals, totalByCategory } from '../utils/financeStats';
 const fmt = (n) =>
     Number(n).toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
+const ChevronDown = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m6 9 6 6 6-6"/>
+    </svg>
+);
+
+const ArrowLeft = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m15 18-6-6 6-6"/>
+    </svg>
+);
+
+const ArrowUp = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>
+    </svg>
+);
+
+const ArrowDown = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>
+    </svg>
+);
+
+const WalletIcon = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7"/>
+        <path d="M18 12h.01"/>
+    </svg>
+);
+
+const FilterIcon = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/>
+    </svg>
+);
+
 
 export default function FinancePage() {
     const navigate = useNavigate();
@@ -41,6 +78,11 @@ export default function FinancePage() {
     const [categoryFilters, setCategoryFilters] = useState([]);
     const [accountFilters, setAccountFilters] = useState([]);
     const [dateRange, setDateRange] = useState({ from: undefined, to: undefined });
+
+    const [openSections, setOpenSections] = useState({ period: true, categories: true, accounts: true });
+    const [drawerOpen, setDrawerOpen] = useState(false);
+
+    const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
 
     const toggleCategory = (id) =>
         setCategoryFilters(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -91,72 +133,90 @@ export default function FinancePage() {
 
     const totals = getTotals(allTransactions);
     const totalByCategories = totalByCategory(allTransactions, categoriesMap);
+    const activeFilterCount = categoryFilters.length + accountFilters.length + (dateRange.from ? 1 : 0);
 
     if (loading) return <div className="loading">Загрузка...</div>;
 
     return (
         <div className="finance-page">
-            {/* Нав */}
+            {/* Nav */}
             <nav className="finance-nav">
-                <div className="finance-nav-brand">
-                    <button className="btn btn-ghost btn-sm" onClick={() => navigate('/')} style={{ padding:'4px 8px' }}>←</button>
-                    Финансы
+                <div className="finance-nav-group">
+                    <button className="btn btn-ghost btn-icon" onClick={() => navigate('/')} aria-label="Назад">
+                        <ArrowLeft />
+                    </button>
+                    <span className="finance-nav-brand">Финансы</span>
                 </div>
-                <button className="btn btn-secondary btn-sm" onClick={handleLogout}>Выйти</button>
+                <div className="finance-nav-group">
+                    <button className="btn btn-primary btn-sm" onClick={() => setAddTransaction({})}>+ Транзакция</button>
+                    <button className="btn btn-ghost btn-sm" onClick={handleLogout}>Выйти</button>
+                </div>
             </nav>
 
-            {/* Стат-карточки */}
-            <div style={{ padding: '16px 20px 0' }}>
-                <div className="stats-row">
-                    <div className="card stat-card">
-                        <span className="stat-card__label">Доход</span>
-                        <span className="stat-card__value amount-income">+{fmt(totals.income)} ₽</span>
-                    </div>
-                    <div className="card stat-card">
-                        <span className="stat-card__label">Расход</span>
-                        <span className="stat-card__value amount-expense">−{fmt(totals.expense)} ₽</span>
-                    </div>
-                    <div className="card stat-card stat-card--accent">
-                        <span className="stat-card__label">Баланс</span>
-                        <span className="stat-card__value">
-                            {totals.isIncome ? '+' : '−'}{fmt(Math.abs(totals.balance))} ₽
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Тело */}
+            {/* Body */}
             <div className="finance-body">
-                {/* Сайдбар */}
-                <aside className="finance-sidebar">
-                    <div className="sidebar-section">
-                        <div className="sidebar-section-title">Период</div>
-                        <DateRangeCalendar draftRange={dateRange} onChange={setDateRange} />
-                    </div>
-
-                    <div className="sidebar-section">
-                        <div className="sidebar-section-title">Категории</div>
-                        <div className="filter-scroll">
-                            {categories.map(c => (
-                                <label key={c.id} className="checkbox-label">
-                                    <input type="checkbox" checked={categoryFilters.includes(c.id)} onChange={() => toggleCategory(c.id)} />
-                                    {c.name}
-                                </label>
-                            ))}
-                            {categories.length === 0 && <span style={{ fontSize:12, color:'var(--text-faint)' }}>Нет категорий</span>}
+                {/* Sidebar */}
+                <aside className={`finance-sidebar${drawerOpen ? ' finance-sidebar--open' : ''}`}>
+                    <div className={`sidebar-section${openSections.period ? ' sidebar-section--open' : ''}`}>
+                        <div className="sidebar-section-header" onClick={() => toggleSection('period')}>
+                            <span className="sidebar-section-title">Период</span>
+                            <span className="sidebar-section-chevron"><ChevronDown /></span>
+                        </div>
+                        <div className="sidebar-section-body">
+                            <div className="sidebar-section-inner">
+                                <div className="sidebar-section-content">
+                                    <DateRangeCalendar draftRange={dateRange} onChange={setDateRange} />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="sidebar-section">
-                        <div className="sidebar-section-title">Счета</div>
-                        <div className="filter-scroll">
-                            {accounts.map(a => (
-                                <label key={a.id} className="checkbox-label">
-                                    <input type="checkbox" checked={accountFilters.includes(a.id)} onChange={() => toggleAccount(a.id)} />
-                                    {a.name}
-                                </label>
-                            ))}
-                            {accounts.length === 0 && <span style={{ fontSize:12, color:'var(--text-faint)' }}>Нет счетов</span>}
+                    <div className={`sidebar-section${openSections.categories ? ' sidebar-section--open' : ''}`}>
+                        <div className="sidebar-section-header" onClick={() => toggleSection('categories')}>
+                            <span className="sidebar-section-title">
+                                Категории
+                                {categoryFilters.length > 0 && (
+                                    <span className="sidebar-section-badge">{categoryFilters.length}</span>
+                                )}
+                            </span>
+                            <span className="sidebar-section-chevron"><ChevronDown /></span>
+                        </div>
+                        <div className="sidebar-section-body">
+                            <div className="sidebar-section-inner">
+                                <div className="sidebar-section-content">
+                                    <div className="filter-scroll">
+                                        {categories.map(c => (
+                                            <label key={c.id} className="checkbox-label">
+                                                <input type="checkbox" checked={categoryFilters.includes(c.id)} onChange={() => toggleCategory(c.id)} />
+                                                {c.name}
+                                            </label>
+                                        ))}
+                                        {categories.length === 0 && <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Нет категорий</span>}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={`sidebar-section${openSections.accounts ? ' sidebar-section--open' : ''}`}>
+                        <div className="sidebar-section-header" onClick={() => toggleSection('accounts')}>
+                            <span className="sidebar-section-title">Счета</span>
+                            <span className="sidebar-section-chevron"><ChevronDown /></span>
+                        </div>
+                        <div className="sidebar-section-body">
+                            <div className="sidebar-section-inner">
+                                <div className="sidebar-section-content">
+                                    <div className="filter-scroll">
+                                        {accounts.map(a => (
+                                            <label key={a.id} className="checkbox-label">
+                                                <input type="checkbox" checked={accountFilters.includes(a.id)} onChange={() => toggleAccount(a.id)} />
+                                                {a.name}
+                                            </label>
+                                        ))}
+                                        {accounts.length === 0 && <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Нет счетов</span>}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -165,24 +225,64 @@ export default function FinancePage() {
                     </button>
                 </aside>
 
-                {/* Главное */}
+                <div
+                    className={`sidebar-backdrop${drawerOpen ? ' sidebar-backdrop--open' : ''}`}
+                    onClick={() => setDrawerOpen(false)}
+                />
+
+                {/* Main */}
                 <main className="finance-main">
+                    {/* Stats */}
+                    <div className="stats-row">
+                        <div className="card stat-card stat-card--income">
+                            <div className="stat-card__head">
+                                <span className="stat-card__icon"><ArrowUp /></span>
+                                <span className="stat-card__label">Доход</span>
+                            </div>
+                            <span className="stat-card__value">+{fmt(totals.income)} ₽</span>
+                            <span className="stat-card__sub">за период</span>
+                        </div>
+                        <div className="card stat-card stat-card--expense">
+                            <div className="stat-card__head">
+                                <span className="stat-card__icon"><ArrowDown /></span>
+                                <span className="stat-card__label">Расход</span>
+                            </div>
+                            <span className="stat-card__value">−{fmt(totals.expense)} ₽</span>
+                            <span className="stat-card__sub">за период</span>
+                        </div>
+                        <div className="card stat-card stat-card--accent">
+                            <div className="stat-card__head">
+                                <span className="stat-card__icon"><WalletIcon /></span>
+                                <span className="stat-card__label">Баланс</span>
+                            </div>
+                            <span className="stat-card__value">
+                                {totals.isIncome ? '+' : '−'}{fmt(Math.abs(totals.balance))} ₽
+                            </span>
+                            <span className="stat-card__sub">{totals.isIncome ? 'профицит' : 'дефицит'}</span>
+                        </div>
+                    </div>
+
+                    {/* Chart + Transactions */}
                     <div className="charts-tx-row">
                         <div className="card chart-card">
-                            <div className="section-title" style={{ marginBottom: 12 }}>По категориям</div>
-                            <CategoryPieChart
-                                data={totalByCategories}
-                                onClickCategory={(name) => {
-                                    const cat = categories.find(c => c.name === name);
-                                    if (cat) toggleCategory(cat.id);
-                                }}
-                            />
+                            <div className="section-header">
+                                <span className="section-title">По категориям</span>
+                            </div>
+                            <div className="chart-canvas">
+                                <CategoryPieChart
+                                    data={totalByCategories}
+                                    onClickCategory={(name) => {
+                                        const cat = categories.find(c => c.name === name);
+                                        if (cat) toggleCategory(cat.id);
+                                    }}
+                                />
+                            </div>
                         </div>
 
                         <div className="card tx-card">
                             <div className="tx-list-header">
                                 <span className="section-title">Операции</span>
-                                <button className="btn btn-primary btn-sm" onClick={() => setAddTransaction({})}>+ Добавить</button>
+                                <span className="section-count">{allTransactions.length}</span>
                             </div>
                             <div className="tx-list">
                                 {allTransactions.length === 0 && <div className="empty">Нет транзакций</div>}
@@ -198,10 +298,14 @@ export default function FinancePage() {
                         </div>
                     </div>
 
+                    {/* Categories */}
                     <div className="card bottom-section">
                         <div className="section-header">
                             <span className="section-title">Категории</span>
-                            <button className="btn btn-secondary btn-sm" onClick={() => setAddCategory({})}>+ Добавить</button>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <span className="section-count">{categories.length}</span>
+                                <button className="btn btn-secondary btn-sm" onClick={() => setAddCategory({})}>+ Добавить</button>
+                            </div>
                         </div>
                         {categories.length === 0
                             ? <div className="empty">Нет категорий</div>
@@ -213,10 +317,14 @@ export default function FinancePage() {
                         }
                     </div>
 
+                    {/* Accounts */}
                     <div className="card bottom-section">
                         <div className="section-header">
                             <span className="section-title">Счета</span>
-                            <button className="btn btn-secondary btn-sm" onClick={() => setAddAccount({})}>+ Добавить</button>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <span className="section-count">{accounts.length}</span>
+                                <button className="btn btn-secondary btn-sm" onClick={() => setAddAccount({})}>+ Добавить</button>
+                            </div>
                         </div>
                         {accounts.length === 0
                             ? <div className="empty">Нет счетов</div>
@@ -230,7 +338,14 @@ export default function FinancePage() {
                 </main>
             </div>
 
-            {/* Модалки */}
+            {/* Mobile FAB */}
+            <button className="filter-fab" onClick={() => setDrawerOpen(true)}>
+                <FilterIcon />
+                Фильтры
+                {activeFilterCount > 0 && <span className="filter-fab__count">{activeFilterCount}</span>}
+            </button>
+
+            {/* Modals */}
             {selectedTransaction && (
                 <TransactionModel transaction={selectedTransaction}
                     onClose={() => setSelectedTransaction(null)}
