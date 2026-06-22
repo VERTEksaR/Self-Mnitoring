@@ -1,92 +1,113 @@
 export function TransactionForm({
-    form,
-    setForm,
-    accounts,
-    categories,
-    accountId,
-    categoryId,
-    setAccountId,
-    setCategoryId,
-    onSubmit,
-    onClose,
-    onSaved,
+    form, setForm,
+    accounts, categories,
+    accountId, categoryId,
+    setAccountId, setCategoryId,
+    onSubmit, onClose,
 }) {
     return (
-        <div style={overlayStyle} onClick={onClose}>
-            <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-               <form onSubmit={onSubmit}>
-                    <select value={accountId} onChange={e => setAccountId(e.target.value)} required>
-                        <option value="">Выберите счет</option>
-                        {accounts.map(acc => (
-                            <option key={acc.id} value={acc.id}>{acc.name}</option>
-                        ))}
-                    </select>
+        <div className="overlay" onClick={onClose}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                    <span className="modal-title">Транзакция</span>
+                    <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
+                </div>
 
-                    <select value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
-                        <option value="">Выберите категорию</option>
-                        {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                    </select>
+                <form className="form" onSubmit={onSubmit}>
+                    <div className="form-group">
+                        <label className="form-label">Счёт</label>
+                        <select
+                            className="select"
+                            value={accountId}
+                            onChange={e => setAccountId(e.target.value)}
+                            required
+                        >
+                            <option value="">Выберите счёт</option>
+                            {accounts.map(acc => (
+                                <option key={acc.id} value={acc.id}>{acc.name}</option>
+                            ))}
+                        </select>
+                    </div>
 
-                    <input
-                        type="number"
-                        placeholder="Сумма"
-                        value={form.amount}
-                        onChange={e => setForm({ ...form, amount: e.target.value })}
-                        required
-                    />
+                    <div className="form-group">
+                        <label className="form-label">Категория</label>
+                        <select
+                            className="select"
+                            value={categoryId}
+                            onChange={e => setCategoryId(e.target.value)}
+                            required
+                        >
+                            <option value="">Выберите категорию</option>
+                            {categories.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                        </select>
+                    </div>
 
-                    <input
-                        type="number"
-                        placeholder="Кэшбэк"
-                        value={form.cashback}
-                        onChange={e => setForm({ ...form, cashback: e.target.value })}
-                    />
+                    <div className="form-group">
+                        <label className="form-label">Сумма (₽)</label>
+                        <input
+                            className="input"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            step="0.01"
+                            value={form.amount}
+                            onChange={e => setForm({ ...form, amount: e.target.value })}
+                            required
+                        />
+                    </div>
 
-                    <input
-                        type="text"
-                        placeholder="Описание"
-                        value={form.destination}
-                        onChange={e => setForm({ ...form, destination: e.target.value })}
-                    />
+                    <div className="form-group">
+                        <label className="form-label">Кэшбэк (₽)</label>
+                        <input
+                            className="input"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            step="0.01"
+                            value={form.cashback}
+                            onChange={e => setForm({ ...form, cashback: e.target.value })}
+                        />
+                    </div>
 
-                    <input
-                        type="date"
-                        value={form.transaction_date}
-                        onChange={e => setForm({ ...form, transaction_date: e.target.value })}
-                        required
-                    />
+                    <div className="form-group">
+                        <label className="form-label">Описание</label>
+                        <input
+                            className="input"
+                            type="text"
+                            placeholder="Необязательно"
+                            value={form.destination}
+                            onChange={e => setForm({ ...form, destination: e.target.value })}
+                        />
+                    </div>
 
-                    <label>
+                    <div className="form-group">
+                        <label className="form-label">Дата</label>
+                        <input
+                            className="input"
+                            type="date"
+                            value={form.transaction_date}
+                            onChange={e => setForm({ ...form, transaction_date: e.target.value })}
+                            required
+                        />
+                    </div>
+
+                    <label className={`form-toggle${form.replenishment ? ' form-toggle--active' : ''}`}>
                         <input
                             type="checkbox"
                             checked={form.replenishment}
                             onChange={e => setForm({ ...form, replenishment: e.target.checked })}
                         />
-                        Доход
+                        Доход (поступление)
                     </label>
 
-                    <button type="submit">Сохранить</button>
-                    <button type="button" onClick={onClose}>Отмена</button>
-               </form>
-           </div>
+                    <div className="modal-actions">
+                        <button type="button" className="btn btn-secondary" onClick={onClose}>Отмена</button>
+                        <button type="submit" className="btn btn-primary">Сохранить</button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 }
-
-const overlayStyle = {
-  position: "fixed",
-  inset: 0,
-  backgroundColor: "rgba(0, 0, 0, 0.4)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-};
-
-const modalStyle = {
-  background: "#fff",
-  padding: "24px",
-  borderRadius: "8px",
-  minWidth: "300px",
-};

@@ -1,8 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
-import { getCategories, getTransactions , getAccounts} from '../api/finance';
+import { useNavigate } from 'react-router-dom';
+import { getCategories, getTransactions, getAccounts } from '../api/finance';
+import { deleteTransaction, deleteCategory, deleteAccount } from '../api/api';
+
 import { TransactionItem } from '../components/TransactionItem';
 import { TransactionModel, AddTransactionModel, EditTransactionModel } from '../components/TransactionModel';
-import { getTotals, totalByCategory } from '../utils/financeStats';
 
 import { CategoryItem } from '../components/CategoryItem';
 import { CategoryModel, AddCategoryModel } from '../components/CategoryModel';
@@ -14,295 +16,371 @@ import { DateRangeCalendar } from '../components/calendar/Calendar';
 import { SetFormatDate } from '../components/calendar/FormatingDate';
 
 import { CategoryPieChart } from '../components/charts/PieChart';
+import { getTotals, totalByCategory } from '../utils/financeStats';
 
-import { deleteTransaction, deleteCategory, deleteAccount } from '../api/api';
+const fmt = (n) =>
+    Number(n).toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+const ChevronDown = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m6 9 6 6 6-6"/>
+    </svg>
+);
+
+const ArrowLeft = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m15 18-6-6 6-6"/>
+    </svg>
+);
+
+const ArrowUp = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>
+    </svg>
+);
+
+const ArrowDown = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>
+    </svg>
+);
+
+const WalletIcon = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7"/>
+        <path d="M18 12h.01"/>
+    </svg>
+);
+
+const FilterIcon = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/>
+    </svg>
+);
 
 
 export default function FinancePage() {
+    const navigate = useNavigate();
+
     const [categories, setCategories] = useState([]);
-    const [transactions, setTransactions] = useState([]);
+    const [allTransactions, setAllTransactions] = useState([]);
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [addTransaction, setAddTransaction] = useState(null);
     const [editTransaction, setEditTransaction] = useState(null);
-
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [addCategory, setAddCategory] = useState(null);
-
     const [selectedAccount, setSelectedAccount] = useState(null);
     const [addAccount, setAddAccount] = useState(null);
 
-    const [categoryFilter, setCategoryFilter] = useState('');
-    const [accountFilter, setAccountFilter] = useState('');
+    const [categoryFilters, setCategoryFilters] = useState([]);
+    const [accountFilters, setAccountFilters] = useState([]);
+    const [dateRange, setDateRange] = useState({ from: undefined, to: undefined });
 
-    const [draftRange, setDraftRange] = useState({
-        from: undefined,
-        to: undefined,
-    });
+    const [openSections, setOpenSections] = useState({ period: true, categories: true, accounts: true });
+    const [drawerOpen, setDrawerOpen] = useState(false);
 
-    const [activeRange, setActiveRange] = useState({
-        from: undefined,
-        to: undefined,
-    });
+    const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+
+    const toggleCategory = (id) =>
+        setCategoryFilters(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    const toggleAccount = (id) =>
+        setAccountFilters(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
     const loadTransactions = async (params = {}) => {
-        const res = await getTransactions(params);
-        setTransactions(res.data);
+        const res = await getTransactions({ ...params, size: 500 });
+        setAllTransactions(res.data.items ?? []);
     };
 
     const resetFilter = () => {
-        setDraftRange({ from: null, to: null });
-        setActiveRange({ from: null, to: null });
-        setCategoryFilter('');
-        setAccountFilter('');
+        setDateRange({ from: undefined, to: undefined });
+        setCategoryFilters([]);
+        setAccountFilters([]);
     };
 
-    const TransactionDelete = async (id) => {
-        await deleteTransaction(id);
-
-        setTransactions(prev =>
-            prev.filter(tx => tx.id !== id)
-        );
-
-        setSelectedTransaction(null);
-    }
-
-    const CategoryDelete = async (id) => {
-        await deleteCategory(id);
-
-        setCategories(prev =>
-            prev.filter(c => c.id !== id)
-        );
-
-        setSelectedCategory(null);
-    }
-
-    const AccountDelete = async (id) => {
-        await deleteAccount(id);
-
-        setAccounts(prev =>
-            prev.filter(a => a.id !== id)
-        );
-
-        setSelectedAccount(null);
-    }
+    const handleLogout = () => {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user_id');
+        navigate('/login');
+    };
 
     useEffect(() => {
-        if (!activeRange.from && !activeRange.to) {
-            loadTransactions();
-            return;
-        };
         loadTransactions({
-
-            date_from: activeRange.from ? SetFormatDate(activeRange.from) : undefined,
-            date_to: activeRange.to ? SetFormatDate(activeRange.to) : undefined,
-            category_id: categoryFilter || undefined,
-            account_id: accountFilter || undefined,
+            transaction_date_from: dateRange.from ? SetFormatDate(dateRange.from) : undefined,
+            transaction_date_to:   dateRange.to   ? SetFormatDate(dateRange.to)   : undefined,
+            category_id: categoryFilters.length > 0 ? categoryFilters : undefined,
+            account_id:  accountFilters.length  > 0 ? accountFilters  : undefined,
         });
-    }, [activeRange, categoryFilter, accountFilter]);
-
-    const totals = getTotals(transactions);
-    const totalByCategories = totalByCategory(transactions);
+    }, [dateRange, categoryFilters, accountFilters]);
 
     useEffect(() => {
         Promise.all([getCategories(), getAccounts()])
-            .then(([categoriesRes, accountsRes]) => {
-                setCategories(categoriesRes.data);
-                setAccounts(accountsRes.data);
+            .then(([catRes, accRes]) => {
+                setCategories(catRes.data.items ?? []);
+                setAccounts(accRes.data.items ?? []);
             })
             .finally(() => setLoading(false));
     }, []);
 
-    const categoriesMap = useMemo(() => {
-        return Object.fromEntries(
-            categories.map(cat => [cat.id, cat.name]));
-    }, [categories])
+    const categoriesMap = useMemo(
+        () => Object.fromEntries(categories.map(c => [c.id, c.name])), [categories]
+    );
+    const accountsMap = useMemo(
+        () => Object.fromEntries(accounts.map(a => [a.id, a.name])), [accounts]
+    );
 
-    if (loading) return <p>Загрузка...</p>
+    const totals = getTotals(allTransactions);
+    const totalByCategories = totalByCategory(allTransactions, categoriesMap);
+    const activeFilterCount = categoryFilters.length + accountFilters.length + (dateRange.from ? 1 : 0);
+
+    if (loading) return <div className="loading">Загрузка...</div>;
 
     return (
-        <div>
-            <h1>Денежная страница</h1>
-            <div style={{ display: "flex", gap: "20px" }}>
-                {/*  тут будет календарь  */}
-                <div style={{ width: "250px", borderRight: "1px solid #ddd" }}>
-                    <h3>Просмотр по дате</h3>
-                    <div>
-                        <DateRangeCalendar
-                            draftRange={draftRange}
-                            onChange={setDraftRange}
-                        />
-                    </div>
-                    <div>
-                        <label>Категория:</label>
-                        <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
-                            <option value="">Укажите категорию</option>
-                            {categories.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label>Счет:</label>
-                        <select value={accountFilter} onChange={e => setAccountFilter(e.target.value)}>
-                            <option value="">Укажите счет</option>
-                            {accounts.map(a => (
-                                <option key={a.id} value={a.id}>{a.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <button onClick={() => setActiveRange(draftRange)}>
-                        Применить
+        <div className="finance-page">
+            {/* Nav */}
+            <nav className="finance-nav">
+                <div className="finance-nav-group">
+                    <button className="btn btn-ghost btn-icon" onClick={() => navigate('/')} aria-label="Назад">
+                        <ArrowLeft />
                     </button>
-                    <button onClick={resetFilter}>
-                        Сбросить
-                    </button>
+                    <span className="finance-nav-brand">Финансы</span>
                 </div>
-                {/*   тут будут транзакции  */}
-                <div style={{ width: "350px", margin: "20px" }}>
-                    <h3>Расходы по категориям</h3>
-                    <CategoryPieChart
-                        data={totalByCategories}
-                        onClickCategory={(categoryName) => {
-                            const category = categories.find(c => c.name === categoryName);
-                            if (category) {
-                                setCategoryFilter(category.id);
-                            };
-                        }}
-                    />
+                <div className="finance-nav-group">
+                    <button className="btn btn-primary btn-sm" onClick={() => setAddTransaction({})}>+ Транзакция</button>
+                    <button className="btn btn-ghost btn-sm" onClick={handleLogout}>Выйти</button>
                 </div>
-                <div style={{ flex: 1,  width: "400px" }}>
-                    <h3>Операции</h3>
-                    {transactions.length === 0 && <p>Нет транзакций</p>}
+            </nav>
 
-                    {transactions.map((t) => (
-                        <TransactionItem key={t.id} transaction={t}
-                        onClick={() => setSelectedTransaction(t)}
-                        isSelected={selectedTransaction?.id === t.id}
-                        categories={categoriesMap}/>
-                    ))}
-                </div>
-                <div>
-                    <button onClick={() => setAddTransaction({})}>
-                        + Добавить транзакцию
-                    </button>
-                    <div>
-                        <p>Доход: <strong>{totals.income}</strong></p>
-                        <p>Расход: <strong>{totals.expense}</strong></p>
-                        <div style={{
-                            color: totals.isIncome ? "green" : "red"
-                        }}>
-                            <p>Итого: <strong>{totals.balance}</strong></p>
+            {/* Body */}
+            <div className="finance-body">
+                {/* Sidebar */}
+                <aside className={`finance-sidebar${drawerOpen ? ' finance-sidebar--open' : ''}`}>
+                    <div className={`sidebar-section${openSections.period ? ' sidebar-section--open' : ''}`}>
+                        <div className="sidebar-section-header" onClick={() => toggleSection('period')}>
+                            <span className="sidebar-section-title">Период</span>
+                            <span className="sidebar-section-chevron"><ChevronDown /></span>
+                        </div>
+                        <div className="sidebar-section-body">
+                            <div className="sidebar-section-inner">
+                                <div className="sidebar-section-content">
+                                    <DateRangeCalendar draftRange={dateRange} onChange={setDateRange} />
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div>
-                        <h4>Топ категорий по тратам</h4>
-                        {totalByCategories.length === 0 && (
-                            <p>Нет данных</p>
-                        )}
 
-                        {totalByCategories.map((c) => (
-                            <div key={c.category}>
-                                {c.category}: <strong>{c.total}</strong>
+                    <div className={`sidebar-section${openSections.categories ? ' sidebar-section--open' : ''}`}>
+                        <div className="sidebar-section-header" onClick={() => toggleSection('categories')}>
+                            <span className="sidebar-section-title">
+                                Категории
+                                {categoryFilters.length > 0 && (
+                                    <span className="sidebar-section-badge">{categoryFilters.length}</span>
+                                )}
+                            </span>
+                            <span className="sidebar-section-chevron"><ChevronDown /></span>
+                        </div>
+                        <div className="sidebar-section-body">
+                            <div className="sidebar-section-inner">
+                                <div className="sidebar-section-content">
+                                    <div className="filter-scroll">
+                                        {categories.map(c => (
+                                            <label key={c.id} className="checkbox-label">
+                                                <input type="checkbox" checked={categoryFilters.includes(c.id)} onChange={() => toggleCategory(c.id)} />
+                                                {c.name}
+                                            </label>
+                                        ))}
+                                        {categories.length === 0 && <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Нет категорий</span>}
+                                    </div>
+                                </div>
                             </div>
-                        ))}
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div style={{ display: "flex", gap: "20px" }}>
-                <div style={{ width: "250px" }}>
-                </div>
-                <div style={{ flex: 1, width: "400px" }}>
-                    <h3>Категории трат</h3>
-                    { categories.length === 0 && <p>Нет категорий</p> }
 
-                    {categories.map((c) => (
-                        <CategoryItem key={c.id} category={c}
-                        onClick={() => setSelectedCategory(c)}
-                        isSelected={selectedCategory?.id === c.id}/>
-                    ))}
-                </div>
-                <div>
-                    <button onClick={() => setAddCategory({})}>
-                        + Добавить категорию
-                    </button>
-                </div>
-            </div>
-            <div style={{ display: "flex", gap: "20px" }}>
-                <div style={{ width: "250px" }}>
-                </div>
-                <div style={{ flex: 1, width: "400px" }}>
-                    <h3>Счета</h3>
-                    { accounts.length === 0 && <p>Нет счетов</p> }
+                    <div className={`sidebar-section${openSections.accounts ? ' sidebar-section--open' : ''}`}>
+                        <div className="sidebar-section-header" onClick={() => toggleSection('accounts')}>
+                            <span className="sidebar-section-title">Счета</span>
+                            <span className="sidebar-section-chevron"><ChevronDown /></span>
+                        </div>
+                        <div className="sidebar-section-body">
+                            <div className="sidebar-section-inner">
+                                <div className="sidebar-section-content">
+                                    <div className="filter-scroll">
+                                        {accounts.map(a => (
+                                            <label key={a.id} className="checkbox-label">
+                                                <input type="checkbox" checked={accountFilters.includes(a.id)} onChange={() => toggleAccount(a.id)} />
+                                                {a.name}
+                                            </label>
+                                        ))}
+                                        {accounts.length === 0 && <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Нет счетов</span>}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                    {accounts.map((a) => (
-                        <AccountItem key={a.id} account={a}
-                        onClick={() => setSelectedAccount(a)}
-                        isSelected={selectedAccount?.id === a.id}/>
-                    ))}
-                </div>
-                <div>
-                    <button onClick={() => setAddAccount({})}>
-                        + Добавить счет
+                    <button className="btn btn-secondary btn-full btn-sm" onClick={resetFilter}>
+                        Сбросить фильтры
                     </button>
-                </div>
+                </aside>
+
+                <div
+                    className={`sidebar-backdrop${drawerOpen ? ' sidebar-backdrop--open' : ''}`}
+                    onClick={() => setDrawerOpen(false)}
+                />
+
+                {/* Main */}
+                <main className="finance-main">
+                    {/* Stats */}
+                    <div className="stats-row">
+                        <div className="card stat-card stat-card--income">
+                            <div className="stat-card__head">
+                                <span className="stat-card__icon"><ArrowUp /></span>
+                                <span className="stat-card__label">Доход</span>
+                            </div>
+                            <span className="stat-card__value">+{fmt(totals.income)} ₽</span>
+                            <span className="stat-card__sub">за период</span>
+                        </div>
+                        <div className="card stat-card stat-card--expense">
+                            <div className="stat-card__head">
+                                <span className="stat-card__icon"><ArrowDown /></span>
+                                <span className="stat-card__label">Расход</span>
+                            </div>
+                            <span className="stat-card__value">−{fmt(totals.expense)} ₽</span>
+                            <span className="stat-card__sub">за период</span>
+                        </div>
+                        <div className="card stat-card stat-card--accent">
+                            <div className="stat-card__head">
+                                <span className="stat-card__icon"><WalletIcon /></span>
+                                <span className="stat-card__label">Баланс</span>
+                            </div>
+                            <span className="stat-card__value">
+                                {totals.isIncome ? '+' : '−'}{fmt(Math.abs(totals.balance))} ₽
+                            </span>
+                            <span className="stat-card__sub">{totals.isIncome ? 'профицит' : 'дефицит'}</span>
+                        </div>
+                    </div>
+
+                    {/* Chart + Transactions */}
+                    <div className="charts-tx-row">
+                        <div className="card chart-card">
+                            <div className="section-header">
+                                <span className="section-title">По категориям</span>
+                            </div>
+                            <div className="chart-canvas">
+                                <CategoryPieChart
+                                    data={totalByCategories}
+                                    onClickCategory={(name) => {
+                                        const cat = categories.find(c => c.name === name);
+                                        if (cat) toggleCategory(cat.id);
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="card tx-card">
+                            <div className="tx-list-header">
+                                <span className="section-title">Операции</span>
+                                <span className="section-count">{allTransactions.length}</span>
+                            </div>
+                            <div className="tx-list">
+                                {allTransactions.length === 0 && <div className="empty">Нет транзакций</div>}
+                                {allTransactions.map(t => (
+                                    <TransactionItem
+                                        key={t.id} transaction={t}
+                                        onClick={() => setSelectedTransaction(t)}
+                                        isSelected={selectedTransaction?.id === t.id}
+                                        categories={categoriesMap}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Categories */}
+                    <div className="card bottom-section">
+                        <div className="section-header">
+                            <span className="section-title">Категории</span>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <span className="section-count">{categories.length}</span>
+                                <button className="btn btn-secondary btn-sm" onClick={() => setAddCategory({})}>+ Добавить</button>
+                            </div>
+                        </div>
+                        {categories.length === 0
+                            ? <div className="empty">Нет категорий</div>
+                            : <div className="entity-grid">{categories.map(c => (
+                                <CategoryItem key={c.id} category={c}
+                                    onClick={() => setSelectedCategory(c)}
+                                    isSelected={selectedCategory?.id === c.id} />
+                            ))}</div>
+                        }
+                    </div>
+
+                    {/* Accounts */}
+                    <div className="card bottom-section">
+                        <div className="section-header">
+                            <span className="section-title">Счета</span>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <span className="section-count">{accounts.length}</span>
+                                <button className="btn btn-secondary btn-sm" onClick={() => setAddAccount({})}>+ Добавить</button>
+                            </div>
+                        </div>
+                        {accounts.length === 0
+                            ? <div className="empty">Нет счетов</div>
+                            : <div className="entity-grid">{accounts.map(a => (
+                                <AccountItem key={a.id} account={a}
+                                    onClick={() => setSelectedAccount(a)}
+                                    isSelected={selectedAccount?.id === a.id} />
+                            ))}</div>
+                        }
+                    </div>
+                </main>
             </div>
+
+            {/* Mobile FAB */}
+            <button className="filter-fab" onClick={() => setDrawerOpen(true)}>
+                <FilterIcon />
+                Фильтры
+                {activeFilterCount > 0 && <span className="filter-fab__count">{activeFilterCount}</span>}
+            </button>
+
+            {/* Modals */}
             {selectedTransaction && (
                 <TransactionModel transaction={selectedTransaction}
                     onClose={() => setSelectedTransaction(null)}
-                    onDelete={TransactionDelete}
-                    onEdit={(tx) => {
-                        setSelectedTransaction(null);
-                        setEditTransaction(tx);
-                    }}
-                    />
+                    onDelete={async (id) => { await deleteTransaction(id); setAllTransactions(p => p.filter(t => t.id !== id)); setSelectedTransaction(null); }}
+                    onEdit={(tx) => { setSelectedTransaction(null); setEditTransaction(tx); }}
+                    categoriesMap={categoriesMap} accountsMap={accountsMap}
+                />
             )}
             {addTransaction && (
                 <AddTransactionModel onClose={() => setAddTransaction(null)}
-                    onSaved={(newTransaction) => {
-                        setTransactions(prev => [newTransaction, ...prev])}}/>
+                    onSaved={(tx) => setAllTransactions(p => [tx, ...p])} />
             )}
             {editTransaction && (
-                <EditTransactionModel
-                    transaction={editTransaction}
+                <EditTransactionModel transaction={editTransaction}
                     onClose={() => setEditTransaction(null)}
-                    onSaved={(updatedTransaction) => {
-                        setTransactions(prev =>
-                            prev.map(tx => tx.id === updatedTransaction.id ? updatedTransaction : tx)
-                        );
-                    }}
-                />
+                    onSaved={(u) => setAllTransactions(p => p.map(t => t.id === u.id ? u : t))} />
             )}
-
             {selectedCategory && (
                 <CategoryModel category={selectedCategory}
                     onClose={() => setSelectedCategory(null)}
-                    onDelete={CategoryDelete}/>
+                    onDelete={async (id) => { await deleteCategory(id); setCategories(p => p.filter(c => c.id !== id)); setSelectedCategory(null); }} />
             )}
             {addCategory && (
                 <AddCategoryModel onClose={() => setAddCategory(null)}
-                    onSaved={(newCategory) => {
-                        setCategories(prev => [newCategory, ...prev])
-                    }}
-                />
+                    onSaved={(c) => setCategories(p => [c, ...p])} />
             )}
-
-        {selectedAccount && (
-            <AccountModel account={selectedAccount}
-                onClose={() => setSelectedAccount(null)}
-                onDelete={AccountDelete}/>
-        )}
-        {addAccount && (
-            <AddAccountModel onClose={() => setAddAccount(null)}
-                onSaved={(newAccount) =>{
-                    setAccounts(prev => [newAccount, ...prev])
-                }}
-            />
-        )}
+            {selectedAccount && (
+                <AccountModel account={selectedAccount}
+                    onClose={() => setSelectedAccount(null)}
+                    onDelete={async (id) => { await deleteAccount(id); setAccounts(p => p.filter(a => a.id !== id)); setSelectedAccount(null); }} />
+            )}
+            {addAccount && (
+                <AddAccountModel onClose={() => setAddAccount(null)}
+                    onSaved={(a) => setAccounts(p => [a, ...p])} />
+            )}
         </div>
     );
 }
-
-

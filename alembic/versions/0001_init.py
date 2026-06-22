@@ -1,0 +1,106 @@
+"""init
+
+Revision ID: 0001
+Revises:
+Create Date: 2026-06-18 00:00:00.000000
+
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+
+
+revision: str = '0001'
+down_revision: Union[str, Sequence[str], None] = None
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    op.create_table(
+        'users',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('nickname', sa.String(), nullable=False),
+        sa.Column('email', sa.String(), nullable=False),
+        sa.Column('hashed_password', sa.String(), nullable=False),
+        sa.Column('is_active', sa.Boolean(), nullable=True),
+        sa.Column('is_admin', sa.Boolean(), nullable=True),
+        sa.PrimaryKeyConstraint('id'),
+    )
+    op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
+    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
+
+    op.create_table(
+        'telegram_users',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('telegram_id', sa.String(), nullable=False),
+        sa.Column('access_token', sa.String(), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id']),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('telegram_id'),
+    )
+    op.create_index(op.f('ix_telegram_users_id'), 'telegram_users', ['id'], unique=False)
+
+    op.create_table(
+        'categories',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('name', sa.String(), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id']),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('name', 'user_id'),
+    )
+    op.create_index(op.f('ix_categories_id'), 'categories', ['id'], unique=False)
+    op.create_index(op.f('ix_categories_name'), 'categories', ['name'], unique=False)
+
+    op.create_table(
+        'accounts',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('name', sa.String(), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id']),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('name', 'user_id'),
+    )
+    op.create_index(op.f('ix_accounts_id'), 'accounts', ['id'], unique=False)
+    op.create_index(op.f('ix_accounts_name'), 'accounts', ['name'], unique=False)
+
+    op.create_table(
+        'transactions',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('destination', sa.String(), nullable=True),
+        sa.Column('amount', sa.Float(), nullable=False),
+        sa.Column('cashback', sa.Float(), nullable=False),
+        sa.Column('replenishment', sa.Boolean(), nullable=True),
+        sa.Column('transaction_date', sa.DATE(), nullable=True),
+        sa.Column('category_id', sa.Integer(), nullable=False),
+        sa.Column('account_id', sa.Integer(), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(['category_id'], ['categories.id']),
+        sa.ForeignKeyConstraint(['account_id'], ['accounts.id']),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id']),
+        sa.PrimaryKeyConstraint('id'),
+    )
+    op.create_index(op.f('ix_transactions_id'), 'transactions', ['id'], unique=False)
+
+
+def downgrade() -> None:
+    op.drop_index(op.f('ix_transactions_id'), table_name='transactions')
+    op.drop_table('transactions')
+
+    op.drop_index(op.f('ix_accounts_name'), table_name='accounts')
+    op.drop_index(op.f('ix_accounts_id'), table_name='accounts')
+    op.drop_table('accounts')
+
+    op.drop_index(op.f('ix_categories_name'), table_name='categories')
+    op.drop_index(op.f('ix_categories_id'), table_name='categories')
+    op.drop_table('categories')
+
+    op.drop_index(op.f('ix_telegram_users_id'), table_name='telegram_users')
+    op.drop_table('telegram_users')
+
+    op.drop_index(op.f('ix_users_email'), table_name='users')
+    op.drop_index(op.f('ix_users_id'), table_name='users')
+    op.drop_table('users')

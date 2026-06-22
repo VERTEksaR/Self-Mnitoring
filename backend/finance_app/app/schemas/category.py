@@ -3,7 +3,6 @@ from pydantic import BaseModel, ConfigDict
 
 class CategoryCreate(BaseModel):
     name: str
-    user_id: int
 
 
 class CategoryRead(BaseModel):

@@ -1,32 +1,21 @@
 import { useEffect, useState } from 'react';
-
 import { createCategory } from '../api/api';
 import { CategoryForm } from './CategoryForm';
 
 
 export function AddCategoryModel({ onClose, onSaved }) {
-    const [form, setForm] = useState({
-        name: '',
-    });
+    const [form, setForm] = useState({ name: '' });
 
     useEffect(() => {
-        const onEsc = (e) => {
-            if (e.key === 'Escape') onClose();
-        };
-
+        const onEsc = (e) => { if (e.key === 'Escape') onClose(); };
         window.addEventListener('keydown', onEsc);
-        return () => window.removeEventListener('keydown',  onEsc);
+        return () => window.removeEventListener('keydown', onEsc);
     }, [onClose]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        const payload = {
-            ...form
-        };
-
         try {
-            const res = await createCategory(payload);
+            const res = await createCategory(form);
             onSaved(res.data);
             onClose();
         } catch (err) {
@@ -34,59 +23,38 @@ export function AddCategoryModel({ onClose, onSaved }) {
         }
     };
 
-    return (
-        <CategoryForm
-            form={form}
-            setForm={setForm}
-            onClose={onClose}
-            onSubmit={handleSubmit}
-        />
-    );
+    return <CategoryForm form={form} setForm={setForm} onClose={onClose} onSubmit={handleSubmit} />;
 }
 
 
 export function CategoryModel({ category, onClose, onDelete }) {
     useEffect(() => {
-        const onEsc = (e) => {
-            if (e.key === 'Escape') onClose();
-        };
-
+        const onEsc = (e) => { if (e.key === 'Escape') onClose(); };
         window.addEventListener('keydown', onEsc);
         return () => window.removeEventListener('keydown', onEsc);
     }, [onClose]);
 
     return (
-        <div style={overlayStyle} onClick={onClose}>
-            <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-                <h3>Детали категории</h3>
+        <div className="overlay" onClick={onClose}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                    <span className="modal-title">Категория</span>
+                    <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
+                </div>
 
-                <p><strong>Наименование:</strong> {category.name} </p>
+                <div className="modal-body">
+                    <p><strong>Название:</strong> {category.name}</p>
+                </div>
 
-                <button onClick={() => onDelete(category.id)}>
-                    Удалить
-                </button>
-
-                <button onClick={onClose}>
-                    Закрыть
-                </button>
+                <div className="modal-actions">
+                    <button className="btn btn-danger" onClick={() => onDelete(category.id)}>
+                        Удалить
+                    </button>
+                    <button className="btn btn-secondary" onClick={onClose}>
+                        Закрыть
+                    </button>
+                </div>
             </div>
         </div>
     );
 }
-
-
-const overlayStyle = {
-  position: "fixed",
-  inset: 0,
-  backgroundColor: "rgba(0, 0, 0, 0.4)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-};
-
-const modalStyle = {
-  background: "#fff",
-  padding: "24px",
-  borderRadius: "8px",
-  minWidth: "300px",
-};

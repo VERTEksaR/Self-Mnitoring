@@ -34,7 +34,7 @@ class Token(BaseModel):
 
 
 class UserFilter(BaseModel):
-    nickname: str
+    nickname: Optional[str] = None
     email: Optional[EmailStr] = None
     is_active: Optional[bool] = None
     is_admin: Optional[bool] = None

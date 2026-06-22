@@ -1,48 +1,47 @@
 import axios from "axios";
 
-
+// baseURL — относительный путь, запросы проксируются через Vite на localhost:8000
+// paramsSerializer (object-форма для axios v1): массивы → ?id=1&id=2, как ждёт FastAPI
 const api = axios.create({
-    baseURL: 'http://localhost:8000/api/',
+    baseURL: '/',
+    paramsSerializer: {
+        serialize: (params) => {
+            const sp = new URLSearchParams();
+            for (const [key, value] of Object.entries(params)) {
+                if (value === undefined || value === null) continue;
+                if (Array.isArray(value)) {
+                    value.forEach(v => sp.append(key, String(v)));
+                } else {
+                    sp.append(key, String(value));
+                }
+            }
+            return sp.toString();
+        },
+    },
+});
+
+// Автоматически добавляем токен из localStorage в каждый запрос
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
 });
 
 export default api;
 
-export const deleteTransaction = (id) => {
-    return api.delete(`finance/transaction/?id=${id}`)
-};
+// DELETE используют path-параметр /{id}, как ожидает бэк
+export const deleteTransaction = (id) => api.delete(`transactions/${id}`);
+export const deleteCategory = (id) => api.delete(`categories/${id}`);
+export const deleteAccount = (id) => api.delete(`accounts/${id}`);
 
-export const deleteCategory = (id) => {
-    return api.delete(`finance/category/?id=${id}`)
-};
+export const getTransactions = (params) => api.get('transactions/', { params });
+export const getCategories = () => api.get('categories/');
+export const getAccounts = () => api.get('accounts/');
 
-export const deleteAccount = (id) => {
-    return api.delete(`finance/account/?id=${id}`)
-};
+export const createTransaction = (data) => api.post('transactions/', data);
+export const updateTransaction = (id, data) => api.patch(`transactions/${id}`, data);
 
-export const getTransactions = (params) => {
-    return api.get(`finance/transactions/`, params)
-};
-
-export const getCategories = () => {
-    return api.get(`finance/categories/`)
-};
-
-export const getAccounts = () => {
-    return api.get(`finance/accounts/`)
-};
-
-export const createTransaction = (data) => {
-    return api.post(`finance/transactions/`, data)
-};
-
-export const updateTransaction = (id, data) => {
-    return api.patch(`finance/transaction/?id=${id}`, data)
-};
-
-export const createCategory = (data) => {
-    return api.post(`finance/categories/`, data)
-};
-
-export const createAccount = (data) => {
-    return api.post(`finance/accounts/`, data)
-};
+export const createCategory = (data) => api.post('categories/', data);
+export const createAccount = (data) => api.post('accounts/', data);
