@@ -1,7 +1,8 @@
 from datetime import date
+from decimal import Decimal
 from typing import List
 
-from sqlalchemy import String, Integer, Boolean, Float, DATE, ForeignKey, UniqueConstraint
+from sqlalchemy import String, Integer, Boolean, Float, DATE, ForeignKey, UniqueConstraint, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.finance_app.app.db.base import Base
 
@@ -21,6 +22,7 @@ class User(Base):
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", back_populates="user")
     telegram_users: Mapped[List["TelegramUser"]] = relationship("TelegramUser", back_populates="user")
     exercises: Mapped[List["Exercises"]] = relationship("Exercises", back_populates="user")
+    trainings: Mapped[List["Trainings"]] = relationship("Trainings", back_populates="user")
 
     def __str__(self):
         return self.email
@@ -102,6 +104,24 @@ class Exercises(Base):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="exercises")
+
+    __table_args__ = (UniqueConstraint("name", "user_id"),)
+
+    def __str__(self):
+        return self.name
+
+
+class Trainings(Base):
+    __tablename__ = "trainings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    weight: Mapped[Decimal] = mapped_column(Numeric(3, 2), nullable=False, default=0)
+    date: Mapped[date] = mapped_column(DATE, nullable=False)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="trainings")
 
     __table_args__ = (UniqueConstraint("name", "user_id"),)
 
