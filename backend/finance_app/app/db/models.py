@@ -10,7 +10,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    nickname: Mapped[str] = mapped_column(String, nullable=False)
+    nickname: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -20,6 +20,7 @@ class User(Base):
     accounts: Mapped[List["Account"]] = relationship("Account", back_populates="user")
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", back_populates="user")
     telegram_users: Mapped[List["TelegramUser"]] = relationship("TelegramUser", back_populates="user")
+    exercises: Mapped[List["Exercises"]] = relationship("Exercises", back_populates="user")
 
     def __str__(self):
         return self.email
@@ -40,7 +41,7 @@ class Category(Base):
     __tablename__ = "categories"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String, index=True, nullable=False)
 
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", back_populates="category")
 
@@ -57,7 +58,7 @@ class Account(Base):
     __tablename__ = "accounts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String, index=True, nullable=False)
 
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", back_populates="account")
 
@@ -91,3 +92,18 @@ class Transaction(Base):
 
     def __str__(self):
         return f"{self.amount} {self.replenishment} {self.transaction_date}"
+
+
+class Exercises(Base):
+    __tablename__ = "exercises"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, primary_key=True, index=True, nullable=False)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="exercises")
+
+    __table_args__ = (UniqueConstraint("name", "user_id"),)
+
+    def __str__(self):
+        return self.name
