@@ -7,6 +7,16 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.finance_app.app.db.base import Base
 
 
+class TrainingExercises(Base):
+    __tablename__ = "training_exercises"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    training_id: Mapped[int] = mapped_column(ForeignKey("trainings.id"), nullable=False)
+    exercise_id: Mapped[int] = mapped_column(ForeignKey("exercises.id"), nullable=False)
+
+    __table_args__ = (UniqueConstraint("training_id", "exercise_id"),)
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -100,10 +110,14 @@ class Exercises(Base):
     __tablename__ = "exercises"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String, primary_key=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String, index=True, nullable=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="exercises")
+
+    trainings: Mapped[List["Trainings"]] = relationship(
+        "Trainings", secondary="training_exercises", back_populates="exercises"
+    )
 
     __table_args__ = (UniqueConstraint("name", "user_id"),)
 
@@ -117,11 +131,15 @@ class Trainings(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String, index=True, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    weight: Mapped[Decimal] = mapped_column(Numeric(3, 2), nullable=False, default=0)
+    weight: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, default=0)
     date: Mapped[date] = mapped_column(DATE, nullable=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="trainings")
+
+    exercises: Mapped[List["Exercises"]] = relationship(
+        "Exercises", secondary="training_exercises", back_populates="trainings", lazy="selectin"
+    )
 
     __table_args__ = (UniqueConstraint("name", "user_id"),)
 
