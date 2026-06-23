@@ -1,8 +1,8 @@
 import './NeonBackground.css';
 
-export function NeonBackground() {
+export function NeonBackground({ variant = 'green' }) {
     return (
-        <div id="neon" aria-hidden="true">
+        <div id="neon" className={variant !== 'green' ? `neon-${variant}` : ''} aria-hidden="true">
             <svg viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
                 {/* Группа A — плавная волна через середину */}
                 <g className="drift-a">

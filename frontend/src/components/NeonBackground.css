@@ -1,7 +1,7 @@
 #neon {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
 }
@@ -101,4 +101,36 @@
   #neon .drift-d,
   #neon .drift-e,
   #neon .drift-f        { animation: none; }
+}
+
+/* ── Белый вариант (стартовая страница) ── */
+#neon.neon-white .nl {
+  stroke: rgba(255, 255, 255, 0.28);
+  filter: drop-shadow(0 0 3px rgba(255,255,255,.35)) drop-shadow(0 0 9px rgba(255,255,255,.12));
+}
+#neon.neon-white .nl--faint {
+  stroke: rgba(255, 255, 255, 0.13);
+}
+#neon.neon-white .np {
+  stroke: rgba(255, 255, 255, 0.85);
+  filter: drop-shadow(0 0 5px rgba(255,255,255,.80)) drop-shadow(0 0 14px rgba(255,255,255,.40));
+}
+#neon.neon-white .np--slow {
+  stroke: rgba(255, 255, 255, 0.65);
+}
+
+/* ── Красный вариант (тренировки) ── */
+#neon.neon-red .nl {
+  stroke: #ff3b4e;
+  filter: drop-shadow(0 0 3px rgba(255,59,78,.85)) drop-shadow(0 0 9px rgba(255,59,78,.5));
+}
+#neon.neon-red .nl--faint {
+  stroke: #ff3b4e;
+}
+#neon.neon-red .np {
+  stroke: #ffd0d6;
+  filter: drop-shadow(0 0 5px rgba(255,150,165,.95)) drop-shadow(0 0 16px rgba(255,59,78,.85));
+}
+#neon.neon-red .np--slow {
+  stroke: #ffaab2;
 }

@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { NeonBackground } from './components/NeonBackground';
 import FinancePage from './pages/FinancePage';
+import WorkoutsPage from './pages/WorkoutsPage';
 import LoginPage from './pages/LoginPage';
 import StartPage from './pages/StartPage';
 
@@ -9,23 +10,37 @@ function PrivateRoute({ children }) {
     return token ? children : <Navigate to="/login" replace />;
 }
 
-function App() {
+function AppContent() {
+    const location = useLocation();
+    const neonVariant = location.pathname.startsWith('/workouts') ? 'red'
+        : location.pathname === '/' ? 'white'
+        : 'green';
+
     return (
         <>
-            <NeonBackground />
-            <BrowserRouter>
-                <Routes>
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/" element={
-                        <PrivateRoute><StartPage /></PrivateRoute>
-                    } />
-                    <Route path="/finance" element={
-                        <PrivateRoute><FinancePage /></PrivateRoute>
-                    } />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-            </BrowserRouter>
+            <NeonBackground variant={neonVariant} />
+            <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/" element={
+                    <PrivateRoute><StartPage /></PrivateRoute>
+                } />
+                <Route path="/finance" element={
+                    <PrivateRoute><FinancePage /></PrivateRoute>
+                } />
+                <Route path="/workouts" element={
+                    <PrivateRoute><WorkoutsPage /></PrivateRoute>
+                } />
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
         </>
+    );
+}
+
+function App() {
+    return (
+        <BrowserRouter>
+            <AppContent />
+        </BrowserRouter>
     );
 }
 

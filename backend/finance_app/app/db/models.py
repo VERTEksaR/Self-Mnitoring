@@ -1,20 +1,10 @@
 from datetime import date
 from decimal import Decimal
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import String, Integer, Boolean, Float, DATE, ForeignKey, UniqueConstraint, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.finance_app.app.db.base import Base
-
-
-class TrainingExercises(Base):
-    __tablename__ = "training_exercises"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    training_id: Mapped[int] = mapped_column(ForeignKey("trainings.id"), nullable=False)
-    exercise_id: Mapped[int] = mapped_column(ForeignKey("exercises.id"), nullable=False)
-
-    __table_args__ = (UniqueConstraint("training_id", "exercise_id"),)
 
 
 class User(Base):
@@ -33,6 +23,7 @@ class User(Base):
     telegram_users: Mapped[List["TelegramUser"]] = relationship("TelegramUser", back_populates="user")
     exercises: Mapped[List["Exercises"]] = relationship("Exercises", back_populates="user")
     trainings: Mapped[List["Trainings"]] = relationship("Trainings", back_populates="user")
+    exercise_trainings: Mapped[List["TrainingExercises"]] = relationship("TrainingExercises", back_populates="user")
 
     def __str__(self):
         return self.email
@@ -125,13 +116,26 @@ class Exercises(Base):
         return self.name
 
 
+class TrainingExercises(Base):
+    __tablename__ = "training_exercises"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    training_id: Mapped[int] = mapped_column(ForeignKey("trainings.id"), nullable=False)
+    exercise_id: Mapped[int] = mapped_column(ForeignKey("exercises.id"), nullable=False)
+    quantity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=0)
+    weight: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True, default=0)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="exercise_trainings")
+
+    __table_args__ = (UniqueConstraint("training_id", "exercise_id", "user_id"),)
+
+
 class Trainings(Base):
     __tablename__ = "trainings"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String, index=True, nullable=False)
-    quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    weight: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, default=0)
     date: Mapped[date] = mapped_column(DATE, nullable=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
