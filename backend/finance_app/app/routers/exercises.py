@@ -38,7 +38,10 @@ async def get_exercise(exercise_id: int, session: AsyncSession = Depends(get_ses
 
 @router.delete("/{exercise_id}", status_code=204)
 async def delete_exercise(exercise_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
-    exercise = await session.get(Exercises, exercise_id)
+    result = await session.execute(
+        select(Exercises).where(Exercises.id == exercise_id, Exercises.user_id == current_user.id)
+    )
+    exercise = result.scalar_one_or_none()
 
     if not exercise:
         logger.error(f"Упражнение с id {exercise_id} не было найдено")
@@ -55,13 +58,17 @@ async def create_exercise(exercise_data: ExerciseCreate, session: AsyncSession =
     exercise = Exercises(**exercise_data.model_dump(), user_id=current_user.id)
     session.add(exercise)
     await session.commit()
-    logger.info(f"Упражнение с id {exercise} было создано")
+    await session.refresh(exercise)
+    logger.info(f"Упражнение с id {exercise.id} было создано")
     return exercise
 
 
 @router.patch("/{exercise_id}", response_model=ExerciseRead, status_code=200)
 async def change_exercise(exercise_id: int, exercise_data: ExerciseChange, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
-    exercise = await session.get(Exercises, exercise_id)
+    result = await session.execute(
+        select(Exercises).where(Exercises.id == exercise_id, Exercises.user_id == current_user.id)
+    )
+    exercise = result.scalar_one_or_none()
 
     if not exercise:
         logger.error(f"Упражнение с id {exercise_id} не было найдено")
