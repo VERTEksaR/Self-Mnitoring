@@ -15,6 +15,7 @@ export default defineConfig({
       '/users': 'http://localhost:8000',
       '/exercises': 'http://localhost:8000',
       '/trainings': 'http://localhost:8000',
+      '/training-exercises': 'http://localhost:8000',
     },
   },
 });

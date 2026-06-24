@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import {
     getExercises, createExercise, updateExercise, deleteExercise,
-    getTrainings, createTraining, updateTraining, deleteTraining,
+    getTrainings, getTraining, createTraining, updateTraining, deleteTraining,
+    createTrainingExercise, updateTrainingExercise, deleteTrainingExercise,
 } from '../api/workouts';
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -102,7 +103,8 @@ function VolumeChart({ series }) {
                     <div style={{ fontFamily: 'JetBrains Mono,monospace', fontWeight: 700, fontSize: 16, color: 'var(--text-strong)' }}>
                         {fmtNum(hd.value)}<span style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 500 }}> кг</span>
                     </div>
-                    {hd.name && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>{hd.name}</div>}
+                    {hd.quantity != null && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>{hd.quantity} повт</div>}
+                    {hd.name && !hd.quantity && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>{hd.name}</div>}
                 </div>
             )}
         </div>
@@ -181,6 +183,8 @@ function ExerciseRow({ exercise, onEdit, onDelete }) {
 // ── TrainingRow ──────────────────────────────────────────────
 function TrainingRow({ training, onClick }) {
     const [hov, setHov] = useState(false);
+    const tes = training.training_exercises ?? [];
+    const volume = tes.reduce((s, te) => s + (Number(te.weight) || 0) * (te.quantity || 0), 0);
     return (
         <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} onClick={onClick} style={{
             display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
@@ -195,12 +199,14 @@ function TrainingRow({ training, onClick }) {
             <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 700, color: 'var(--text-strong)', fontSize: 14 }}>{training.name}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                    {fmtDate(training.date)} · {training.quantity} повт · {training.exercises?.length || 0} упр
+                    {fmtDate(training.date)} · {tes.length} упр
                 </div>
             </div>
-            <div style={{ fontFamily: 'JetBrains Mono,monospace', fontWeight: 700, color: 'var(--text-strong)', fontSize: 15, flexShrink: 0 }}>
-                {training.weight} <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: 12 }}>кг</span>
-            </div>
+            {volume > 0 && (
+                <div style={{ fontFamily: 'JetBrains Mono,monospace', fontWeight: 700, color: 'var(--text-strong)', fontSize: 15, flexShrink: 0 }}>
+                    {fmtNum(volume)} <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: 12 }}>кг</span>
+                </div>
+            )}
             <ChevronRight size={16} color="var(--text-faint)" />
         </div>
     );
@@ -218,6 +224,7 @@ export default function WorkoutsPage() {
     const [detailTraining, setDetailTraining] = useState(null);
     const [trainForm, setTrainForm] = useState(null);
     const [exForm, setExForm] = useState(null);
+    const [selectedExId, setSelectedExId] = useState(null);
 
     useEffect(() => {
         document.body.classList.add('wk-body');
@@ -237,12 +244,19 @@ export default function WorkoutsPage() {
     const inPeriod = t => t.date >= range.from && t.date <= range.to;
     const periodTrainings = trainings.filter(inPeriod).sort((a, b) => b.date.localeCompare(a.date));
 
-    const totalVolume = periodTrainings.reduce((s, t) => s + Number(t.weight) * t.quantity, 0);
-    const bestWeight = periodTrainings.reduce((s, t) => Math.max(s, Number(t.weight)), 0);
-    const totalReps = periodTrainings.reduce((s, t) => s + t.quantity, 0);
-    const chartSeries = [...periodTrainings]
-        .sort((a, b) => a.date.localeCompare(b.date))
-        .map(t => ({ date: t.date, value: Number(t.weight) * t.quantity, name: t.name }));
+    const allTEs = periodTrainings.flatMap(t => t.training_exercises ?? []);
+    const totalReps = allTEs.reduce((s, te) => s + (te.quantity || 0), 0);
+
+    const activeExId = selectedExId ?? (exercises[0]?.id ?? null);
+    const activeEx = exercises.find(e => e.id === activeExId) ?? null;
+    const progressSeries = [...trainings]
+        .filter(t => t.date >= range.from && t.date <= range.to)
+        .flatMap(t =>
+            (t.training_exercises ?? [])
+                .filter(te => te.exercise_id === activeExId && te.weight != null)
+                .map(te => ({ date: t.date, value: Number(te.weight), quantity: te.quantity }))
+        )
+        .sort((a, b) => a.date.localeCompare(b.date));
 
     // ── Exercise CRUD ──
     async function saveExercise(form) {
@@ -262,19 +276,53 @@ export default function WorkoutsPage() {
 
     // ── Training CRUD ──
     async function saveTraining(form) {
-        const data = {
-            name: form.name,
-            quantity: Number(form.quantity),
-            weight: Number(form.weight),
-            date: form.date,
-            exercise_ids: form.exercise_ids,
-        };
+        // Step 1: create or update training itself
+        let trainingId;
         if (form.id) {
-            const res = await updateTraining(form.id, data);
-            setTrainings(p => p.map(t => t.id === form.id ? res.data : t));
+            await updateTraining(form.id, { name: form.name, date: form.date });
+            trainingId = form.id;
         } else {
-            const res = await createTraining(data);
-            setTrainings(p => [res.data, ...p]);
+            const res = await createTraining({ name: form.name, date: form.date });
+            trainingId = res.data.id;
+        }
+
+        // Step 2: reconcile training_exercises
+        const oldTEs = form.id
+            ? (trainings.find(t => t.id === form.id)?.training_exercises ?? [])
+            : [];
+        const newEntries = form.exercises; // [{exercise_id, quantity, weight}]
+
+        const oldMap = new Map(oldTEs.map(te => [te.exercise_id, te]));
+        const newMap = new Map(newEntries.map(e => [e.exercise_id, e]));
+
+        await Promise.all([
+            // delete removed
+            ...[...oldMap.keys()].filter(id => !newMap.has(id))
+                .map(id => deleteTrainingExercise(id, trainingId)),
+            // add new
+            ...newEntries.filter(e => !oldMap.has(e.exercise_id))
+                .map(e => createTrainingExercise({
+                    training_id: trainingId,
+                    exercise_id: e.exercise_id,
+                    quantity: Number(e.quantity) || null,
+                    weight: Number(e.weight) || null,
+                })),
+            // update changed
+            ...newEntries.filter(e => {
+                const old = oldMap.get(e.exercise_id);
+                return old && (old.quantity !== Number(e.quantity) || Number(old.weight) !== Number(e.weight));
+            }).map(e => updateTrainingExercise(e.exercise_id, trainingId, {
+                quantity: Number(e.quantity) || null,
+                weight: Number(e.weight) || null,
+            })),
+        ]);
+
+        // Step 3: refresh from server
+        const refreshed = await getTraining(trainingId);
+        if (form.id) {
+            setTrainings(p => p.map(t => t.id === trainingId ? refreshed.data : t));
+        } else {
+            setTrainings(p => [refreshed.data, ...p]);
         }
         setTrainForm(null);
     }
@@ -374,18 +422,16 @@ export default function WorkoutsPage() {
                                     value={range.to} onChange={e => setRange(r => ({ ...r, to: e.target.value }))} />
                             </div>
                             <button className="btn btn-sm" style={{ background: WK_RED, borderColor: WK_RED, color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                                onClick={() => setTrainForm({ name: '', quantity: 10, weight: '', date: TODAY, exercise_ids: [] })}>
+                                onClick={() => setTrainForm({ name: '', date: TODAY, exercises: [] })}>
                                 <Plus size={16} /> Тренировка
                             </button>
                         </div>
                     </div>
 
                     {/* Stats */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 22 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 22 }}>
                         <StatTile label="Тренировок" value={String(periodTrainings.length)} hint="за период" icon={<Flame size={16} />} />
-                        <StatTile label="Объём" value={fmtNum(totalVolume)} unit="кг" accent hint="вес × повторения" icon={<Activity size={16} />} />
                         <StatTile label="Повторений" value={fmtNum(totalReps)} hint="суммарно" icon={<Timer size={16} />} />
-                        <StatTile label="Рекорд" value={String(bestWeight)} unit="кг" hint="лучший вес" icon={<Trophy size={16} />} />
                     </div>
 
                     {/* 2-col grid */}
@@ -394,13 +440,26 @@ export default function WorkoutsPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                             {/* Chart */}
                             <div className="card" style={{ padding: 20 }}>
-                                <div style={{ marginBottom: 16 }}>
-                                    <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-strong)', margin: 0 }}>Динамика нагрузки</h3>
-                                    <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-                                        {periodTrainings.length} тренировок · объём = вес × повторения
+                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+                                    <div>
+                                        <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-strong)', margin: 0 }}>Прогресс по упражнению</h3>
+                                        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+                                            {progressSeries.length > 0
+                                                ? `${progressSeries.length} записей · рабочий вес`
+                                                : 'Нет данных за выбранный период'}
+                                        </div>
                                     </div>
+                                    <select
+                                        value={activeExId ?? ''}
+                                        onChange={e => setSelectedExId(Number(e.target.value))}
+                                        className="input"
+                                        style={{ fontSize: 13, width: 'auto', minWidth: 160, flexShrink: 0 }}>
+                                        {exercises.map(ex => (
+                                            <option key={ex.id} value={ex.id}>{ex.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
-                                <VolumeChart series={chartSeries} />
+                                <VolumeChart series={progressSeries} />
                             </div>
 
                             {/* Training log */}
@@ -445,7 +504,7 @@ export default function WorkoutsPage() {
 
             {/* ── Training detail modal ── */}
             {detailTraining && (
-                <WkModal open title={detailTraining.name} onClose={() => setDetailTraining(null)} width={460}
+                <WkModal open title={detailTraining.name} onClose={() => setDetailTraining(null)} width={480}
                     footer={<>
                         <button className="btn btn-danger btn-sm" onClick={() => removeTraining(detailTraining.id)}>
                             <Trash2 size={14} /> Удалить
@@ -454,10 +513,12 @@ export default function WorkoutsPage() {
                             setTrainForm({
                                 id: detailTraining.id,
                                 name: detailTraining.name,
-                                quantity: detailTraining.quantity,
-                                weight: detailTraining.weight,
                                 date: detailTraining.date,
-                                exercise_ids: (detailTraining.exercises || []).map(e => e.id),
+                                exercises: (detailTraining.training_exercises || []).map(te => ({
+                                    exercise_id: te.exercise_id,
+                                    quantity: te.quantity ?? '',
+                                    weight: te.weight ?? '',
+                                })),
                             });
                             setDetailTraining(null);
                         }}>
@@ -468,20 +529,26 @@ export default function WorkoutsPage() {
                         </button>
                     </>}>
                     <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-                        {[['Дата', fmtDate(detailTraining.date)], ['Повторения', detailTraining.quantity], ['Вес', `${detailTraining.weight} кг`]].map(([k, v]) => (
+                        {[['Дата', fmtDate(detailTraining.date)], ['Упражнений', (detailTraining.training_exercises || []).length]].map(([k, v]) => (
                             <div key={k} style={{ flex: 1, padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-sunken)' }}>
                                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{k}</div>
                                 <div style={{ fontFamily: 'JetBrains Mono,monospace', fontWeight: 700, color: 'var(--text-strong)', fontSize: 15 }}>{v}</div>
                             </div>
                         ))}
                     </div>
-                    {(detailTraining.exercises || []).length > 0 && (
+                    {(detailTraining.training_exercises || []).length > 0 && (
                         <>
                             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--text-muted)', marginBottom: 8 }}>Упражнения</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                {detailTraining.exercises.map(ex => (
-                                    <div key={ex.id} style={{ padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 8, fontWeight: 600, color: 'var(--text-strong)', fontSize: 14 }}>
-                                        {ex.name}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {detailTraining.training_exercises.map(te => (
+                                    <div key={te.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-sunken)' }}>
+                                        <span style={{ flex: 1, fontWeight: 600, color: 'var(--text-strong)', fontSize: 14 }}>{te.exercise.name}</span>
+                                        {te.quantity != null && (
+                                            <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'JetBrains Mono,monospace' }}>{te.quantity} повт</span>
+                                        )}
+                                        {te.weight != null && (
+                                            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-strong)', fontFamily: 'JetBrains Mono,monospace' }}>{te.weight} кг</span>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -491,66 +558,88 @@ export default function WorkoutsPage() {
             )}
 
             {/* ── Training form modal ── */}
-            {trainForm && (
-                <WkModal open title={trainForm.id ? 'Изменить тренировку' : 'Новая тренировка'} onClose={() => setTrainForm(null)}
-                    footer={<>
-                        <button className="btn btn-secondary btn-sm" onClick={() => setTrainForm(null)}>Отмена</button>
-                        <button className="btn btn-sm" style={{ background: WK_RED, borderColor: WK_RED, color: '#fff' }}
-                            disabled={!trainForm.name?.trim()}
-                            onClick={() => saveTraining(trainForm)}>
-                            Сохранить
-                        </button>
-                    </>}>
-                    <div className="form">
-                        <div className="form-group">
-                            <label className="form-label">Название</label>
-                            <input className="input" placeholder="Например, Жим лёжа" value={trainForm.name}
-                                onChange={e => setTrainForm(f => ({ ...f, name: e.target.value }))} />
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                            <div className="form-group">
-                                <label className="form-label">Дата</label>
-                                <input className="input" type="date" value={trainForm.date}
-                                    onChange={e => setTrainForm(f => ({ ...f, date: e.target.value }))} />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Повторения</label>
-                                <input className="input" type="number" min="1" value={trainForm.quantity}
-                                    onChange={e => setTrainForm(f => ({ ...f, quantity: e.target.value }))} />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Вес (кг)</label>
-                                <input className="input" type="number" min="0" step="0.5" value={trainForm.weight}
-                                    onChange={e => setTrainForm(f => ({ ...f, weight: e.target.value }))} />
-                            </div>
-                        </div>
-                        {exercises.length > 0 && (
-                            <div className="form-group">
-                                <label className="form-label">Упражнения · выбрано {trainForm.exercise_ids.length}</label>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, maxHeight: 200, overflowY: 'auto', paddingTop: 4 }}>
-                                    {exercises.map(e => {
-                                        const on = trainForm.exercise_ids.includes(e.id);
-                                        return (
-                                            <button key={e.id} type="button"
-                                                onClick={() => setTrainForm(f => ({ ...f, exercise_ids: on ? f.exercise_ids.filter(x => x !== e.id) : [...f.exercise_ids, e.id] }))}
-                                                style={{
-                                                    display: 'inline-flex', alignItems: 'center', gap: 5,
-                                                    cursor: 'pointer', fontFamily: 'inherit',
-                                                    fontSize: 13, fontWeight: 600, padding: '6px 10px', borderRadius: 999,
-                                                    border: `1px solid ${on ? WK_RED : 'var(--border)'}`,
-                                                    background: on ? WK_RED_SUBTLE : 'var(--surface-sunken)',
-                                                    color: on ? WK_RED : 'var(--text-body)',
-                                                }}>
-                                                {e.name}
-                                            </button>
-                                        );
-                                    })}
+            {trainForm && (() => {
+                const toggleEx = (exId) => setTrainForm(f => {
+                    const has = f.exercises.some(e => e.exercise_id === exId);
+                    return {
+                        ...f,
+                        exercises: has
+                            ? f.exercises.filter(e => e.exercise_id !== exId)
+                            : [...f.exercises, { exercise_id: exId, quantity: '', weight: '' }],
+                    };
+                });
+                const updateEntry = (exId, field, val) => setTrainForm(f => ({
+                    ...f,
+                    exercises: f.exercises.map(e => e.exercise_id === exId ? { ...e, [field]: val } : e),
+                }));
+                return (
+                    <WkModal open title={trainForm.id ? 'Изменить тренировку' : 'Новая тренировка'} onClose={() => setTrainForm(null)} width={500}
+                        footer={<>
+                            <button className="btn btn-secondary btn-sm" onClick={() => setTrainForm(null)}>Отмена</button>
+                            <button className="btn btn-sm" style={{ background: WK_RED, borderColor: WK_RED, color: '#fff' }}
+                                disabled={!trainForm.name?.trim()}
+                                onClick={() => saveTraining(trainForm)}>
+                                Сохранить
+                            </button>
+                        </>}>
+                        <div className="form">
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12 }}>
+                                <div className="form-group">
+                                    <label className="form-label">Название</label>
+                                    <input className="input" placeholder="День груди" value={trainForm.name}
+                                        onChange={e => setTrainForm(f => ({ ...f, name: e.target.value }))} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Дата</label>
+                                    <input className="input" type="date" value={trainForm.date}
+                                        onChange={e => setTrainForm(f => ({ ...f, date: e.target.value }))} />
                                 </div>
                             </div>
-                        )}
-                    </div>
-                </WkModal>
-            )}
+                            {exercises.length > 0 && (
+                                <div className="form-group">
+                                    <label className="form-label">
+                                        Упражнения · выбрано {trainForm.exercises.length}
+                                    </label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto', paddingTop: 4 }}>
+                                        {exercises.map(ex => {
+                                            const entry = trainForm.exercises.find(e => e.exercise_id === ex.id);
+                                            const on = !!entry;
+                                            return (
+                                                <div key={ex.id} style={{
+                                                    display: 'flex', alignItems: 'center', gap: 8,
+                                                    padding: '8px 10px', borderRadius: 8,
+                                                    border: `1px solid ${on ? WK_RED_BD : 'var(--border)'}`,
+                                                    background: on ? WK_RED_SUBTLE : 'var(--surface-sunken)',
+                                                }}>
+                                                    <button type="button" onClick={() => toggleEx(ex.id)} style={{
+                                                        flex: 1, textAlign: 'left', background: 'none', border: 'none',
+                                                        cursor: 'pointer', fontFamily: 'inherit',
+                                                        fontSize: 13, fontWeight: 600,
+                                                        color: on ? WK_RED : 'var(--text-body)',
+                                                    }}>
+                                                        {on ? <X size={13} style={{ marginRight: 6, verticalAlign: 'middle' }} /> : null}
+                                                        {ex.name}
+                                                    </button>
+                                                    {on && (
+                                                        <>
+                                                            <input type="number" min="1" placeholder="повт" value={entry.quantity}
+                                                                onChange={e => updateEntry(ex.id, 'quantity', e.target.value)}
+                                                                style={{ width: 70, fontSize: 13 }} className="input" />
+                                                            <input type="number" min="0" step="0.5" placeholder="кг" value={entry.weight}
+                                                                onChange={e => updateEntry(ex.id, 'weight', e.target.value)}
+                                                                style={{ width: 70, fontSize: 13 }} className="input" />
+                                                        </>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </WkModal>
+                );
+            })()}
 
             {/* ── Exercise form modal ── */}
             {exForm && (

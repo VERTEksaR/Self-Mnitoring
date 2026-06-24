@@ -85,3 +85,28 @@ async def change_ex_training(ex_training_data: ExerciseTrainingChange, exercise_
     await session.commit()
     await session.refresh(ex_training)
     return ex_training
+
+
+@router.get("/", response_model=Page[ExerciseTrainingRead], status_code=200)
+async def get_ex_trainings(page: int = 1, size: int = 10, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+    total_result = await session.execute(
+        select(func.count())
+        .where(TrainingExercises.user_id == current_user.id)
+    )
+    total = total_result.scalar_one()
+
+    result = await session.execute(
+        select(TrainingExercises)
+        .where(TrainingExercises.user_id == current_user.id)
+        .offset((page - 1) * size)
+        .limit(size)
+    )
+    ex_trainings = result.scalars().all()
+    pages = ceil(total / size) if total > 0 else 1
+    return {
+        "items": ex_trainings,
+        "total": total,
+        "pages": pages,
+        "page": page,
+        "size": size,
+    }
