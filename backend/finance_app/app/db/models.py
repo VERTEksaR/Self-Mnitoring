@@ -106,10 +106,6 @@ class Exercises(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="exercises")
 
-    trainings: Mapped[List["Trainings"]] = relationship(
-        "Trainings", secondary="training_exercises", back_populates="exercises"
-    )
-
     __table_args__ = (UniqueConstraint("name", "user_id"),)
 
     def __str__(self):
@@ -122,11 +118,12 @@ class TrainingExercises(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     training_id: Mapped[int] = mapped_column(ForeignKey("trainings.id"), nullable=False)
     exercise_id: Mapped[int] = mapped_column(ForeignKey("exercises.id"), nullable=False)
-    quantity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=0)
-    weight: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True, default=0)
+    quantity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    weight: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="exercise_trainings")
+    exercise: Mapped["Exercises"] = relationship("Exercises", lazy="selectin")
 
     __table_args__ = (UniqueConstraint("training_id", "exercise_id", "user_id"),)
 
@@ -140,9 +137,8 @@ class Trainings(Base):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="trainings")
-
-    exercises: Mapped[List["Exercises"]] = relationship(
-        "Exercises", secondary="training_exercises", back_populates="trainings", lazy="selectin"
+    training_exercises: Mapped[List["TrainingExercises"]] = relationship(
+        "TrainingExercises", lazy="selectin", cascade="all, delete-orphan"
     )
 
     __table_args__ = (UniqueConstraint("name", "user_id"),)
