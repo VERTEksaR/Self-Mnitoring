@@ -33,6 +33,18 @@ const ArrowLeft = () => (
     </svg>
 );
 
+const DumbbellIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14.4 14.4 9.6 9.6"/><path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z"/><path d="m21.5 21.5-1.4-1.4"/><path d="M3.9 3.9 2.5 2.5"/><path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829 2 2 0 1 1 2.828 2.829l1.767-1.768a2 2 0 1 1 2.829 2.829z"/>
+    </svg>
+);
+
+const HomeIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+);
+
 const ArrowUp = () => (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>
@@ -155,6 +167,19 @@ export default function FinancePage() {
 
             {/* Body */}
             <div className="finance-body">
+                {/* Module quick-nav (left) */}
+                <nav className="finance-module-nav">
+                    <span className="finance-module-nav__label">Модули</span>
+                    <button className="finance-module-nav__btn finance-module-nav__btn--home" onClick={() => navigate('/')} title="Главная">
+                        <HomeIcon />
+                        <span>Главная</span>
+                    </button>
+                    <button className="finance-module-nav__btn finance-module-nav__btn--workouts" onClick={() => navigate('/workouts')} title="Тренировки">
+                        <DumbbellIcon />
+                        <span>Трен.</span>
+                    </button>
+                </nav>
+
                 {/* Sidebar */}
                 <aside className={`finance-sidebar${drawerOpen ? ' finance-sidebar--open' : ''}`}>
                     <div className={`sidebar-section${openSections.period ? ' sidebar-section--open' : ''}`}>
@@ -336,6 +361,7 @@ export default function FinancePage() {
                         }
                     </div>
                 </main>
+
             </div>
 
             {/* Mobile FAB */}

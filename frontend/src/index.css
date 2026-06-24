@@ -71,6 +71,43 @@ body {
   min-height: 100vh;
 }
 
+/* ── Красная тема (тренировки) ── */
+body.wk-body {
+  background:
+    radial-gradient(120% 90%  at 14% -10%, #2c2122 0%, rgba(24,18,19,0) 52%),
+    radial-gradient(120% 120% at 88%   6%, #271c1d 0%, rgba(17,13,13,0) 46%),
+    radial-gradient(140% 130% at 50%  62%, rgba(12,9,10,0) 0%, #0a0708 100%),
+    linear-gradient(160deg, #130f10 0%, #0a0708 100%);
+
+  /* Бренд-цвет → красный */
+  --brand:           #ff3b4e;
+  --brand-hover:     #ff5e6e;
+  --brand-active:    #e52838;
+  --brand-subtle:    rgba(255, 59, 78, 0.13);
+  --brand-subtle-bd: rgba(255, 59, 78, 0.34);
+  --brand-on:        #1a0003;
+  --text-link:       #ff5e6e;
+
+  /* Фокус и обводка */
+  --border-focus:    #ff3b4e;
+  --ring:            0 0 0 3px rgba(255, 59, 78, 0.30);
+
+  /* Бордеры с красным оттенком */
+  --border:          rgba(200, 90, 90, 0.16);
+  --border-strong:   rgba(200, 80, 80, 0.32);
+
+  /* Тени */
+  --shadow-md:       0 6px 18px rgba(0,0,0,.55), 0 0 0 1px rgba(255,59,78,.07);
+  --shadow-overlay:  0 24px 60px rgba(0,0,0,.72), 0 0 0 1px rgba(255,59,78,.10);
+  --glow-brand:      0 10px 34px rgba(255, 59, 78, 0.28);
+
+  /* Текст — тёплый нейтральный вместо зелёного */
+  --text-strong:     #fff1f2;
+  --text-body:       #c9bcbc;
+  --text-muted:      #988a8a;
+  --text-faint:      #6b5e5e;
+}
+
 #root { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
 
 /* ── Кнопки ── */
@@ -323,6 +360,41 @@ body {
   overflow-y: auto; display: flex; flex-direction: column; gap: 24px; min-width: 0;
 }
 
+.finance-module-nav {
+  width: 72px; flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface-card);
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 20px 8px; gap: 6px;
+}
+.finance-module-nav__label {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .07em;
+  color: var(--text-faint); margin-bottom: 10px;
+  text-align: center;
+}
+.finance-module-nav__btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 6px; width: 56px;
+  border-radius: var(--radius-md); border: none;
+  background: none; cursor: pointer;
+  color: var(--text-muted); font-size: 10px; font-weight: 600;
+  font-family: inherit; transition: background var(--t), color var(--t);
+}
+.finance-module-nav__btn:hover {
+  background: var(--brand-subtle); color: var(--brand);
+}
+.finance-module-nav__btn--workouts:hover {
+  background: rgba(255, 59, 78, 0.13); color: #ff3b4e;
+}
+.finance-module-nav__btn--finance:hover {
+  background: rgba(62, 224, 122, 0.13); color: #3ee07a;
+}
+.finance-module-nav__btn--home:hover {
+  background: rgba(255, 255, 255, 0.09); color: rgba(255, 255, 255, 0.88);
+}
+
 /* ── Stat cards ── */
 .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .stat-card {
@@ -443,6 +515,7 @@ body {
   .stats-row { grid-template-columns: 1fr; }
 
   .finance-body { display: block; overflow: visible; }
+  .finance-module-nav { display: none; }
 
   .finance-sidebar {
     position: fixed; left: 0; right: 0; bottom: 0; top: auto;

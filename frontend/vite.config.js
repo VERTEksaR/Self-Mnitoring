@@ -13,6 +13,9 @@ export default defineConfig({
       '/accounts': 'http://localhost:8000',
       '/transactions': 'http://localhost:8000',
       '/users': 'http://localhost:8000',
+      '/exercises': 'http://localhost:8000',
+      '/trainings': 'http://localhost:8000',
+      '/training-exercises': 'http://localhost:8000',
     },
   },
 });
