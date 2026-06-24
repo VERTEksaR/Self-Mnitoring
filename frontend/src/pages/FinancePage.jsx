@@ -12,65 +12,161 @@ import { CategoryModel, AddCategoryModel } from '../components/CategoryModel';
 import { AccountItem } from '../components/AccountItem';
 import { AccountModel, AddAccountModel } from '../components/AccountModel';
 
-import { DateRangeCalendar } from '../components/calendar/Calendar';
-import { SetFormatDate } from '../components/calendar/FormatingDate';
-
-import { CategoryPieChart } from '../components/charts/PieChart';
-import { getTotals, totalByCategory } from '../utils/financeStats';
-
+// ── Helpers ──────────────────────────────────────────────────
 const fmt = (n) =>
     Number(n).toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
-const ChevronDown = () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="m6 9 6 6 6-6"/>
-    </svg>
-);
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function daysAgoStr(n) { return new Date(Date.now() - n * 86400000).toISOString().slice(0, 10); }
 
+function dateLabel(iso) {
+    const t = todayStr();
+    const y = daysAgoStr(1);
+    if (iso === t) return 'Сегодня';
+    if (iso === y) return 'Вчера';
+    const [yr, m, d] = iso.split('-');
+    return `${d}.${m}.${yr}`;
+}
+
+function groupByDate(transactions) {
+    const map = new Map();
+    for (const tx of transactions) {
+        const key = tx.transaction_date ?? 'unknown';
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(tx);
+    }
+    return [...map.entries()].sort(([a], [b]) => b.localeCompare(a));
+}
+
+const SECTION_LIMIT = 5;
+const TX_LIMITS = [5, 10, 20];
+const PERIODS = [
+    { id: 'today', label: 'Сегодня' },
+    { id: 'week',  label: 'Неделя'  },
+    { id: 'month', label: 'Месяц'   },
+    { id: 'all',   label: 'Всё'     },
+];
+
+// ── Icons ────────────────────────────────────────────────────
 const ArrowLeft = () => (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="m15 18-6-6 6-6"/>
     </svg>
 );
-
 const DumbbellIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14.4 14.4 9.6 9.6"/><path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z"/><path d="m21.5 21.5-1.4-1.4"/><path d="M3.9 3.9 2.5 2.5"/><path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829 2 2 0 1 1 2.828 2.829l1.767-1.768a2 2 0 1 1 2.829 2.829z"/>
     </svg>
 );
-
 const HomeIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
     </svg>
 );
-
-const ArrowUp = () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>
+const LayoutIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+    </svg>
+);
+const BarChartIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
     </svg>
 );
 
-const ArrowDown = () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>
-    </svg>
-);
+// ── EmptyHint ─────────────────────────────────────────────────
+function EmptyHint({ icon, title, hint, action, onAction }) {
+    return (
+        <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+            padding: '28px 20px', textAlign: 'center',
+        }}>
+            <span style={{ fontSize: 28 }}>{icon}</span>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)' }}>{title}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 280, lineHeight: 1.5 }}>{hint}</div>
+            {action && (
+                <button className="btn btn-primary btn-sm" style={{ marginTop: 4 }} onClick={onAction}>
+                    {action}
+                </button>
+            )}
+        </div>
+    );
+}
 
-const WalletIcon = () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7"/>
-        <path d="M18 12h.01"/>
-    </svg>
-);
+// ── SetupGuide ────────────────────────────────────────────────
+function SetupGuide({ hasCategories, hasAccounts, onAddCategory, onAddAccount }) {
+    const steps = [
+        {
+            done: hasAccounts,
+            num: 1,
+            title: 'Создайте счёт',
+            hint: 'Счёт — это карта, наличные или любой источник средств.',
+            action: '+ Создать счёт',
+            onAction: onAddAccount,
+        },
+        {
+            done: hasCategories,
+            num: 2,
+            title: 'Создайте категорию',
+            hint: 'Категории помогают группировать расходы: еда, транспорт, развлечения.',
+            action: '+ Создать категорию',
+            onAction: onAddCategory,
+        },
+        {
+            done: false,
+            num: 3,
+            title: 'Добавьте первую транзакцию',
+            hint: 'Когда есть счёт и категория — нажмите «+ Транзакция» в правом верхнем углу.',
+            action: null,
+        },
+    ];
 
-const FilterIcon = () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/>
-    </svg>
-);
+    return (
+        <div className="card" style={{ marginBottom: 20, padding: '20px 24px' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-strong)', marginBottom: 4 }}>
+                С чего начать?
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 18 }}>
+                Выполните три шага, чтобы начать отслеживать финансы
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {steps.map(s => (
+                    <div key={s.num} style={{
+                        display: 'flex', gap: 14, alignItems: 'flex-start',
+                        padding: '12px 14px', borderRadius: 10,
+                        border: `1px solid ${s.done ? 'var(--brand)' : 'var(--border)'}`,
+                        background: s.done ? 'var(--brand-subtle)' : 'var(--surface-sunken)',
+                        opacity: s.done ? 0.7 : 1,
+                    }}>
+                        <div style={{
+                            width: 26, height: 26, borderRadius: '50%', flex: 'none',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 12, fontWeight: 800,
+                            background: s.done ? 'var(--brand)' : 'var(--surface-card)',
+                            color: s.done ? '#fff' : 'var(--text-muted)',
+                            border: `1.5px solid ${s.done ? 'var(--brand)' : 'var(--border)'}`,
+                        }}>
+                            {s.done ? '✓' : s.num}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-strong)', marginBottom: 2 }}>
+                                {s.title}
+                            </div>
+                            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.hint}</div>
+                        </div>
+                        {!s.done && s.action && (
+                            <button className="btn btn-primary btn-sm" style={{ flexShrink: 0 }} onClick={s.onAction}>
+                                {s.action}
+                            </button>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
 
-
+// ── FinancePage ───────────────────────────────────────────────
 export default function FinancePage() {
     const navigate = useNavigate();
 
@@ -78,6 +174,8 @@ export default function FinancePage() {
     const [allTransactions, setAllTransactions] = useState([]);
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const [activeSection, setActiveSection] = useState('overview');
 
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [addTransaction, setAddTransaction] = useState(null);
@@ -87,30 +185,10 @@ export default function FinancePage() {
     const [selectedAccount, setSelectedAccount] = useState(null);
     const [addAccount, setAddAccount] = useState(null);
 
-    const [categoryFilters, setCategoryFilters] = useState([]);
-    const [accountFilters, setAccountFilters] = useState([]);
-    const [dateRange, setDateRange] = useState({ from: undefined, to: undefined });
-
-    const [openSections, setOpenSections] = useState({ period: true, categories: true, accounts: true });
-    const [drawerOpen, setDrawerOpen] = useState(false);
-
-    const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
-
-    const toggleCategory = (id) =>
-        setCategoryFilters(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-    const toggleAccount = (id) =>
-        setAccountFilters(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-
-    const loadTransactions = async (params = {}) => {
-        const res = await getTransactions({ ...params, size: 500 });
-        setAllTransactions(res.data.items ?? []);
-    };
-
-    const resetFilter = () => {
-        setDateRange({ from: undefined, to: undefined });
-        setCategoryFilters([]);
-        setAccountFilters([]);
-    };
+    const [txLimit, setTxLimit] = useState(5);
+    const [periodFilter, setPeriodFilter] = useState('all');
+    const [catExpanded, setCatExpanded] = useState(false);
+    const [accExpanded, setAccExpanded] = useState(false);
 
     const handleLogout = () => {
         localStorage.removeItem('access_token');
@@ -119,18 +197,10 @@ export default function FinancePage() {
     };
 
     useEffect(() => {
-        loadTransactions({
-            transaction_date_from: dateRange.from ? SetFormatDate(dateRange.from) : undefined,
-            transaction_date_to:   dateRange.to   ? SetFormatDate(dateRange.to)   : undefined,
-            category_id: categoryFilters.length > 0 ? categoryFilters : undefined,
-            account_id:  accountFilters.length  > 0 ? accountFilters  : undefined,
-        });
-    }, [dateRange, categoryFilters, accountFilters]);
-
-    useEffect(() => {
-        Promise.all([getCategories(), getAccounts()])
-            .then(([catRes, accRes]) => {
+        Promise.all([getCategories(), getTransactions({ size: 500 }), getAccounts()])
+            .then(([catRes, txRes, accRes]) => {
                 setCategories(catRes.data.items ?? []);
+                setAllTransactions(txRes.data.items ?? []);
                 setAccounts(accRes.data.items ?? []);
             })
             .finally(() => setLoading(false));
@@ -143,15 +213,51 @@ export default function FinancePage() {
         () => Object.fromEntries(accounts.map(a => [a.id, a.name])), [accounts]
     );
 
-    const totals = getTotals(allTransactions);
-    const totalByCategories = totalByCategory(allTransactions, categoriesMap);
-    const activeFilterCount = categoryFilters.length + accountFilters.length + (dateRange.from ? 1 : 0);
+    // ── Derived data ──
+    const totalBalance = useMemo(
+        () => allTransactions.reduce((s, tx) => tx.replenishment ? s + tx.amount : s - tx.amount, 0),
+        [allTransactions]
+    );
+
+    const sortedTransactions = useMemo(
+        () => [...allTransactions].sort((a, b) => {
+            if (!a.transaction_date) return 1;
+            if (!b.transaction_date) return -1;
+            return b.transaction_date.localeCompare(a.transaction_date);
+        }),
+        [allTransactions]
+    );
+
+    const filteredByPeriod = useMemo(() => {
+        if (periodFilter === 'today') return sortedTransactions.filter(t => t.transaction_date === todayStr());
+        if (periodFilter === 'week')  return sortedTransactions.filter(t => t.transaction_date >= daysAgoStr(7));
+        if (periodFilter === 'month') return sortedTransactions.filter(t => t.transaction_date >= daysAgoStr(30));
+        return sortedTransactions;
+    }, [sortedTransactions, periodFilter]);
+
+    const visibleTransactions = periodFilter === 'all'
+        ? filteredByPeriod.slice(0, txLimit)
+        : filteredByPeriod;
+
+    const groupedTransactions = useMemo(
+        () => groupByDate(visibleTransactions),
+        [visibleTransactions]
+    );
+
+    const visibleCategories = catExpanded ? categories : categories.slice(0, SECTION_LIMIT);
+    const visibleAccounts   = accExpanded ? accounts   : accounts.slice(0, SECTION_LIMIT);
+
+    const isNewUser = allTransactions.length === 0 && (categories.length === 0 || accounts.length === 0);
+
+    const sections = [
+        { id: 'overview',   label: 'Общая информация', icon: <LayoutIcon />   },
+        { id: 'analytics',  label: 'Аналитика',         icon: <BarChartIcon /> },
+    ];
 
     if (loading) return <div className="loading">Загрузка...</div>;
 
     return (
         <div className="finance-page">
-            {/* Nav */}
             <nav className="finance-nav">
                 <div className="finance-nav-group">
                     <button className="btn btn-ghost btn-icon" onClick={() => navigate('/')} aria-label="Назад">
@@ -160,216 +266,258 @@ export default function FinancePage() {
                     <span className="finance-nav-brand">Финансы</span>
                 </div>
                 <div className="finance-nav-group">
-                    <button className="btn btn-primary btn-sm" onClick={() => setAddTransaction({})}>+ Транзакция</button>
                     <button className="btn btn-ghost btn-sm" onClick={handleLogout}>Выйти</button>
                 </div>
             </nav>
 
-            {/* Body */}
             <div className="finance-body">
-                {/* Module quick-nav (left) */}
+                {/* Module quick-nav */}
                 <nav className="finance-module-nav">
                     <span className="finance-module-nav__label">Модули</span>
                     <button className="finance-module-nav__btn finance-module-nav__btn--home" onClick={() => navigate('/')} title="Главная">
-                        <HomeIcon />
-                        <span>Главная</span>
+                        <HomeIcon /><span>Главная</span>
                     </button>
                     <button className="finance-module-nav__btn finance-module-nav__btn--workouts" onClick={() => navigate('/workouts')} title="Тренировки">
-                        <DumbbellIcon />
-                        <span>Трен.</span>
+                        <DumbbellIcon /><span>Трен.</span>
                     </button>
                 </nav>
 
-                {/* Sidebar */}
-                <aside className={`finance-sidebar${drawerOpen ? ' finance-sidebar--open' : ''}`}>
-                    <div className={`sidebar-section${openSections.period ? ' sidebar-section--open' : ''}`}>
-                        <div className="sidebar-section-header" onClick={() => toggleSection('period')}>
-                            <span className="sidebar-section-title">Период</span>
-                            <span className="sidebar-section-chevron"><ChevronDown /></span>
-                        </div>
-                        <div className="sidebar-section-body">
-                            <div className="sidebar-section-inner">
-                                <div className="sidebar-section-content">
-                                    <DateRangeCalendar draftRange={dateRange} onChange={setDateRange} />
-                                </div>
-                            </div>
-                        </div>
+                {/* Section sidebar */}
+                <aside style={{
+                    width: 200, flex: 'none', position: 'sticky', top: 56,
+                    height: 'calc(100vh - 56px)', padding: '16px 10px',
+                    background: 'var(--surface-card)', borderRight: '1px solid var(--border)',
+                    display: 'flex', flexDirection: 'column', gap: 4,
+                    backdropFilter: 'blur(12px)',
+                }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--text-muted)', padding: '0 10px 8px' }}>
+                        Финансы
                     </div>
-
-                    <div className={`sidebar-section${openSections.categories ? ' sidebar-section--open' : ''}`}>
-                        <div className="sidebar-section-header" onClick={() => toggleSection('categories')}>
-                            <span className="sidebar-section-title">
-                                Категории
-                                {categoryFilters.length > 0 && (
-                                    <span className="sidebar-section-badge">{categoryFilters.length}</span>
-                                )}
-                            </span>
-                            <span className="sidebar-section-chevron"><ChevronDown /></span>
-                        </div>
-                        <div className="sidebar-section-body">
-                            <div className="sidebar-section-inner">
-                                <div className="sidebar-section-content">
-                                    <div className="filter-scroll">
-                                        {categories.map(c => (
-                                            <label key={c.id} className="checkbox-label">
-                                                <input type="checkbox" checked={categoryFilters.includes(c.id)} onChange={() => toggleCategory(c.id)} />
-                                                {c.name}
-                                            </label>
-                                        ))}
-                                        {categories.length === 0 && <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Нет категорий</span>}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className={`sidebar-section${openSections.accounts ? ' sidebar-section--open' : ''}`}>
-                        <div className="sidebar-section-header" onClick={() => toggleSection('accounts')}>
-                            <span className="sidebar-section-title">Счета</span>
-                            <span className="sidebar-section-chevron"><ChevronDown /></span>
-                        </div>
-                        <div className="sidebar-section-body">
-                            <div className="sidebar-section-inner">
-                                <div className="sidebar-section-content">
-                                    <div className="filter-scroll">
-                                        {accounts.map(a => (
-                                            <label key={a.id} className="checkbox-label">
-                                                <input type="checkbox" checked={accountFilters.includes(a.id)} onChange={() => toggleAccount(a.id)} />
-                                                {a.name}
-                                            </label>
-                                        ))}
-                                        {accounts.length === 0 && <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Нет счетов</span>}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button className="btn btn-secondary btn-full btn-sm" onClick={resetFilter}>
-                        Сбросить фильтры
-                    </button>
+                    {sections.map(s => (
+                        <button key={s.id} onClick={() => setActiveSection(s.id)} style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '10px 12px', borderRadius: 8, border: 'none',
+                            fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left',
+                            width: '100%', fontFamily: 'inherit',
+                            color: s.id === activeSection ? 'var(--brand)' : 'var(--text-body)',
+                            background: s.id === activeSection ? 'var(--brand-subtle)' : 'transparent',
+                        }}>
+                            {s.icon}<span>{s.label}</span>
+                        </button>
+                    ))}
                 </aside>
-
-                <div
-                    className={`sidebar-backdrop${drawerOpen ? ' sidebar-backdrop--open' : ''}`}
-                    onClick={() => setDrawerOpen(false)}
-                />
 
                 {/* Main */}
                 <main className="finance-main">
-                    {/* Stats */}
-                    <div className="stats-row">
-                        <div className="card stat-card stat-card--income">
-                            <div className="stat-card__head">
-                                <span className="stat-card__icon"><ArrowUp /></span>
-                                <span className="stat-card__label">Доход</span>
-                            </div>
-                            <span className="stat-card__value">+{fmt(totals.income)} ₽</span>
-                            <span className="stat-card__sub">за период</span>
-                        </div>
-                        <div className="card stat-card stat-card--expense">
-                            <div className="stat-card__head">
-                                <span className="stat-card__icon"><ArrowDown /></span>
-                                <span className="stat-card__label">Расход</span>
-                            </div>
-                            <span className="stat-card__value">−{fmt(totals.expense)} ₽</span>
-                            <span className="stat-card__sub">за период</span>
-                        </div>
-                        <div className="card stat-card stat-card--accent">
-                            <div className="stat-card__head">
-                                <span className="stat-card__icon"><WalletIcon /></span>
-                                <span className="stat-card__label">Баланс</span>
-                            </div>
-                            <span className="stat-card__value">
-                                {totals.isIncome ? '+' : '−'}{fmt(Math.abs(totals.balance))} ₽
-                            </span>
-                            <span className="stat-card__sub">{totals.isIncome ? 'профицит' : 'дефицит'}</span>
-                        </div>
-                    </div>
-
-                    {/* Chart + Transactions */}
-                    <div className="charts-tx-row">
-                        <div className="card chart-card">
-                            <div className="section-header">
-                                <span className="section-title">По категориям</span>
-                            </div>
-                            <div className="chart-canvas">
-                                <CategoryPieChart
-                                    data={totalByCategories}
-                                    onClickCategory={(name) => {
-                                        const cat = categories.find(c => c.name === name);
-                                        if (cat) toggleCategory(cat.id);
-                                    }}
+                    {activeSection === 'overview' && (
+                        <>
+                            {/* ── Онбординг ── */}
+                            {isNewUser && (
+                                <SetupGuide
+                                    hasCategories={categories.length > 0}
+                                    hasAccounts={accounts.length > 0}
+                                    onAddCategory={() => setAddCategory({})}
+                                    onAddAccount={() => setAddAccount({})}
                                 />
-                            </div>
-                        </div>
+                            )}
 
-                        <div className="card tx-card">
-                            <div className="tx-list-header">
-                                <span className="section-title">Операции</span>
-                                <span className="section-count">{allTransactions.length}</span>
-                            </div>
-                            <div className="tx-list">
-                                {allTransactions.length === 0 && <div className="empty">Нет транзакций</div>}
-                                {allTransactions.map(t => (
-                                    <TransactionItem
-                                        key={t.id} transaction={t}
-                                        onClick={() => setSelectedTransaction(t)}
-                                        isSelected={selectedTransaction?.id === t.id}
-                                        categories={categoriesMap}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                            {/* ── Суммарный баланс ── */}
+                            {allTransactions.length > 0 && (
+                                <div className="card" style={{ marginBottom: 20, padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                                    <div>
+                                        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--text-muted)', marginBottom: 4 }}>
+                                            Общий баланс
+                                        </div>
+                                        <div style={{ fontSize: 28, fontWeight: 800, color: totalBalance >= 0 ? 'var(--brand)' : '#ef4444', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-.02em' }}>
+                                            {totalBalance >= 0 ? '+' : '−'}{fmt(Math.abs(totalBalance))} ₽
+                                        </div>
+                                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
+                                            по всем транзакциям · {allTransactions.length} операций
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 24 }}>
+                                        {[
+                                            { label: 'Доходы',  value: allTransactions.filter(t =>  t.replenishment).reduce((s,t) => s + t.amount, 0), color: 'var(--brand)' },
+                                            { label: 'Расходы', value: allTransactions.filter(t => !t.replenishment).reduce((s,t) => s + t.amount, 0), color: '#ef4444'     },
+                                        ].map(item => (
+                                            <div key={item.label} style={{ textAlign: 'right' }}>
+                                                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 2 }}>{item.label}</div>
+                                                <div style={{ fontSize: 15, fontWeight: 700, color: item.color, fontFamily: 'JetBrains Mono,monospace' }}>
+                                                    {fmt(item.value)} ₽
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
-                    {/* Categories */}
-                    <div className="card bottom-section">
-                        <div className="section-header">
-                            <span className="section-title">Категории</span>
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                <span className="section-count">{categories.length}</span>
-                                <button className="btn btn-secondary btn-sm" onClick={() => setAddCategory({})}>+ Добавить</button>
+                            {/* ── Кнопки создания ── */}
+                            <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+                                <button className="btn btn-primary btn-sm" onClick={() => setAddTransaction({})}>+ Транзакция</button>
+                                <button className="btn btn-secondary btn-sm" onClick={() => setAddCategory({})}>+ Категория</button>
+                                <button className="btn btn-secondary btn-sm" onClick={() => setAddAccount({})}>+ Счёт</button>
                             </div>
-                        </div>
-                        {categories.length === 0
-                            ? <div className="empty">Нет категорий</div>
-                            : <div className="entity-grid">{categories.map(c => (
-                                <CategoryItem key={c.id} category={c}
-                                    onClick={() => setSelectedCategory(c)}
-                                    isSelected={selectedCategory?.id === c.id} />
-                            ))}</div>
-                        }
-                    </div>
 
-                    {/* Accounts */}
-                    <div className="card bottom-section">
-                        <div className="section-header">
-                            <span className="section-title">Счета</span>
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                <span className="section-count">{accounts.length}</span>
-                                <button className="btn btn-secondary btn-sm" onClick={() => setAddAccount({})}>+ Добавить</button>
+                            {/* ── Двухколоночная сетка ── */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 20, alignItems: 'start' }}>
+
+                                {/* Левая колонка — транзакции */}
+                                <div className="card" style={{ overflow: 'hidden' }}>
+                                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-strong)' }}>Операции</span>
+                                                <span className="section-count">{filteredByPeriod.length}</span>
+                                            </div>
+                                            {periodFilter === 'all' && (
+                                                <div style={{ display: 'flex', gap: 5 }}>
+                                                    {TX_LIMITS.map(n => (
+                                                        <button key={n} onClick={() => setTxLimit(n)} style={{
+                                                            padding: '3px 9px', borderRadius: 6, border: '1px solid var(--border)',
+                                                            fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                                                            background: txLimit === n ? 'var(--brand)' : 'var(--surface-sunken)',
+                                                            color: txLimit === n ? '#fff' : 'var(--text-muted)',
+                                                        }}>{n}</button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                                            {PERIODS.map(p => (
+                                                <button key={p.id} onClick={() => setPeriodFilter(p.id)} style={{
+                                                    padding: '4px 12px', borderRadius: 20, border: '1px solid var(--border)',
+                                                    fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                                                    background: periodFilter === p.id ? 'var(--brand-subtle)' : 'var(--surface-sunken)',
+                                                    color: periodFilter === p.id ? 'var(--brand)' : 'var(--text-muted)',
+                                                    borderColor: periodFilter === p.id ? 'var(--brand-subtle-bd)' : 'var(--border)',
+                                                }}>{p.label}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="tx-list">
+                                        {visibleTransactions.length === 0 ? (
+                                            <EmptyHint
+                                                icon="💸"
+                                                title="Транзакций нет"
+                                                hint={periodFilter !== 'all'
+                                                    ? 'За этот период операций не найдено. Попробуйте другой период.'
+                                                    : 'Нажмите «+ Транзакция» выше, чтобы добавить первую операцию.'}
+                                            />
+                                        ) : (
+                                            groupedTransactions.map(([date, txs]) => (
+                                                <div key={date}>
+                                                    <div style={{
+                                                        padding: '8px 16px 4px',
+                                                        fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                                                        letterSpacing: '.06em', color: 'var(--text-faint)',
+                                                        background: 'var(--surface-card)',
+                                                        borderBottom: '1px solid var(--border)',
+                                                    }}>
+                                                        {date === 'unknown' ? 'Без даты' : dateLabel(date)}
+                                                    </div>
+                                                    {txs.map(t => (
+                                                        <TransactionItem
+                                                            key={t.id} transaction={t}
+                                                            onClick={() => setSelectedTransaction(t)}
+                                                            isSelected={selectedTransaction?.id === t.id}
+                                                            categories={categoriesMap}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Правая колонка — счета + категории */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                                    {/* Счета */}
+                                    <div className="card" style={{ overflow: 'hidden' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
+                                            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)' }}>Счета</span>
+                                            <span className="section-count">{accounts.length}</span>
+                                        </div>
+                                        {accounts.length === 0 ? (
+                                            <EmptyHint
+                                                icon="💳"
+                                                title="Нет счетов"
+                                                hint="Счёт — это карта, наличные или кошелёк. Добавьте хотя бы один."
+                                                action="+ Создать счёт"
+                                                onAction={() => setAddAccount({})}
+                                            />
+                                        ) : (
+                                            <div style={{ padding: '10px 12px' }}>
+                                                <div className="entity-grid">
+                                                    {visibleAccounts.map(a => (
+                                                        <AccountItem key={a.id} account={a}
+                                                            onClick={() => setSelectedAccount(a)}
+                                                            isSelected={selectedAccount?.id === a.id} />
+                                                    ))}
+                                                </div>
+                                                {accounts.length > SECTION_LIMIT && (
+                                                    <button onClick={() => setAccExpanded(x => !x)} style={{
+                                                        marginTop: 8, padding: '4px 12px', borderRadius: 6,
+                                                        border: '1px solid var(--border)', background: 'var(--surface-sunken)',
+                                                        fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                                        color: 'var(--text-muted)', fontFamily: 'inherit',
+                                                    }}>
+                                                        {accExpanded ? 'Свернуть' : `Ещё ${accounts.length - SECTION_LIMIT}`}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Категории */}
+                                    <div className="card" style={{ overflow: 'hidden' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
+                                            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)' }}>Категории</span>
+                                            <span className="section-count">{categories.length}</span>
+                                        </div>
+                                        {categories.length === 0 ? (
+                                            <EmptyHint
+                                                icon="🏷️"
+                                                title="Нет категорий"
+                                                hint="Категории нужны для классификации транзакций. Без них нельзя добавить операцию."
+                                                action="+ Создать категорию"
+                                                onAction={() => setAddCategory({})}
+                                            />
+                                        ) : (
+                                            <div style={{ padding: '10px 12px' }}>
+                                                <div className="entity-grid">
+                                                    {visibleCategories.map(c => (
+                                                        <CategoryItem key={c.id} category={c}
+                                                            onClick={() => setSelectedCategory(c)}
+                                                            isSelected={selectedCategory?.id === c.id} />
+                                                    ))}
+                                                </div>
+                                                {categories.length > SECTION_LIMIT && (
+                                                    <button onClick={() => setCatExpanded(x => !x)} style={{
+                                                        marginTop: 8, padding: '4px 12px', borderRadius: 6,
+                                                        border: '1px solid var(--border)', background: 'var(--surface-sunken)',
+                                                        fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                                        color: 'var(--text-muted)', fontFamily: 'inherit',
+                                                    }}>
+                                                        {catExpanded ? 'Свернуть' : `Ещё ${categories.length - SECTION_LIMIT}`}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                </div>
                             </div>
+                        </>
+                    )}
+
+                    {activeSection === 'analytics' && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: 'var(--text-muted)', fontSize: 15 }}>
+                            Аналитика — в разработке
                         </div>
-                        {accounts.length === 0
-                            ? <div className="empty">Нет счетов</div>
-                            : <div className="entity-grid">{accounts.map(a => (
-                                <AccountItem key={a.id} account={a}
-                                    onClick={() => setSelectedAccount(a)}
-                                    isSelected={selectedAccount?.id === a.id} />
-                            ))}</div>
-                        }
-                    </div>
+                    )}
                 </main>
-
             </div>
-
-            {/* Mobile FAB */}
-            <button className="filter-fab" onClick={() => setDrawerOpen(true)}>
-                <FilterIcon />
-                Фильтры
-                {activeFilterCount > 0 && <span className="filter-fab__count">{activeFilterCount}</span>}
-            </button>
 
             {/* Modals */}
             {selectedTransaction && (
