@@ -11,6 +11,7 @@ import { CategoryModel, AddCategoryModel } from '../components/CategoryModel';
 
 import { AccountItem } from '../components/AccountItem';
 import { AccountModel, AddAccountModel } from '../components/AccountModel';
+import { FinanceAnalytics } from '../components/FinanceAnalytics';
 
 // ── Helpers ──────────────────────────────────────────────────
 const fmt = (n) =>
@@ -512,9 +513,11 @@ export default function FinancePage() {
                     )}
 
                     {activeSection === 'analytics' && (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: 'var(--text-muted)', fontSize: 15 }}>
-                            Аналитика — в разработке
-                        </div>
+                        <FinanceAnalytics
+                            transactions={allTransactions}
+                            categoriesMap={categoriesMap}
+                            accountsMap={accountsMap}
+                        />
                     )}
                 </main>
             </div>
