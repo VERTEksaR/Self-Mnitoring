@@ -1,40 +1,32 @@
-export function CategoryForm({
-    form,
-    setForm,
-    onClose,
-    onSubmit
-}) {
+export function CategoryForm({ form, setForm, onClose, onSubmit }) {
     return (
-        <div style={overlayStyle} onClick={onClose}>
-            <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-                <form onSubmit={onSubmit}>
-                    <input
-                        type="text"
-                        placeholder="Наименование"
-                        value={form.name}
-                        onChange={e => setForm({ ...form, name: e.target.value })}
-                    />
+        <div className="overlay" onClick={onClose}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                    <span className="modal-title">Категория</span>
+                    <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
+                </div>
 
-                    <button type="submit">Сохранить</button>
-                    <button type="button" onClick={onClose}>Отмена</button>
+                <form className="form" onSubmit={onSubmit}>
+                    <div className="form-group">
+                        <label className="form-label">Название</label>
+                        <input
+                            className="input"
+                            type="text"
+                            placeholder="Название категории"
+                            value={form.name}
+                            onChange={e => setForm({ ...form, name: e.target.value })}
+                            required
+                            autoFocus
+                        />
+                    </div>
+
+                    <div className="modal-actions">
+                        <button type="button" className="btn btn-secondary" onClick={onClose}>Отмена</button>
+                        <button type="submit" className="btn btn-primary">Сохранить</button>
+                    </div>
                 </form>
             </div>
         </div>
     );
 }
-
-const overlayStyle = {
-  position: "fixed",
-  inset: 0,
-  backgroundColor: "rgba(0, 0, 0, 0.4)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-};
-
-const modalStyle = {
-  background: "#fff",
-  padding: "24px",
-  borderRadius: "8px",
-  minWidth: "300px",
-};
