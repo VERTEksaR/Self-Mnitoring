@@ -146,9 +146,10 @@ function findLargestTx(transactions, txType, dateFrom, dateTo, categoriesMap, ac
     };
 }
 
-function buildGroupData(transactions, idMap, idField, txType, dateFrom, dateTo) {
+function buildGroupData(transactions, idMap, idField, txType, dateFrom, dateTo, excludeIds) {
     const filtered = filterByPeriod(transactions, dateFrom, dateTo)
-        .filter(t => txType === 'expense' ? !t.replenishment : t.replenishment);
+        .filter(t => txType === 'expense' ? !t.replenishment : t.replenishment)
+        .filter(t => !excludeIds?.has(t[idField]));
     const map = new Map();
     for (const tx of filtered) {
         const name = idMap[tx[idField]] ?? `#${tx[idField]}`;
@@ -264,7 +265,7 @@ function BreakdownChart({ title, data, type }) {
 }
 
 // ── Main ──────────────────────────────────────────────────────
-export function FinanceAnalytics({ transactions, categoriesMap, accountsMap }) {
+export function FinanceAnalytics({ transactions, categories = [], categoriesMap, accountsMap }) {
     const [gran,     setGran    ] = useState('month');
     const [dateFrom, setDateFrom] = useState(YEAR_START);
     const [dateTo,   setDateTo  ] = useState(TODAY);
@@ -282,8 +283,19 @@ export function FinanceAnalytics({ transactions, categoriesMap, accountsMap }) {
     const timeSeries = useMemo(() => buildTimeSeries(transactions, gran, dateFrom, dateTo), [transactions, gran, dateFrom, dateTo]);
     const running    = useMemo(() => buildRunningTotal(timeSeries), [timeSeries]);
     const dowData    = useMemo(() => buildDayOfWeek(transactions, txType, dateFrom, dateTo), [transactions, txType, dateFrom, dateTo]);
-    const catData    = useMemo(() => buildGroupData(transactions, categoriesMap, 'category_id', txType, dateFrom, dateTo), [transactions, categoriesMap, txType, dateFrom, dateTo]);
-    const accData    = useMemo(() => buildGroupData(transactions, accountsMap, 'account_id', txType, dateFrom, dateTo), [transactions, accountsMap, txType, dateFrom, dateTo]);
+    // IDs категорий с show_analytics=false — исключаем только из графика по категориям
+    const hiddenCatIds = useMemo(
+        () => new Set(categories.filter(c => !c.show_analytics).map(c => c.id)),
+        [categories]
+    );
+    const catData = useMemo(
+        () => buildGroupData(transactions, categoriesMap, 'category_id', txType, dateFrom, dateTo, hiddenCatIds),
+        [transactions, categoriesMap, txType, dateFrom, dateTo, hiddenCatIds]
+    );
+    const accData = useMemo(
+        () => buildGroupData(transactions, accountsMap, 'account_id', txType, dateFrom, dateTo),
+        [transactions, accountsMap, txType, dateFrom, dateTo]
+    );
 
     const typeLabel = txType === 'expense' ? 'расходам' : 'доходам';
 

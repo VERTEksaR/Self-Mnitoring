@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.finance_app.app.dependencies.auth import get_current_user
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Category, User
-from backend.finance_app.app.schemas.category import CategoryRead, CategoryCreate
+from backend.finance_app.app.schemas.category import CategoryRead, CategoryCreate, CategoryChange
 from backend.finance_app.app.schemas.common import Page
 
 router = APIRouter()
@@ -47,6 +47,24 @@ async def delete_category(category_id: int, session: AsyncSession = Depends(get_
     await session.commit()
     logger.info(f"Категория с id {category_id} была удалена")
     return None
+
+
+@router.patch('/{category_id}', response_model=CategoryRead, status_code=200)
+async def change_category(category_id: int, data: CategoryChange, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+    category = await session.get(Category, category_id)
+
+    if not category:
+        logger.error(f"Категория с id {category_id} не была найдена")
+        raise HTTPException(status_code=404, detail=f"Категория с id {category_id} не была найдена")
+
+    update_data = data.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(category, field, value)
+
+    await session.commit()
+    await session.refresh(category)
+    return category
 
 
 @router.post('/', response_model=CategoryRead, status_code=201)

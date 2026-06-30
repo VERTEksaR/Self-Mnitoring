@@ -515,6 +515,7 @@ export default function FinancePage() {
                     {activeSection === 'analytics' && (
                         <FinanceAnalytics
                             transactions={allTransactions}
+                            categories={categories}
                             categoriesMap={categoriesMap}
                             accountsMap={accountsMap}
                         />
@@ -543,7 +544,12 @@ export default function FinancePage() {
             {selectedCategory && (
                 <CategoryModel category={selectedCategory}
                     onClose={() => setSelectedCategory(null)}
-                    onDelete={async (id) => { await deleteCategory(id); setCategories(p => p.filter(c => c.id !== id)); setSelectedCategory(null); }} />
+                    onDelete={async (id) => { await deleteCategory(id); setCategories(p => p.filter(c => c.id !== id)); setSelectedCategory(null); }}
+                    onUpdate={(updated) => {
+                        setCategories(p => p.map(c => c.id === updated.id ? updated : c));
+                        setSelectedCategory(updated);
+                    }}
+                />
             )}
             {addCategory && (
                 <AddCategoryModel onClose={() => setAddCategory(null)}

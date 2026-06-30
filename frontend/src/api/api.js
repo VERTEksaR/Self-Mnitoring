@@ -29,6 +29,19 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// При 401 (кроме самого логина) — токен протух, выкидываем на страницу входа
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const isLoginEndpoint = error.config?.url?.includes('auth/login');
+        if (error.response?.status === 401 && !isLoginEndpoint) {
+            localStorage.removeItem('access_token');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default api;
 
 // DELETE используют path-параметр /{id}, как ожидает бэк
@@ -44,4 +57,5 @@ export const createTransaction = (data) => api.post('transactions/', data);
 export const updateTransaction = (id, data) => api.patch(`transactions/${id}`, data);
 
 export const createCategory = (data) => api.post('categories/', data);
+export const updateCategory = (id, data) => api.patch(`categories/${id}`, data);
 export const createAccount = (data) => api.post('accounts/', data);

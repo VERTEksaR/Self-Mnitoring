@@ -21,6 +21,29 @@ export function CategoryForm({ form, setForm, onClose, onSubmit }) {
                         />
                     </div>
 
+                    <label style={{
+                        display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
+                        padding: '10px 12px', borderRadius: 8,
+                        border: '1px solid var(--border)',
+                        background: 'var(--surface-sunken)',
+                        userSelect: 'none',
+                    }}>
+                        <input
+                            type="checkbox"
+                            checked={form.show_analytics ?? true}
+                            onChange={e => setForm({ ...form, show_analytics: e.target.checked })}
+                            style={{ width: 16, height: 16, accentColor: 'var(--brand)', cursor: 'pointer' }}
+                        />
+                        <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-strong)' }}>
+                                Показывать в аналитике
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                                Если выключено — категория не попадает в график расходов по категориям
+                            </div>
+                        </div>
+                    </label>
+
                     <div className="modal-actions">
                         <button type="button" className="btn btn-secondary" onClick={onClose}>Отмена</button>
                         <button type="submit" className="btn btn-primary">Сохранить</button>
