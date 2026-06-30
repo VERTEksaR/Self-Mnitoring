@@ -22,6 +22,7 @@ class User(Base):
     accounts: Mapped[List["Account"]] = relationship("Account", back_populates="user")
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", back_populates="user")
     telegram_users: Mapped[List["TelegramUser"]] = relationship("TelegramUser", back_populates="user")
+    steam_users: Mapped[List["SteamUser"]] = relationship("SteamUser", back_populates="user")
     exercises: Mapped[List["Exercises"]] = relationship("Exercises", back_populates="user")
     trainings: Mapped[List["Trainings"]] = relationship("Trainings", back_populates="user")
     exercise_trainings: Mapped[List["TrainingExercises"]] = relationship("TrainingExercises", back_populates="user")
@@ -39,6 +40,16 @@ class TelegramUser(Base):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="telegram_users")
+
+
+class SteamUser(Base):
+    __tablename__ = "steam_users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    steam_id: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="steam_users")
 
 
 class Category(Base):

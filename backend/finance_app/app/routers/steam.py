@@ -56,4 +56,4 @@ async def steam_callback(request: Request):
         raise HTTPException(400, detail="Не удалось получить id пользователя")
 
     steam_id = match.group(1)
-    return RedirectResponse(f"{settings.base_url}/steam?{steam_id}")
+    return RedirectResponse(f"{settings.base_url}/steam?steam_id={steam_id}")
