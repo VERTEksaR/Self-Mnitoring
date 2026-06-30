@@ -1,7 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import {
+    ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
+    CartesianGrid, Tooltip, Cell,
+} from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import {
-    Activity, LayoutDashboard, ScrollText, Dumbbell, TrendingUp,
+    Activity, LayoutDashboard, Dumbbell, TrendingUp,
     Plus, Pencil, Trash2,
     ChevronRight, ChevronLeft, Flame, Timer, Trophy, X,
     Home, Wallet,
@@ -12,7 +16,22 @@ import {
     createTrainingExercise, updateTrainingExercise, deleteTrainingExercise,
 } from '../api/workouts';
 
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY      = new Date().toISOString().slice(0, 10);
+const YEAR_START = `${new Date().getFullYear()}-01-01`;
+const WK_RED        = '#ff3b4e';
+const WK_RED_SUBTLE = 'rgba(255,59,78,.14)';
+const WK_RED_BD     = 'rgba(255,59,78,.36)';
+const MONTH_NAMES   = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+const MUSCLE_COLORS = ['#ff3b4e','#ff6b35','#ffd700','#3ee07a','#06b6d4','#6366f1','#ec4899'];
+
+function getWeekKey(iso) {
+    const d   = new Date(iso + 'T00:00:00');
+    const dow = d.getDay();
+    const mon = new Date(d.getTime() + (dow === 0 ? -6 : 1 - dow) * 86400000);
+    return mon.toISOString().slice(0, 10);
+}
+function monthLabel(key) { const [y, m] = key.split('-'); return `${MONTH_NAMES[Number(m)-1]} ${y.slice(2)}`; }
+function weekLabel(key)  { const [, m, d] = key.split('-'); return `${Number(d)}.${m}`; }
 const fmtNum = (n) => new Intl.NumberFormat('ru-RU').format(Math.round(n));
 const fmtDate = (iso) => { const [y, m, d] = iso.split('-'); return `${d}.${m}.${y}`; };
 const fmtShort = (iso) => { const [, m, d] = iso.split('-'); return `${Number(d)}.${m}`; };
@@ -212,6 +231,235 @@ function TrainingRow({ training, onClick }) {
     );
 }
 
+// ── AnalyticsSection ─────────────────────────────────────────
+function AnalyticsSection({ trainings, exercises }) {
+    const [dateFrom, setDateFrom] = useState(YEAR_START);
+    const [dateTo,   setDateTo  ] = useState(TODAY);
+    const [gran,     setGran    ] = useState('month');
+
+    const exMap = useMemo(() => Object.fromEntries(exercises.map(e => [e.id, e])), [exercises]);
+
+    const filtered = useMemo(() =>
+        trainings.filter(t => t.date >= dateFrom && t.date <= dateTo),
+        [trainings, dateFrom, dateTo]
+    );
+
+    const allTEs = useMemo(() =>
+        filtered.flatMap(t =>
+            (t.training_exercises ?? []).map(te => ({ ...te, date: t.date }))
+        ),
+        [filtered]
+    );
+
+    const bucket    = (iso) => gran === 'month' ? iso.slice(0, 7) : getWeekKey(iso);
+    const bucketLbl = (key) => gran === 'month' ? monthLabel(key) : weekLabel(key);
+
+    const freqData = useMemo(() => {
+        const map = new Map();
+        for (const t of filtered) { const k = bucket(t.date); map.set(k, (map.get(k) ?? 0) + 1); }
+        return [...map.entries()].sort(([a],[b]) => a.localeCompare(b)).map(([k,v]) => ({ label: bucketLbl(k), count: v }));
+    }, [filtered, gran]);
+
+    const volumeData = useMemo(() => {
+        const map = new Map();
+        for (const t of filtered) {
+            const k   = bucket(t.date);
+            const vol = (t.training_exercises ?? []).reduce((s, te) => s + (Number(te.weight)||0) * (te.quantity||0), 0);
+            map.set(k, (map.get(k) ?? 0) + vol);
+        }
+        return [...map.entries()].sort(([a],[b]) => a.localeCompare(b)).map(([k,v]) => ({ label: bucketLbl(k), volume: Math.round(v) }));
+    }, [filtered, gran]);
+
+    const muscleData = useMemo(() => {
+        const map = new Map();
+        for (const te of allTEs) {
+            const g = exMap[te.exercise_id]?.muscle_group ?? '—';
+            map.set(g, (map.get(g) ?? 0) + 1);
+        }
+        return [...map.entries()].sort(([,a],[,b]) => b-a).map(([name,sets]) => ({ name, sets }));
+    }, [allTEs, exMap]);
+
+    const topExData = useMemo(() => {
+        const map = new Map();
+        for (const te of allTEs) {
+            const name = exMap[te.exercise_id]?.name ?? `#${te.exercise_id}`;
+            map.set(name, (map.get(name) ?? 0) + 1);
+        }
+        return [...map.entries()].sort(([,a],[,b]) => b-a).slice(0,8).map(([name,sets]) => ({ name, sets }));
+    }, [allTEs, exMap]);
+
+    const records = useMemo(() => {
+        const map = new Map();
+        for (const t of trainings) {
+            for (const te of t.training_exercises ?? []) {
+                if (!te.weight) continue;
+                const w  = Number(te.weight);
+                const ex = exMap[te.exercise_id];
+                if (!ex) continue;
+                const cur = map.get(te.exercise_id);
+                if (!cur || w > cur.weight) map.set(te.exercise_id, { name: ex.name, muscle_group: ex.muscle_group, weight: w, date: t.date });
+            }
+        }
+        return [...map.values()].sort((a,b) => b.weight - a.weight);
+    }, [trainings, exMap]);
+
+    const fmtK = v => v >= 1000 ? `${(v/1000).toFixed(1)}т` : String(v);
+
+    const WkTooltip = ({ active, payload, label }) => {
+        if (!active || !payload?.length) return null;
+        const val  = payload[0].value;
+        const key  = payload[0].dataKey;
+        const unit = key === 'volume' ? ' кг·повт' : key === 'count' ? ' трен.' : ' сетов';
+        return (
+            <div style={{ background: 'var(--surface-raised)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 13 }}>
+                <div style={{ fontWeight: 700, color: 'var(--text-strong)', marginBottom: 3 }}>{label}</div>
+                <div style={{ fontFamily: 'JetBrains Mono,monospace', fontWeight: 700, color: WK_RED }}>{fmtK(val)}{unit}</div>
+            </div>
+        );
+    };
+
+    const ChartCard = ({ title, sub, children, height }) => (
+        <div className="card" style={{ padding: '18px 20px' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)', marginBottom: sub ? 2 : 14 }}>{title}</div>
+            {sub && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>{sub}</div>}
+            <ResponsiveContainer width="100%" height={height ?? 210}>{children}</ResponsiveContainer>
+        </div>
+    );
+
+    const empty = (h = 210) => (
+        <div style={{ height: h, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+            Нет данных
+        </div>
+    );
+
+    return (
+        <div>
+            {/* Управление */}
+            <div className="card" style={{ padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input type="date" className="input" style={{ fontSize: 12, width: 140 }} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+                    <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>—</span>
+                    <input type="date" className="input" style={{ fontSize: 12, width: 140 }} value={dateTo} onChange={e => setDateTo(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', gap: 5 }}>
+                    {[['month','Месяцы'],['week','Недели']].map(([id,lbl]) => (
+                        <button key={id} onClick={() => setGran(id)} style={{
+                            padding: '4px 12px', borderRadius: 6, border: '1px solid', fontFamily: 'inherit',
+                            fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                            background: gran === id ? WK_RED        : 'var(--surface-sunken)',
+                            color:      gran === id ? '#fff'        : 'var(--text-muted)',
+                            borderColor:gran === id ? WK_RED        : 'var(--border)',
+                        }}>{lbl}</button>
+                    ))}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+                    {filtered.length} тренировок · {allTEs.length} сетов
+                </div>
+            </div>
+
+            {/* Частота + Объём */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <ChartCard title="Частота тренировок">
+                    {freqData.length === 0 ? empty() : (
+                        <BarChart data={freqData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+                            <CartesianGrid vertical={false} stroke="rgba(255,255,255,.06)" />
+                            <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--text-faint)', fontFamily: 'JetBrains Mono,monospace' }} axisLine={false} tickLine={false} />
+                            <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} width={20} />
+                            <Tooltip content={<WkTooltip />} cursor={{ fill: 'rgba(255,255,255,.04)' }} />
+                            <Bar dataKey="count" fill={WK_RED} radius={[4,4,0,0]} maxBarSize={36} />
+                        </BarChart>
+                    )}
+                </ChartCard>
+                <ChartCard title="Объём нагрузки" sub="вес × повторения">
+                    {volumeData.length === 0 ? empty() : (
+                        <BarChart data={volumeData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+                            <CartesianGrid vertical={false} stroke="rgba(255,255,255,.06)" />
+                            <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--text-faint)', fontFamily: 'JetBrains Mono,monospace' }} axisLine={false} tickLine={false} />
+                            <YAxis tickFormatter={fmtK} tick={{ fontSize: 11, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} width={34} />
+                            <Tooltip content={<WkTooltip />} cursor={{ fill: 'rgba(255,255,255,.04)' }} />
+                            <Bar dataKey="volume" fill="rgba(255,59,78,.65)" radius={[4,4,0,0]} maxBarSize={36} />
+                        </BarChart>
+                    )}
+                </ChartCard>
+            </div>
+
+            {/* Мышцы + Топ упражнений */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <ChartCard title="Нагрузка по группам мышц" height={Math.max(200, muscleData.length * 40 + 20)}>
+                    {muscleData.length === 0 ? empty() : (
+                        <BarChart data={muscleData} layout="vertical" margin={{ top: 0, right: 52, bottom: 0, left: 60 }}>
+                            <CartesianGrid horizontal={false} stroke="rgba(255,255,255,.06)" />
+                            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
+                            <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 12, fill: 'var(--text-body)' }} axisLine={false} tickLine={false} />
+                            <Tooltip content={<WkTooltip />} cursor={{ fill: 'rgba(255,255,255,.04)' }} />
+                            <Bar dataKey="sets" radius={[0,4,4,0]} maxBarSize={28}
+                                label={{ position: 'right', formatter: v => `${v} сет`, fontSize: 11, fill: 'var(--text-muted)', fontFamily: 'JetBrains Mono,monospace' }}>
+                                {muscleData.map((_,i) => <Cell key={i} fill={MUSCLE_COLORS[i % MUSCLE_COLORS.length]} />)}
+                            </Bar>
+                        </BarChart>
+                    )}
+                </ChartCard>
+                <ChartCard title="Топ упражнений" sub="по количеству сетов за период" height={Math.max(200, topExData.length * 40 + 20)}>
+                    {topExData.length === 0 ? empty() : (
+                        <BarChart data={topExData} layout="vertical" margin={{ top: 0, right: 36, bottom: 0, left: 120 }}>
+                            <CartesianGrid horizontal={false} stroke="rgba(255,255,255,.06)" />
+                            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
+                            <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12, fill: 'var(--text-body)' }} axisLine={false} tickLine={false} />
+                            <Tooltip content={<WkTooltip />} cursor={{ fill: 'rgba(255,255,255,.04)' }} />
+                            <Bar dataKey="sets" fill={WK_RED} radius={[0,4,4,0]} maxBarSize={28}
+                                label={{ position: 'right', formatter: v => `${v}`, fontSize: 11, fill: 'var(--text-muted)', fontFamily: 'JetBrains Mono,monospace' }} />
+                        </BarChart>
+                    )}
+                </ChartCard>
+            </div>
+
+            {/* Личные рекорды */}
+            <div className="card" style={{ overflow: 'hidden' }}>
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)' }}>Личные рекорды</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Максимальный вес за всё время</div>
+                    </div>
+                    <Trophy size={18} color={WK_RED} />
+                </div>
+                {records.length === 0 ? (
+                    <div style={{ padding: 28, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Нет данных о весах</div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {records.map((r, i) => (
+                            <div key={r.name} style={{
+                                display: 'flex', alignItems: 'center', gap: 14, padding: '11px 20px',
+                                borderBottom: '1px solid var(--border)',
+                                background: i === 0 ? 'rgba(255,59,78,.06)' : 'transparent',
+                            }}>
+                                <span style={{ width: 20, textAlign: 'center', flexShrink: 0 }}>
+                                    {i === 0
+                                        ? <Trophy size={14} color={WK_RED} />
+                                        : <span style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: 12, color: 'var(--text-faint)' }}>{i+1}</span>}
+                                </span>
+                                <span style={{ flex: 1, fontWeight: 600, fontSize: 14, color: 'var(--text-strong)' }}>{r.name}</span>
+                                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(255,59,78,.1)', color: WK_RED, fontWeight: 700 }}>
+                                    {r.muscle_group}
+                                </span>
+                                <span style={{ fontFamily: 'JetBrains Mono,monospace', fontWeight: 800, fontSize: 16, color: i === 0 ? WK_RED : 'var(--text-strong)', minWidth: 60, textAlign: 'right' }}>
+                                    {r.weight} <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)' }}>кг</span>
+                                </span>
+                                <span style={{ fontSize: 12, color: 'var(--text-faint)', minWidth: 56, fontFamily: 'JetBrains Mono,monospace' }}>
+                                    {fmtDate(r.date)}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+const MUSCLE_GROUPS = ['Ноги', 'Грудь', 'Бицепс', 'Трицепс', 'Спина', 'Плечи', 'Пресс'];
+const EXERCISE_TYPES = ['Силовое', 'Кардио', 'Растяжка'];
+const EX_FORM_DEFAULT = { name: '', muscle_group: 'Грудь', exercise_type: 'Силовое' };
+
 // ── WorkoutsPage ─────────────────────────────────────────────
 export default function WorkoutsPage() {
     const navigate = useNavigate();
@@ -225,6 +473,8 @@ export default function WorkoutsPage() {
     const [trainForm, setTrainForm] = useState(null);
     const [exForm, setExForm] = useState(null);
     const [selectedExId, setSelectedExId] = useState(null);
+    const [exProfileId, setExProfileId] = useState(null);
+    const [exSearch, setExSearch] = useState('');
 
     useEffect(() => {
         document.body.classList.add('wk-body');
@@ -260,11 +510,12 @@ export default function WorkoutsPage() {
 
     // ── Exercise CRUD ──
     async function saveExercise(form) {
+        const payload = { name: form.name, muscle_group: form.muscle_group, exercise_type: form.exercise_type };
         if (form.id) {
-            const res = await updateExercise(form.id, { name: form.name });
+            const res = await updateExercise(form.id, payload);
             setExercises(p => p.map(e => e.id === form.id ? res.data : e));
         } else {
-            const res = await createExercise({ name: form.name });
+            const res = await createExercise(payload);
             setExercises(p => [res.data, ...p]);
         }
         setExForm(null);
@@ -341,15 +592,11 @@ export default function WorkoutsPage() {
     if (loading) return <div className="loading">Загрузка...</div>;
 
     const navItems = [
-        { id: 'overview', label: 'Обзор', icon: <LayoutDashboard size={18} /> },
-        { id: 'log', label: 'Журнал', icon: <ScrollText size={18} /> },
-        { id: 'exercises', label: 'Упражнения', icon: <Dumbbell size={18} /> },
-        { id: 'analytics', label: 'Аналитика', icon: <TrendingUp size={18} /> },
+        { id: 'overview',   label: 'Обзор',       icon: <LayoutDashboard size={18} /> },
+        { id: 'exercises',  label: 'Упражнения',  icon: <Dumbbell size={18} /> },
+        { id: 'analytics',  label: 'Аналитика',   icon: <TrendingUp size={18} /> },
     ];
 
-    const WK_RED = '#ff3b4e';
-    const WK_RED_SUBTLE = 'rgba(255,59,78,.14)';
-    const WK_RED_BD = 'rgba(255,59,78,.36)';
 
     return (
         <div className="finance-page">
@@ -407,6 +654,9 @@ export default function WorkoutsPage() {
 
                 {/* Main */}
                 <main style={{ flex: 1, minWidth: 0, padding: 28 }}>
+
+                {/* ── Обзор ── */}
+                {activeNav === 'overview' && (<>
                     {/* Header */}
                     <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 22, gap: 16, flexWrap: 'wrap' }}>
                         <div>
@@ -479,11 +729,11 @@ export default function WorkoutsPage() {
                             </div>
                         </div>
 
-                        {/* Right — Exercises */}
+                        {/* Right — Exercises quick list */}
                         <div className="card" style={{ overflow: 'hidden' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
                                 <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-strong)', margin: 0 }}>Упражнения</h3>
-                                <button className="btn btn-ghost btn-sm" onClick={() => setExForm({ name: '' })}>
+                                <button className="btn btn-ghost btn-sm" onClick={() => setExForm({ ...EX_FORM_DEFAULT })}>
                                     <Plus size={15} /> Добавить
                                 </button>
                             </div>
@@ -493,12 +743,178 @@ export default function WorkoutsPage() {
                                 )}
                                 {exercises.map(e => (
                                     <ExerciseRow key={e.id} exercise={e}
-                                        onEdit={() => setExForm({ id: e.id, name: e.name })}
+                                        onEdit={() => setExForm({ id: e.id, name: e.name, muscle_group: e.muscle_group, exercise_type: e.exercise_type })}
                                         onDelete={() => removeExercise(e.id)} />
                                 ))}
                             </div>
                         </div>
                     </div>
+                </>)}
+
+                {/* ── Упражнения ── */}
+                {activeNav === 'exercises' && (() => {
+                    const profileEx = exercises.find(e => e.id === exProfileId) ?? exercises[0] ?? null;
+                    const profileId = profileEx?.id ?? null;
+
+                    const allExTEs = trainings
+                        .flatMap(t =>
+                            (t.training_exercises ?? [])
+                                .filter(te => te.exercise_id === profileId)
+                                .map(te => ({ date: t.date, weight: Number(te.weight ?? 0), quantity: te.quantity }))
+                        )
+                        .sort((a, b) => b.date.localeCompare(a.date));
+
+                    const maxWeight = allExTEs.length ? Math.max(...allExTEs.map(te => te.weight)) : 0;
+                    const lastDate  = allExTEs[0]?.date ?? null;
+                    const totalSets = allExTEs.length;
+                    const chartSeries = [...allExTEs].reverse().filter(te => te.weight > 0)
+                        .map(te => ({ date: te.date, value: te.weight, quantity: te.quantity }));
+
+                    const filteredEx = exercises.filter(e =>
+                        e.name.toLowerCase().includes(exSearch.toLowerCase())
+                    );
+
+                    return (
+                        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20, alignItems: 'start' }}>
+
+                            {/* Left: список */}
+                            <div className="card" style={{ overflow: 'hidden' }}>
+                                <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8 }}>
+                                    <input className="input" placeholder="Поиск..." value={exSearch}
+                                        onChange={e => setExSearch(e.target.value)}
+                                        style={{ flex: 1, fontSize: 13 }} />
+                                    <button className="btn btn-sm" style={{ background: WK_RED, borderColor: WK_RED, color: '#fff', flexShrink: 0, padding: '0 10px' }}
+                                        onClick={() => setExForm({ ...EX_FORM_DEFAULT })}>
+                                        <Plus size={15} />
+                                    </button>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
+                                    {filteredEx.length === 0 && (
+                                        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                                            Нет упражнений
+                                        </div>
+                                    )}
+                                    {filteredEx.map(ex => {
+                                        const isActive = ex.id === (exProfileId ?? exercises[0]?.id);
+                                        return (
+                                            <div key={ex.id} onClick={() => setExProfileId(ex.id)} style={{
+                                                padding: '12px 16px', cursor: 'pointer',
+                                                borderBottom: '1px solid var(--border)',
+                                                borderLeft: `3px solid ${isActive ? WK_RED : 'transparent'}`,
+                                                background: isActive ? WK_RED_SUBTLE : 'transparent',
+                                                transition: 'background .12s',
+                                            }}>
+                                                <div style={{ fontWeight: 600, fontSize: 14, color: isActive ? WK_RED : 'var(--text-strong)', marginBottom: 5 }}>
+                                                    {ex.name}
+                                                </div>
+                                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                                    <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: 'rgba(255,59,78,.12)', color: WK_RED, fontWeight: 700 }}>
+                                                        {ex.muscle_group}
+                                                    </span>
+                                                    <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: 'var(--surface-sunken)', color: 'var(--text-muted)', fontWeight: 600, border: '1px solid var(--border)' }}>
+                                                        {ex.exercise_type}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Right: профиль */}
+                            {profileEx ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                    {/* Заголовок */}
+                                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                                        <div>
+                                            <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-strong)', margin: '0 0 8px' }}>
+                                                {profileEx.name}
+                                            </h2>
+                                            <div style={{ display: 'flex', gap: 8 }}>
+                                                <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6, background: 'rgba(255,59,78,.12)', color: WK_RED, fontWeight: 700 }}>
+                                                    {profileEx.muscle_group}
+                                                </span>
+                                                <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6, background: 'var(--surface-card)', color: 'var(--text-muted)', fontWeight: 600, border: '1px solid var(--border)' }}>
+                                                    {profileEx.exercise_type}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                                            <button className="btn btn-secondary btn-sm"
+                                                onClick={() => setExForm({ id: profileEx.id, name: profileEx.name, muscle_group: profileEx.muscle_group, exercise_type: profileEx.exercise_type })}>
+                                                <Pencil size={14} /> Изменить
+                                            </button>
+                                            <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,.12)', color: '#ef4444', borderColor: 'rgba(239,68,68,.28)' }}
+                                                onClick={() => { removeExercise(profileEx.id); setExProfileId(null); }}>
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Мини-статы */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                                        <StatTile label="Рекорд" value={maxWeight > 0 ? String(maxWeight) : '—'} unit={maxWeight > 0 ? 'кг' : ''} hint="макс. вес" icon={<Trophy size={16} />} />
+                                        <StatTile label="Последний раз" value={lastDate ? fmtDate(lastDate) : '—'} hint="дата тренировки" icon={<Timer size={16} />} />
+                                        <StatTile label="Всего сетов" value={String(totalSets)} hint="за всё время" icon={<Flame size={16} />} />
+                                    </div>
+
+                                    {/* Прогресс-чарт */}
+                                    <div className="card" style={{ padding: 20 }}>
+                                        <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-strong)', margin: '0 0 16px' }}>
+                                            Прогресс рабочего веса
+                                        </h3>
+                                        <VolumeChart series={chartSeries} />
+                                    </div>
+
+                                    {/* История */}
+                                    <div className="card" style={{ overflow: 'hidden' }}>
+                                        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-strong)' }}>История</span>
+                                            <span style={{ fontSize: 12, color: 'var(--text-faint)', fontFamily: 'JetBrains Mono,monospace' }}>{allExTEs.length} записей</span>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            {allExTEs.length === 0 && (
+                                                <div style={{ padding: 28, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                                                    Нет записей для этого упражнения
+                                                </div>
+                                            )}
+                                            {allExTEs.slice(0, 15).map((te, i) => (
+                                                <div key={i} style={{
+                                                    display: 'flex', alignItems: 'center', gap: 14,
+                                                    padding: '10px 18px', borderBottom: '1px solid var(--border)',
+                                                }}>
+                                                    <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'JetBrains Mono,monospace', minWidth: 72 }}>
+                                                        {fmtDate(te.date)}
+                                                    </span>
+                                                    {te.weight > 0 && (
+                                                        <span style={{ fontFamily: 'JetBrains Mono,monospace', fontWeight: 700, color: 'var(--text-strong)', fontSize: 14 }}>
+                                                            {te.weight} кг
+                                                        </span>
+                                                    )}
+                                                    {te.quantity != null && (
+                                                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                                                            {te.quantity} повт.
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, background: 'var(--surface-card)', borderRadius: 12, border: '1px solid var(--border)' }}>
+                                    Выберите упражнение из списка
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
+
+                {/* ── Аналитика ── */}
+                {activeNav === 'analytics' && (
+                    <AnalyticsSection trainings={trainings} exercises={exercises} />
+                )}
+
                 </main>
             </div>
 
@@ -647,7 +1063,7 @@ export default function WorkoutsPage() {
                     footer={<>
                         <button className="btn btn-secondary btn-sm" onClick={() => setExForm(null)}>Отмена</button>
                         <button className="btn btn-sm" style={{ background: WK_RED, borderColor: WK_RED, color: '#fff' }}
-                            disabled={!exForm.name?.trim()}
+                            disabled={!exForm.name?.trim() || !exForm.muscle_group || !exForm.exercise_type}
                             onClick={() => saveExercise(exForm)}>
                             Сохранить
                         </button>
@@ -656,7 +1072,23 @@ export default function WorkoutsPage() {
                         <div className="form-group">
                             <label className="form-label">Название</label>
                             <input className="input" placeholder="Например, Жим лёжа" value={exForm.name}
-                                onChange={e => setExForm(f => ({ ...f, name: e.target.value }))} />
+                                onChange={e => setExForm(f => ({ ...f, name: e.target.value }))} autoFocus />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                            <div className="form-group">
+                                <label className="form-label">Группа мышц</label>
+                                <select className="select" value={exForm.muscle_group}
+                                    onChange={e => setExForm(f => ({ ...f, muscle_group: e.target.value }))}>
+                                    {MUSCLE_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Тип</label>
+                                <select className="select" value={exForm.exercise_type}
+                                    onChange={e => setExForm(f => ({ ...f, exercise_type: e.target.value }))}>
+                                    {EXERCISE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </WkModal>
