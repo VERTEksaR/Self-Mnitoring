@@ -16,6 +16,10 @@ export default defineConfig({
       '/exercises': 'http://localhost:8000',
       '/trainings': 'http://localhost:8000',
       '/training-exercises': 'http://localhost:8000',
+      '/steam/login': 'http://localhost:8000',
+      '/steam/auth': 'http://localhost:8000',
+      '/steam/accounts': 'http://localhost:8000',
+      '/steam/link': 'http://localhost:8000',
     },
   },
 });

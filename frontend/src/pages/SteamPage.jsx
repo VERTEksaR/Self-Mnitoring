@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getSteamAccounts, linkSteam, unlinkSteam } from '../api/api';
 import './steam.css';
 
 // ── icons ──
@@ -16,6 +17,51 @@ const UserIcon     = () => <Ico><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4
 const NewsIcon     = () => <Ico><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" /><path d="M18 14h-8M15 18h-5M10 6h8v4h-8V6Z" /></Ico>;
 const TrophyIcon   = () => <Ico><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></Ico>;
 const WrenchIcon   = () => <Ico><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></Ico>;
+
+// ── Карточка привязанных Steam-аккаунтов ──
+function SteamAccountsCard({ accounts, onUnlink, onLogin }) {
+    return (
+        <div className="card" style={{ padding: 20, marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: accounts.length ? 16 : 0 }}>
+                <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)', marginBottom: 2 }}>Steam аккаунты</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                        {accounts.length === 0 ? 'Нет привязанных аккаунтов' : `Привязано: ${accounts.length}`}
+                    </div>
+                </div>
+                <button className="btn btn-primary btn-sm" style={{ gap: 6 }} onClick={onLogin}>
+                    <SteamIcon /><span>Войти через Steam</span>
+                </button>
+            </div>
+
+            {accounts.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {accounts.map(acc => (
+                        <div key={acc.id} style={{
+                            display: 'flex', alignItems: 'center', gap: 12,
+                            padding: '10px 12px', borderRadius: 'var(--radius-md)',
+                            background: 'var(--surface-sunken)', border: '1px solid var(--border)',
+                        }}>
+                            <div className="steam-avatar" style={{ width: 36, height: 36, fontSize: 13 }}>
+                                {acc.steam_id.slice(-2)}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 1 }}>Steam ID</div>
+                                <div className="steam-mono" style={{ fontSize: 13, color: 'var(--text-strong)' }}>{acc.steam_id}</div>
+                            </div>
+                            <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => onUnlink(acc.steam_id)}
+                            >
+                                Отвязать
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
 
 // ── "В разработке" заглушка ──
 function WIP({ label }) {
@@ -43,6 +89,37 @@ const SECTIONS = [
 export default function SteamPage() {
     const navigate = useNavigate();
     const [active, setActive] = useState('profile');
+    const [accounts, setAccounts] = useState([]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const steamId = params.get('steam_id');
+if (steamId) {
+            localStorage.setItem('steam_id', steamId);
+            navigate('/steam', { replace: true });
+            linkSteam(steamId)
+                .then(res => setAccounts(prev =>
+                    prev.some(a => a.steam_id === steamId) ? prev : [...prev, res.data]
+                ))
+                .catch(err => console.error('[Steam] linkSteam failed:', err?.response?.status, err?.response?.data));
+        } else {
+            getSteamAccounts()
+                .then(res => setAccounts(res.data))
+                .catch(err => console.error('[Steam] getSteamAccounts failed:', err?.response?.status, err?.response?.data));
+        }
+    }, []);
+
+    const handleLogin = () => {
+        window.location.href = '/steam/login';
+    };
+
+    const handleUnlink = async (steamId) => {
+        await unlinkSteam(steamId);
+        setAccounts(prev => prev.filter(a => a.steam_id !== steamId));
+        if (localStorage.getItem('steam_id') === steamId) {
+            localStorage.removeItem('steam_id');
+        }
+    };
 
     const handleLogout = () => {
         localStorage.removeItem('access_token');
@@ -98,6 +175,11 @@ export default function SteamPage() {
 
                 {/* main content */}
                 <main className="finance-main">
+                    <SteamAccountsCard
+                        accounts={accounts}
+                        onLogin={handleLogin}
+                        onUnlink={handleUnlink}
+                    />
                     <WIP label={activeLabel} />
                 </main>
             </div>
