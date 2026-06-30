@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     database: str
     db_username: str
     password: str
+    steam_openid_url: str
+    steam_api_key: str
+    base_url: str
+    return_steam_url: str
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,

@@ -8,7 +8,7 @@ import {
     Activity, LayoutDashboard, Dumbbell, TrendingUp,
     Plus, Pencil, Trash2,
     ChevronRight, ChevronLeft, Flame, Timer, Trophy, X,
-    Home, Wallet,
+    Home, Wallet, Gamepad2,
 } from 'lucide-react';
 import {
     getExercises, createExercise, updateExercise, deleteExercise,
@@ -623,6 +623,10 @@ export default function WorkoutsPage() {
                     <button className="finance-module-nav__btn finance-module-nav__btn--finance" onClick={() => navigate('/finance')} title="Финансы">
                         <Wallet size={18} />
                         <span>Финансы</span>
+                    </button>
+                    <button className="finance-module-nav__btn finance-module-nav__btn--steam" onClick={() => navigate('/steam')} title="Steam">
+                        <Gamepad2 size={18} />
+                        <span>Steam</span>
                     </button>
                 </nav>
 
