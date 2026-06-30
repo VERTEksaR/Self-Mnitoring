@@ -2,19 +2,28 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
+from backend.finance_app.app.db.models import MuscleGroup, ExerciseType
+
 
 class ExerciseCreate(BaseModel):
     name: str
+    muscle_group: MuscleGroup
+    exercise_type: ExerciseType
 
 
 class ExerciseChange(BaseModel):
     name: Optional[str] = None
+    muscle_group: Optional[MuscleGroup] = None
+    exercise_type: Optional[ExerciseType] = None
 
 
 class ExerciseRead(BaseModel):
     id: int
     name: str
     user_id: int
+    muscle_group: MuscleGroup
+    exercise_type: ExerciseType
+
     model_config = ConfigDict(from_attributes=True)
 
 
