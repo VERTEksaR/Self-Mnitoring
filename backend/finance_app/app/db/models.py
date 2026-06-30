@@ -46,6 +46,8 @@ class Category(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String, index=True, nullable=False)
 
+    show_analytics: Mapped[bool] = mapped_column(Boolean, default=True)
+
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", back_populates="category")
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
