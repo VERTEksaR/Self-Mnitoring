@@ -3,7 +3,7 @@ services:
     image: postgres:16
     environment:
       POSTGRES_USER: verteksar
-      POSTGRES_PASSWORD: ...
+      POSTGRES_PASSWORD: ${PASSWORD}
       POSTGRES_DB: monitoring
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -29,4 +29,4 @@ services:
     ports:
       - "80:80"
     depends_on:
-      1)- backend
+      - backend
