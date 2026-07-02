@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const sections = [
-    { title: 'Финансы', description: 'Транзакции, счета и категории', path: '/finance', accent: '#3ee07a' },
-    { title: 'Тренировки', description: 'Журнал тренировок и упражнения', path: '/workouts', accent: '#ff3b4e' },
+    { title: 'Финансы',    description: 'Транзакции, счета и категории',     path: '/finance',  accent: '#3ee07a' },
+    { title: 'Тренировки', description: 'Журнал тренировок и упражнения',    path: '/workouts', accent: '#ff3b4e' },
+    { title: 'Steam',      description: 'Активность и статистика из Steam',  path: '/steam',    accent: '#8b5cf6' },
 ];
 
 export default function StartPage() {

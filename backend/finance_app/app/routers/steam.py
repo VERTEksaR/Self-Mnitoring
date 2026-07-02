@@ -1,0 +1,169 @@
+import json
+import re
+import asyncio
+import httpx
+
+from urllib.parse import urlencode
+from fastapi import Request, HTTPException, APIRouter, Depends
+from fastapi.responses import RedirectResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.finance_app.app.db.redis import get_redis
+from backend.finance_app.app.core.config import settings
+from backend.finance_app.app.db.models import User, SteamUser
+from backend.finance_app.app.db.session import get_session
+from backend.finance_app.app.dependencies.auth import get_current_user
+from backend.finance_app.app.schemas.steam import SteamUserCreate, SteamUserRead
+
+STEAM_ID_RE = re.compile(r"https?://steamcommunity\.com/openid/id/(\d+)")
+
+
+router = APIRouter()
+
+
+@router.get("/login")
+async def login():
+    params = {
+        "openid.ns": "http://specs.openid.net/auth/2.0",
+        "openid.mode": "checkid_setup",
+        "openid.return_to": settings.return_steam_url,
+        "openid.realm": settings.base_url,
+        "openid.identity": "http://specs.openid.net/auth/2.0/identifier_select",
+        "openid.claimed_id": "http://specs.openid.net/auth/2.0/identifier_select",
+    }
+    return RedirectResponse(f"{settings.steam_openid_url}?{urlencode(params)}")
+
+
+@router.get("/auth/callback", status_code=200)
+async def steam_callback(request: Request):
+    is_checked = False
+
+    params = dict(request.query_params)
+    print(params)
+
+    if params.get("openid.mode") != "id_res":
+        raise HTTPException(401, detail="Авторизация Steam отменена или некорректна")
+
+    verify = dict(params)
+    verify["openid.mode"] = "check_authentication"
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        response = await client.post(settings.steam_openid_url, data=verify)
+
+    if "is_valid:true" in response.text:
+        is_checked = True
+
+    print(response.text)
+
+    if not is_checked:
+        raise HTTPException(401, detail="Не удалось подтвердить вход через Steam")
+
+    user_id = params.get("openid.claimed_id", "")
+    match = STEAM_ID_RE.match(user_id)
+
+    if not match:
+        raise HTTPException(400, detail="Не удалось получить id пользователя")
+
+    steam_id = match.group(1)
+    return RedirectResponse(f"{settings.base_url.rstrip('/')}/steam?steam_id={steam_id}")
+
+
+@router.get("/accounts", response_model=list[SteamUserRead])
+async def get_steam_accounts(current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    result = await session.execute(
+        select(SteamUser).where(SteamUser.user_id == current_user.id)
+    )
+    return result.scalars().all()
+
+
+@router.post("/link", response_model=SteamUserRead, status_code=201)
+async def link_steam(data: SteamUserCreate, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    existing = await session.execute(
+        select(SteamUser)
+        .where(SteamUser.steam_id == data.steam_id, SteamUser.user_id == current_user.id)
+    )
+    existing = existing.scalar_one_or_none()
+
+    if existing:
+        return existing
+
+    new_entry = SteamUser(steam_id=data.steam_id, user_id=current_user.id)
+    session.add(new_entry)
+    await session.commit()
+    await session.refresh(new_entry)
+    return new_entry
+
+
+@router.delete("/link/{steam_id}", status_code=204)
+async def unlink_steam(steam_id: str, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    result = await session.execute(
+        select(SteamUser)
+        .where(SteamUser.steam_id == steam_id, SteamUser.user_id == current_user.id)
+    )
+    entry = result.scalar_one_or_none()
+
+    if not entry:
+        raise HTTPException(404, detail="Привязка не найдена")
+
+    await session.delete(entry)
+    await session.commit()
+
+
+@router.get("/player-info/{steam_id}", status_code=200)
+async def get_steam_player_info(steam_id: str, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    result = await session.execute(
+        select(SteamUser).where(SteamUser.steam_id == steam_id, SteamUser.user_id == current_user.id)
+    )
+    if not result.scalar_one_or_none():
+        raise HTTPException(404, detail="Профиля Steam с таким id у текущего пользователя не найдено")
+
+    redis_object = await get_redis()
+    cache_key = f'user_info_{steam_id}_{current_user.id}'
+    cache = await redis_object.get(cache_key)
+
+    if cache:
+        return json.loads(cache)
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        data1, data2, data3 = await asyncio.gather(
+            fetch(client, f"{settings.steam_profile_info_url}?key={settings.steam_api_key}&steamids={steam_id}"),
+            fetch(client, f"{settings.steam_profile_games_url}?key={settings.steam_api_key}&steamid={steam_id}&include_appinfo=true"),
+            fetch(client, f"{settings.steam_profile_recent_games}?key={settings.steam_api_key}&steamid={steam_id}&count=7"),
+        )
+
+    player = data1.get("response", {}).get("players", [{}])[0]
+    games_resp = data2.get("response", {})
+    recent_resp = data3.get("response", {})
+    playtime_all = sum(g.get("playtime_forever", 0) for g in games_resp.get("games", [])) / 60
+    games = list()
+
+    for game in recent_resp.get("games", []):
+        games.append({
+            "name": game.get("name", ""),
+            "playtime_total": game.get("playtime_forever", 0) / 60,
+            "playtime_2weeks": game.get("playtime_2weeks", 0) / 60,
+            "image": f"https://cdn.akamai.steamstatic.com/steam/apps/{game.get('appid')}/header.jpg",
+        })
+
+    result = {
+        "personaname": player.get("personaname", ""),
+        "steamid": player.get("steamid", ""),
+        "timecreated": player.get("timecreated", 0),
+        "personastate": player.get("personastate", 0),
+        "avatarfull": player.get("avatarfull", ""),
+        "game_count": games_resp.get("game_count", 0),
+        "playtime": round(playtime_all),
+        "games": games,
+    }
+    await redis_object.set(cache_key, json.dumps(result), ex=3600)
+    return result
+
+
+async def fetch(client: httpx.AsyncClient, url: str) -> dict:
+    try:
+        r = await client.get(url)
+        r.raise_for_status()
+        return r.json()
+    except Exception:
+        return {}

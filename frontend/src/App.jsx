@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { NeonBackground } from './components/NeonBackground';
 import FinancePage from './pages/FinancePage';
 import WorkoutsPage from './pages/WorkoutsPage';
+import SteamPage from './pages/SteamPage';
 import LoginPage from './pages/LoginPage';
 import StartPage from './pages/StartPage';
 
@@ -13,6 +14,7 @@ function PrivateRoute({ children }) {
 function AppContent() {
     const location = useLocation();
     const neonVariant = location.pathname.startsWith('/workouts') ? 'red'
+        : location.pathname.startsWith('/steam') ? 'purple'
         : location.pathname === '/' ? 'white'
         : 'green';
 
@@ -29,6 +31,9 @@ function AppContent() {
                 } />
                 <Route path="/workouts" element={
                     <PrivateRoute><WorkoutsPage /></PrivateRoute>
+                } />
+                <Route path="/steam" element={
+                    <PrivateRoute><SteamPage /></PrivateRoute>
                 } />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

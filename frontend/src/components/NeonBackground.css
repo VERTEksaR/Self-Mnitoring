@@ -119,6 +119,22 @@
   stroke: rgba(255, 255, 255, 0.65);
 }
 
+/* ── Фиолетовый вариант (Steam) ── */
+#neon.neon-purple .nl {
+  stroke: #8b5cf6;
+  filter: drop-shadow(0 0 3px rgba(139,92,246,.85)) drop-shadow(0 0 9px rgba(139,92,246,.5));
+}
+#neon.neon-purple .nl--faint {
+  stroke: #8b5cf6;
+}
+#neon.neon-purple .np {
+  stroke: #d6c6ff;
+  filter: drop-shadow(0 0 5px rgba(190,160,255,.95)) drop-shadow(0 0 16px rgba(139,92,246,.85));
+}
+#neon.neon-purple .np--slow {
+  stroke: #c4a8ff;
+}
+
 /* ── Красный вариант (тренировки) ── */
 #neon.neon-red .nl {
   stroke: #ff3b4e;

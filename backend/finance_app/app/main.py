@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from backend.finance_app.app.admin.admin import create_admin
-from backend.finance_app.app.routers import categories, transactions, accounts, auth, user, exercises, trainings, training_exercises
+from backend.finance_app.app.routers import categories, transactions, accounts, auth, user, exercises, trainings, training_exercises, steam
 
 app = FastAPI(title="Finance API")
 
@@ -16,6 +16,7 @@ app.include_router(user.router, prefix='/users', tags=["user"])
 app.include_router(exercises.router, prefix='/exercises', tags=["exercises"])
 app.include_router(trainings.router, prefix='/trainings', tags=["trainings"])
 app.include_router(training_exercises.router, prefix='/training-exercises', tags=["training-exercises"])
+app.include_router(steam.router, prefix='/steam', tags=["steam"])
 
 @app.get("/ping")
 async def ping():
