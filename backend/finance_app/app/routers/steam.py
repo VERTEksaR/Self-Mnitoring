@@ -1,3 +1,4 @@
+import json
 import re
 import asyncio
 import httpx
@@ -8,6 +9,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.finance_app.app.db.redis import get_redis
 from backend.finance_app.app.core.config import settings
 from backend.finance_app.app.db.models import User, SteamUser
 from backend.finance_app.app.db.session import get_session
@@ -27,7 +29,6 @@ async def login():
         "openid.mode": "checkid_setup",
         "openid.return_to": settings.return_steam_url,
         "openid.realm": settings.base_url,
-        # Просим Steam сам определить identity пользователя:
         "openid.identity": "http://specs.openid.net/auth/2.0/identifier_select",
         "openid.claimed_id": "http://specs.openid.net/auth/2.0/identifier_select",
     }
@@ -117,6 +118,13 @@ async def get_steam_player_info(steam_id: str, current_user: User = Depends(get_
     if not result.scalar_one_or_none():
         raise HTTPException(404, detail="Профиля Steam с таким id у текущего пользователя не найдено")
 
+    redis_object = await get_redis()
+    cache_key = f'user_info_{steam_id}_{current_user.id}'
+    cache = await redis_object.get(cache_key)
+
+    if cache:
+        return json.loads(cache)
+
     async with httpx.AsyncClient(timeout=10) as client:
         data1, data2, data3 = await asyncio.gather(
             fetch(client, f"{settings.steam_profile_info_url}?key={settings.steam_api_key}&steamids={steam_id}"),
@@ -138,7 +146,7 @@ async def get_steam_player_info(steam_id: str, current_user: User = Depends(get_
             "image": f"https://cdn.akamai.steamstatic.com/steam/apps/{game.get('appid')}/header.jpg",
         })
 
-    return {
+    result = {
         "personaname": player.get("personaname", ""),
         "steamid": player.get("steamid", ""),
         "timecreated": player.get("timecreated", 0),
@@ -148,6 +156,8 @@ async def get_steam_player_info(steam_id: str, current_user: User = Depends(get_
         "playtime": round(playtime_all),
         "games": games,
     }
+    await redis_object.set(cache_key, json.dumps(result), ex=3600)
+    return result
 
 
 async def fetch(client: httpx.AsyncClient, url: str) -> dict:
