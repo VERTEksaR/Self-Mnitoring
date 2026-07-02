@@ -1,9 +1,12 @@
 import logging
+import json
 from math import ceil
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.finance_app.app.db.redis import get_redis
 from backend.finance_app.app.dependencies.auth import get_current_user
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Category, User
@@ -78,10 +81,18 @@ async def create_category(category_data: CategoryCreate, session: AsyncSession =
 
 @router.get('/', response_model=Page[CategoryRead], status_code=200)
 async def get_all_categories(page: int = 1, size: int = 10, name: str = '', session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+    redis_object = await get_redis()
+
     total_result = await session.execute(
         select(func.count()).where((Category.name.like(f"%{name}%")) & (Category.user_id == current_user.id))
     )
     total = total_result.scalar_one()
+
+    cache_key = f'categories_{current_user.id}_{page}_{size}_{total}'
+    cache = await redis_object.get(cache_key)
+
+    if cache:
+        return json.loads(cache)
 
     result = await session.execute(
         select(Category).where((Category.name.like(f"%{name}%")) & (Category.user_id == current_user.id))
@@ -89,10 +100,12 @@ async def get_all_categories(page: int = 1, size: int = 10, name: str = '', sess
     categories = result.scalars().all()
     pages = ceil(total / size) if total > 0 else 1
     logger.info(f"Всего было найдено {total} категорий")
-    return {
-        'items': categories,
+    result = {
+        'items': [CategoryRead.model_validate(c).model_dump(mode='json') for c in categories],
         'total': total,
         'pages': pages,
         'page': page,
         'size': size,
     }
+    await redis_object.set(cache_key, json.dumps(result), ex=3600)
+    return result
