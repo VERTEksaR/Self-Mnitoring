@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     steam_profile_info_url: str
     steam_profile_games_url: str
     steam_profile_recent_games: str
+    redis_host: str = "localhost"
+    redis_port: int = 6379
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
