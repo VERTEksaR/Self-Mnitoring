@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     database: str
     db_username: str
     password: str
+    redis_host: str = "localhost"
+    redis_port: int = 6379
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
