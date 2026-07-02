@@ -1,9 +1,12 @@
 import logging
+import json
 from math import ceil
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.finance_app.app.db.redis import get_redis
 from backend.finance_app.app.dependencies.auth import get_current_user
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Transaction, User
@@ -19,7 +22,6 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
-
 
 
 @router.get("/{transaction_id}", response_model=TransactionRead, status_code=200)
@@ -81,7 +83,8 @@ async def change_transaction(transaction_id: int, transaction_data: TransactionC
 @router.get('/', response_model=Page[TransactionRead], status_code=200)
 async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFilter = Depends(), session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
     conditions = [Transaction.user_id == current_user.id]
-    print(1, filters)
+
+    redis_object = await get_redis()
 
     if filters.destination:
         conditions.append(Transaction.destination.like(f'%{filters.destination}%'))
@@ -124,6 +127,12 @@ async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFi
     )
     total = total_result.scalar_one()
 
+    cache_key = f'transactions_{current_user.id}_{page}_{size}_{total}'
+    cache = await redis_object.get(cache_key)
+
+    if cache:
+        return json.loads(cache)
+
     result = await session.execute(
         select(Transaction).where(*conditions)
         .offset((page - 1) * size)
@@ -132,10 +141,12 @@ async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFi
     transactions = result.scalars().all()
     pages = ceil(total / size) if total > 0 else 1
     logger.info(f"Всего было найдено {total} транзакций")
-    return {
-        'items': transactions,
+    result = {
+        'items': [TransactionRead.model_validate(t).model_dump(mode='json') for t in transactions],
         'total': total,
         'pages': pages,
         'page': page,
         'size': size,
     }
+    await redis_object.set(cache_key, json.dumps(result), 3600)
+    return result
