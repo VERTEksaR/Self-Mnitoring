@@ -3,7 +3,7 @@ from backend.finance_app.app.core.config import settings
 
 engine = create_async_engine(
     settings.database_url,
-    echo=True,
+    echo=False,
 )
 
 AsyncSessionLocal = async_sessionmaker(

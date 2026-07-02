@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16
+    restart: unless-stopped
     environment:
       POSTGRES_USER: verteksar
       POSTGRES_PASSWORD: ${PASSWORD}
@@ -17,17 +18,17 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    restart: unless-stopped
     env_file: .env
     environment:
       HOST: db
-    ports:
-      - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
 
   frontend:
     build: ./frontend
+    restart: unless-stopped
     ports:
       - "80:80"
     depends_on:
