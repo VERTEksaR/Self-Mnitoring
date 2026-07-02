@@ -20,6 +20,7 @@ export default defineConfig({
       '/steam/auth': 'http://localhost:8000',
       '/steam/accounts': 'http://localhost:8000',
       '/steam/link': 'http://localhost:8000',
+      '/steam/player-info': 'http://localhost:8000',
     },
   },
 });

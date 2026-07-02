@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSteamAccounts, linkSteam, unlinkSteam } from '../api/api';
+import { getSteamAccounts, linkSteam, unlinkSteam, getPlayerInfo } from '../api/api';
 import './steam.css';
 
 // ── icons ──
@@ -18,8 +18,123 @@ const NewsIcon     = () => <Ico><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H
 const TrophyIcon   = () => <Ico><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></Ico>;
 const WrenchIcon   = () => <Ico><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></Ico>;
 
+const nf = (n) => Number(n).toLocaleString('ru-RU');
+
+// ── Profile section ──
+function Profile({ steamId }) {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (!steamId) { setLoading(false); return; }
+        setLoading(true);
+        getPlayerInfo(steamId)
+            .then(res => { setData(res.data); setLoading(false); })
+            .catch(() => { setError('Не удалось загрузить данные профиля'); setLoading(false); });
+    }, [steamId]);
+
+    if (!steamId) return (
+        <div className="card empty" style={{ minHeight: 200 }}>
+            <div className="empty__title">Выберите аккаунт</div>
+            <div className="empty__hint">Привяжите Steam аккаунт выше, чтобы увидеть профиль.</div>
+        </div>
+    );
+
+    if (loading) return (
+        <div className="card empty" style={{ minHeight: 200 }}>
+            <div className="empty__hint">Загрузка...</div>
+        </div>
+    );
+
+    if (error) return (
+        <div className="card empty" style={{ minHeight: 200 }}>
+            <div className="empty__title" style={{ color: 'var(--expense)' }}>{error}</div>
+        </div>
+    );
+
+    const online = data.personastate > 0;
+    const year = data.timecreated ? new Date(data.timecreated * 1000).getFullYear() : '—';
+
+    return (
+        <>
+            {/* header card */}
+            <div className="card" style={{ padding: 22, display: 'flex', gap: 20, alignItems: 'center', marginBottom: 22, flexWrap: 'wrap' }}>
+                {data.avatarfull
+                    ? <img src={data.avatarfull} alt="avatar" style={{ width: 84, height: 84, borderRadius: '50%', border: '2px solid var(--brand-subtle-bd)', flexShrink: 0 }} />
+                    : <div className="steam-avatar">{data.personaname.slice(0, 2).toUpperCase()}</div>
+                }
+                <div style={{ flex: 1, minWidth: 200 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-strong)' }}>{data.personaname}</span>
+                        <span className="badge" style={{
+                            background: online ? 'var(--brand-subtle)' : 'var(--surface-sunken)',
+                            color: online ? 'var(--brand)' : 'var(--text-muted)',
+                            border: `1px solid ${online ? 'var(--brand-subtle-bd)' : 'var(--border)'}`,
+                        }}>
+                            <span className="badge-dot" style={{ background: online ? 'var(--brand)' : 'var(--text-faint)' }} />
+                            {online ? 'В сети' : 'Не в сети'}
+                        </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 12.5, color: 'var(--text-muted)' }}>
+                        <span>Steam ID&nbsp;<span className="steam-mono" style={{ color: 'var(--text-body)' }}>{data.steamid}</span></span>
+                        <span>Аккаунт с&nbsp;<span className="steam-mono" style={{ color: 'var(--text-body)' }}>{year}</span> г.</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* stat tiles */}
+            <div className="steam-stats" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                {[
+                    { label: 'Игр в библиотеке', value: nf(data.game_count), sub: 'всего на аккаунте' },
+                    { label: 'Часов в играх',    value: nf(data.playtime),   sub: 'суммарное время' },
+                ].map(t => (
+                    <div key={t.label} className="card stat-card">
+                        <div className="stat-card__label">{t.label}</div>
+                        <div className="stat-card__value">{t.value}</div>
+                        <div className="stat-card__sub">{t.sub}</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* recently played */}
+            {data.games?.length > 0 && (
+                <>
+                    <div className="section-header" style={{ marginBottom: 12 }}>
+                        <span className="section-title">Недавно запускали</span>
+                        <span className="section-count">{data.games.length}</span>
+                    </div>
+                    <div className="rp-grid">
+                        {data.games.map((g, i) => (
+                            <div key={i} className="card rp-card">
+                                <img
+                                    src={g.image}
+                                    alt={g.name}
+                                    style={{ width: 92, height: 44, borderRadius: 'var(--radius-md)', objectFit: 'cover', flexShrink: 0, border: '1px solid var(--border)' }}
+                                    onError={e => { e.target.style.display = 'none'; }}
+                                />
+                                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                                    <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
+                                        <span style={{ color: 'var(--text-muted)' }}>
+                                            <span className="steam-mono" style={{ color: 'var(--text-body)', fontWeight: 600 }}>{nf(Math.round(g.playtime_total))}</span> ч всего
+                                        </span>
+                                        <span style={{ color: 'var(--text-muted)' }}>
+                                            <span className="steam-mono" style={{ color: 'var(--brand)', fontWeight: 600 }}>{g.playtime_2weeks.toFixed(1)}</span> ч за 2 нед.
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
+        </>
+    );
+}
+
 // ── Карточка привязанных Steam-аккаунтов ──
-function SteamAccountsCard({ accounts, onUnlink, onLogin }) {
+function SteamAccountsCard({ accounts, selectedSteamId, onSelect, onUnlink, onLogin }) {
     return (
         <div className="card" style={{ padding: 20, marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: accounts.length ? 16 : 0 }}>
@@ -37,10 +152,11 @@ function SteamAccountsCard({ accounts, onUnlink, onLogin }) {
             {accounts.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {accounts.map(acc => (
-                        <div key={acc.id} style={{
+                        <div key={acc.id} onClick={() => onSelect(acc.steam_id)} style={{
                             display: 'flex', alignItems: 'center', gap: 12,
-                            padding: '10px 12px', borderRadius: 'var(--radius-md)',
-                            background: 'var(--surface-sunken)', border: '1px solid var(--border)',
+                            padding: '10px 12px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                            background: acc.steam_id === selectedSteamId ? 'var(--brand-subtle)' : 'var(--surface-sunken)',
+                            border: `1px solid ${acc.steam_id === selectedSteamId ? 'var(--brand-subtle-bd)' : 'var(--border)'}`,
                         }}>
                             <div className="steam-avatar" style={{ width: 36, height: 36, fontSize: 13 }}>
                                 {acc.steam_id.slice(-2)}
@@ -90,6 +206,7 @@ export default function SteamPage() {
     const navigate = useNavigate();
     const [active, setActive] = useState('profile');
     const [accounts, setAccounts] = useState([]);
+    const [selectedSteamId, setSelectedSteamId] = useState(localStorage.getItem('steam_id') || null);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -97,6 +214,7 @@ export default function SteamPage() {
 if (steamId) {
             localStorage.setItem('steam_id', steamId);
             navigate('/steam', { replace: true });
+            setSelectedSteamId(steamId);
             linkSteam(steamId)
                 .then(res => setAccounts(prev =>
                     prev.some(a => a.steam_id === steamId) ? prev : [...prev, res.data]
@@ -104,7 +222,12 @@ if (steamId) {
                 .catch(err => console.error('[Steam] linkSteam failed:', err?.response?.status, err?.response?.data));
         } else {
             getSteamAccounts()
-                .then(res => setAccounts(res.data))
+                .then(res => {
+                    setAccounts(res.data);
+                    if (!selectedSteamId && res.data.length > 0) {
+                        setSelectedSteamId(res.data[0].steam_id);
+                    }
+                })
                 .catch(err => console.error('[Steam] getSteamAccounts failed:', err?.response?.status, err?.response?.data));
         }
     }, []);
@@ -115,10 +238,16 @@ if (steamId) {
 
     const handleUnlink = async (steamId) => {
         await unlinkSteam(steamId);
-        setAccounts(prev => prev.filter(a => a.steam_id !== steamId));
-        if (localStorage.getItem('steam_id') === steamId) {
-            localStorage.removeItem('steam_id');
-        }
+        setAccounts(prev => {
+            const next = prev.filter(a => a.steam_id !== steamId);
+            if (selectedSteamId === steamId) {
+                const fallback = next[0]?.steam_id || null;
+                setSelectedSteamId(fallback);
+                if (fallback) localStorage.setItem('steam_id', fallback);
+                else localStorage.removeItem('steam_id');
+            }
+            return next;
+        });
     };
 
     const handleLogout = () => {
@@ -177,10 +306,14 @@ if (steamId) {
                 <main className="finance-main">
                     <SteamAccountsCard
                         accounts={accounts}
+                        selectedSteamId={selectedSteamId}
+                        onSelect={setSelectedSteamId}
                         onLogin={handleLogin}
                         onUnlink={handleUnlink}
                     />
-                    <WIP label={activeLabel} />
+                    {active === 'profile'      && <Profile steamId={selectedSteamId} />}
+                    {active === 'news'         && <WIP label="Новости" />}
+                    {active === 'achievements' && <WIP label="Достижения" />}
                 </main>
             </div>
         </div>

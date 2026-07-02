@@ -1,4 +1,5 @@
 import re
+import asyncio
 import httpx
 
 from urllib.parse import urlencode
@@ -106,3 +107,53 @@ async def unlink_steam(steam_id: str, current_user: User = Depends(get_current_u
 
     await session.delete(entry)
     await session.commit()
+
+
+@router.get("/player-info/{steam_id}", status_code=200)
+async def get_steam_player_info(steam_id: str, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    result = await session.execute(
+        select(SteamUser).where(SteamUser.steam_id == steam_id, SteamUser.user_id == current_user.id)
+    )
+    if not result.scalar_one_or_none():
+        raise HTTPException(404, detail="Профиля Steam с таким id у текущего пользователя не найдено")
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        data1, data2, data3 = await asyncio.gather(
+            fetch(client, f"{settings.steam_profile_info_url}?key={settings.steam_api_key}&steamids={steam_id}"),
+            fetch(client, f"{settings.steam_profile_games_url}?key={settings.steam_api_key}&steamid={steam_id}&include_appinfo=true"),
+            fetch(client, f"{settings.steam_profile_recent_games}?key={settings.steam_api_key}&steamid={steam_id}&count=7"),
+        )
+
+    player = data1.get("response", {}).get("players", [{}])[0]
+    games_resp = data2.get("response", {})
+    recent_resp = data3.get("response", {})
+    playtime_all = sum(g.get("playtime_forever", 0) for g in games_resp.get("games", [])) / 60
+    games = list()
+
+    for game in recent_resp.get("games", []):
+        games.append({
+            "name": game.get("name", ""),
+            "playtime_total": game.get("playtime_forever", 0) / 60,
+            "playtime_2weeks": game.get("playtime_2weeks", 0) / 60,
+            "image": f"https://cdn.akamai.steamstatic.com/steam/apps/{game.get('appid')}/header.jpg",
+        })
+
+    return {
+        "personaname": player.get("personaname", ""),
+        "steamid": player.get("steamid", ""),
+        "timecreated": player.get("timecreated", 0),
+        "personastate": player.get("personastate", 0),
+        "avatarfull": player.get("avatarfull", ""),
+        "game_count": games_resp.get("game_count", 0),
+        "playtime": round(playtime_all),
+        "games": games,
+    }
+
+
+async def fetch(client: httpx.AsyncClient, url: str) -> dict:
+    try:
+        r = await client.get(url)
+        r.raise_for_status()
+        return r.json()
+    except Exception:
+        return {}

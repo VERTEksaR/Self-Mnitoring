@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     steam_api_key: str
     base_url: str
     return_steam_url: str
+    steam_profile_info_url: str
+    steam_profile_games_url: str
+    steam_profile_recent_games: str
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,

@@ -63,3 +63,4 @@ export const createAccount = (data) => api.post('accounts/', data);
 export const getSteamAccounts = () => api.get('steam/accounts');
 export const linkSteam = (steam_id) => api.post('steam/link', { steam_id });
 export const unlinkSteam = (steam_id) => api.delete(`steam/link/${steam_id}`);
+export const getPlayerInfo = (steam_id) => api.get(`steam/player-info/${steam_id}`);
