@@ -3,6 +3,7 @@ import { NeonBackground } from './components/NeonBackground';
 import FinancePage from './pages/FinancePage';
 import WorkoutsPage from './pages/WorkoutsPage';
 import SteamPage from './pages/SteamPage';
+import SteamAchievementsDetailPage from './pages/SteamAchievementsDetailPage';
 import LoginPage from './pages/LoginPage';
 import StartPage from './pages/StartPage';
 
@@ -34,6 +35,9 @@ function AppContent() {
                 } />
                 <Route path="/steam" element={
                     <PrivateRoute><SteamPage /></PrivateRoute>
+                } />
+                <Route path="/steam/achievements/:appid" element={
+                    <PrivateRoute><SteamAchievementsDetailPage /></PrivateRoute>
                 } />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

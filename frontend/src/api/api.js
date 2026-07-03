@@ -64,3 +64,14 @@ export const getSteamAccounts = () => api.get('steam/accounts');
 export const linkSteam = (steam_id) => api.post('steam/link', { steam_id });
 export const unlinkSteam = (steam_id) => api.delete(`steam/link/${steam_id}`);
 export const getPlayerInfo = (steam_id) => api.get(`steam/player-info/${steam_id}`);
+
+export const getTrackedGames = (steam_id, page = 1, size = 10) =>
+    api.get(`steam/tracked-games/${steam_id}`, { params: { page, size } });
+export const addTrackedGame = (steam_id, appid) =>
+    api.post(`steam/tracked-games/${steam_id}`, { appid });
+export const removeTrackedGame = (steam_id, appid) =>
+    api.delete(`steam/tracked-games/${steam_id}/${appid}`);
+export const getAchievementsSummary = (steam_id, appids) =>
+    api.get(`steam/ach-summary/${steam_id}`, { params: { appids } });
+export const getAchievementsDetail = (steam_id, appid) =>
+    api.get(`steam/ach-detail/${steam_id}/${appid}`);

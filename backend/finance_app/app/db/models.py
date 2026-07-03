@@ -195,3 +195,14 @@ class Trainings(Base):
 
     def __str__(self):
         return self.name
+
+
+class SteamTrackedGamse(Base):
+    __tablename__ = "steam_tracked_gamses"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    steam_id: Mapped[str] = mapped_column(ForeignKey("steam_users.steam_id"), nullable=False)
+    app_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    game_name: Mapped[str] = mapped_column(String, nullable=False)
+
+    __table_args__ = (UniqueConstraint("steam_id", "app_id"),)
