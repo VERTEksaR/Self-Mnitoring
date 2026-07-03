@@ -14,12 +14,12 @@ class SteamUserCreate(BaseModel):
 
 
 class SteamTrackedGameRead(BaseModel):
-    app_id: int
+    appid: int
     game_name: str
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class SteamTrackedGameCreate(BaseModel):
-    app_id: int
+    appid: int
 
