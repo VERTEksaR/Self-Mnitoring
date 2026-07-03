@@ -201,7 +201,7 @@ async def create_tracked_game(steam_id: str, data: SteamTrackedGameCreate, sessi
         raise HTTPException(404, detail="Аккаунт Steam не найден")
 
     existing = await session.execute(
-        select(SteamTrackedGamse).where(SteamTrackedGamse.steam_id == steam_id, SteamTrackedGamse.app_id == data.app_id)
+        select(SteamTrackedGamse).where(SteamTrackedGamse.steam_id == steam_id, SteamTrackedGamse.app_id == data.appid)
     )
     if existing.scalar_one_or_none():
         raise HTTPException(409, detail="Игра уже добавлена")
@@ -214,7 +214,7 @@ async def create_tracked_game(steam_id: str, data: SteamTrackedGameCreate, sessi
                 "format": "json",
                 "input_json": json.dumps({
                     "steamid": steam_id,
-                    "appids_filter": [data.app_id],
+                    "appids_filter": [data.appid],
                     "include_appinfo": True,
                 }),
             }
@@ -226,7 +226,7 @@ async def create_tracked_game(steam_id: str, data: SteamTrackedGameCreate, sessi
     if not games_list:
         raise HTTPException(400, detail="Игра не найдена в библиотеке пользователя")
 
-    tracked_game = SteamTrackedGamse(steam_id=steam_id, app_id=data.app_id, game_name=games_list[0]["name"])
+    tracked_game = SteamTrackedGamse(steam_id=steam_id, app_id=data.appid, game_name=games_list[0]["name"])
     session.add(tracked_game)
     await session.commit()
     await session.refresh(tracked_game)
