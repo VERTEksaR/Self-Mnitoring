@@ -1,110 +1,112 @@
 # Self-Monitoring
 
-> Персональный дашборд для учёта финансов и тренировок — на FastAPI и React.
+> A personal dashboard for tracking finances and workouts — built with FastAPI and React.
 
 ---
 
-## Обзор
+## Overview
 
-Self-Monitoring — это full-stack приложение для личной продуктивности с двумя независимыми модулями:
+Self-Monitoring is a full-stack personal productivity app with two independent modules:
 
-- **Финансы** — учёт доходов и расходов, управление счетами и категориями, визуализация трат
-- **Тренировки** — журнал тренировок, библиотека упражнений, отслеживание прогресса по весу и результатам
+- **Finance** — income/expense tracking, account and category management, spending visualization
+- **Workouts** — training log, exercise library, weight and performance progress tracking
 
-Оба модуля используют единую систему аутентификации и единый тёмный UI.
-
----
-
-## Функциональность
-
-### Финансы
-- Создание и управление **счетами** и **категориями расходов**
-- Запись **транзакций** (доход / расход) с датами и описаниями
-- Сводка баланса по всем счетам за любой период
-- Флаг отображения категории в аналитике — можно исключить отдельные категории из графиков
-- **Аналитика**: динамика доходов и расходов, накопительный баланс, норма сбережений, сравнение с прошлым периодом, паттерн трат по дням недели, средние за месяц, крупнейшая транзакция
-
-### Тренировки
-- Библиотека упражнений с классификацией по **группе мышц** и **типу** (Силовое / Кардио / Растяжка)
-- Тренировочные сессии с записью **веса** и **повторений** по каждому упражнению
-- Профиль упражнения: личный рекорд, дата последней тренировки, полная история, график прогресса веса
-- **Аналитика**: частота тренировок, объём нагрузки по периодам, распределение по группам мышц, топ упражнений по сетам, таблица личных рекордов
-
-### Платформа
-- JWT-аутентификация с автоматическим перенаправлением при истечении сессии
-- Административная панель (SQLAdmin) для управления данными
-- Интеграция с Telegram-ботом
+Both modules share a single authentication system and a unified dark UI.
 
 ---
 
-## Стек технологий
+## Features
 
-### Бэкенд
+### Finance
 
-| Слой | Технология |
-|---|---|
-| Фреймворк | FastAPI 0.137 |
-| ORM | SQLAlchemy 2.0 (async) |
-| Драйвер БД | asyncpg |
-| База данных | PostgreSQL |
-| Миграции | Alembic |
-| Валидация | Pydantic v2 |
-| Аутентификация | python-jose (JWT) · passlib (bcrypt) |
-| Сервер | Uvicorn |
-| Админ-панель | SQLAdmin |
-| Бот | aiogram 3 |
+- Create and manage **accounts** and **expense categories**
+- Log **transactions** (income / expense) with dates and descriptions
+- Balance summary across all accounts for any period
+- Toggle to include/exclude a category from analytics charts
+- **Analytics**: income/expense trends, cumulative balance, savings rate, period-over-period comparison, day-of-week spending patterns, monthly averages, largest transaction
 
-### Фронтенд
+### Workouts
 
-| Слой | Технология |
-|---|---|
-| Фреймворк | React 19 |
-| Сборщик | Vite (rolldown) |
-| Роутинг | React Router DOM 7 |
-| HTTP | Axios |
-| Графики | Recharts |
-| Иконки | Lucide React |
+- Exercise library classified by **muscle group** and **type** (Strength / Cardio / Stretching)
+- Training sessions logging **weight** and **reps** for each exercise
+- Exercise profile: personal record, last workout date, full history, weight progress chart
+- **Analytics**: workout frequency, training volume by period, muscle group distribution, top exercises by sets, personal records table
 
+### Platform
+
+- JWT authentication with automatic redirect on session expiry
+- Admin panel (SQLAdmin) for data management
+- Telegram bot integration
 
 ---
 
-## Запуск
+## Tech Stack
 
-### Требования
+### Backend
+
+| Layer          | Technology                           |
+| -------------- | ------------------------------------ |
+| Framework      | FastAPI 0.137                        |
+| ORM            | SQLAlchemy 2.0 (async)               |
+| DB driver      | asyncpg                              |
+| Database       | PostgreSQL                           |
+| Migrations     | Alembic                              |
+| Validation     | Pydantic v2                          |
+| Authentication | python-jose (JWT) · passlib (bcrypt) |
+| Server         | Uvicorn                              |
+| Admin panel    | SQLAdmin                             |
+| Bot            | aiogram 3                            |
+
+### Frontend
+
+| Layer     | Technology          |
+| --------- | ------------------- |
+| Framework | React 19             |
+| Bundler   | Vite (rolldown)      |
+| Routing   | React Router DOM 7   |
+| HTTP      | Axios                |
+| Charts    | Recharts             |
+| Icons     | Lucide React         |
+
+---
+
+## Getting Started
+
+### Requirements
 
 - Python 3.11+
 - Node.js 18+
 - PostgreSQL
 
-### Бэкенд
+### Backend
 
-```bash
-# Установить зависимости
+```
+# Install dependencies
 pip install -r requirements.txt
 
-# Настроить окружение
-cp .env.example .env
-# Заполнить DATABASE_URL, SECRET_KEY и т.д.
+# Set up environment
+cp .env.template .env
+# Fill in DATABASE_URL, SECRET_KEY, etc.
 
-# Применить миграции
+# Apply migrations
 alembic upgrade head
 
-# Запустить сервер
+# Start the server
 uvicorn backend.finance_app.app.main:app --reload
 ```
 
-### Фронтенд
+### Frontend
 
-```bash
+```
 cd frontend
 npm install
 npm run dev
 ```
 
-Дев-сервер запускается на `http://localhost:5173` и проксирует API-запросы на `http://localhost:8000`.
+The dev server runs on `http://localhost:5173` and proxies API requests to `http://localhost:8000`.
 
 ---
 
 ## API
 
-Интерактивная документация доступна по адресу `http://localhost:8000/docs` после запуска сервера.
+Interactive documentation is available at `http://localhost:8000/docs` once the server is running.
