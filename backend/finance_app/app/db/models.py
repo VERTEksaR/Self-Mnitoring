@@ -1,8 +1,9 @@
+import enum
 from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 
-from sqlalchemy import String, Integer, Boolean, Float, DATE, ForeignKey, UniqueConstraint, Numeric
+from sqlalchemy import String, Integer, Boolean, Float, DATE, ForeignKey, UniqueConstraint, Numeric, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.finance_app.app.db.base import Base
 
@@ -21,6 +22,7 @@ class User(Base):
     accounts: Mapped[List["Account"]] = relationship("Account", back_populates="user")
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", back_populates="user")
     telegram_users: Mapped[List["TelegramUser"]] = relationship("TelegramUser", back_populates="user")
+    steam_users: Mapped[List["SteamUser"]] = relationship("SteamUser", back_populates="user")
     exercises: Mapped[List["Exercises"]] = relationship("Exercises", back_populates="user")
     trainings: Mapped[List["Trainings"]] = relationship("Trainings", back_populates="user")
     exercise_trainings: Mapped[List["TrainingExercises"]] = relationship("TrainingExercises", back_populates="user")
@@ -40,11 +42,23 @@ class TelegramUser(Base):
     user: Mapped["User"] = relationship("User", back_populates="telegram_users")
 
 
+class SteamUser(Base):
+    __tablename__ = "steam_users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    steam_id: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="steam_users")
+
+
 class Category(Base):
     __tablename__ = "categories"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String, index=True, nullable=False)
+
+    show_analytics: Mapped[bool] = mapped_column(Boolean, default=True)
 
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", back_populates="category")
 
@@ -97,11 +111,47 @@ class Transaction(Base):
         return f"{self.amount} {self.replenishment} {self.transaction_date}"
 
 
+class MuscleGroup(str, enum.Enum):
+    LEGS = "Ноги"
+    CHEST = "Грудь"
+    BICEPS = "Бицепс"
+    TRICEPS = "Трицепс"
+    BACK = "Спина"
+    SHOULDERS = "Плечи"
+    ABS = "Пресс"
+
+    def __str__(self):
+        return self.value
+
+
+class ExerciseType(str, enum.Enum):
+    CARDIO = "Кардио"
+    STRENGTH = "Силовое"
+    STRETCHING = "Растяжка"
+
+    def __str__(self):
+        return self.value
+
+
 class Exercises(Base):
     __tablename__ = "exercises"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    muscle_group: Mapped[MuscleGroup] = mapped_column(
+        Enum(
+            MuscleGroup,
+            values_callable=lambda c: [e.value for e in c],
+            native_enum=False
+        ), nullable=False
+    )
+    exercise_type: Mapped[ExerciseType] = mapped_column(
+        Enum(
+            ExerciseType,
+            values_callable=lambda c: [e.value for e in c],
+            native_enum=False
+        ), nullable=False
+    )
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="exercises")

@@ -394,6 +394,9 @@ body.wk-body {
 .finance-module-nav__btn--home:hover {
   background: rgba(255, 255, 255, 0.09); color: rgba(255, 255, 255, 0.88);
 }
+.finance-module-nav__btn--steam:hover {
+  background: rgba(139, 92, 246, 0.14); color: #8b5cf6;
+}
 
 /* ── Stat cards ── */
 .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }

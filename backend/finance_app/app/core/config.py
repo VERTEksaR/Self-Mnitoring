@@ -14,6 +14,15 @@ class Settings(BaseSettings):
     database: str
     db_username: str
     password: str
+    steam_openid_url: str
+    steam_api_key: str
+    base_url: str
+    return_steam_url: str
+    steam_profile_info_url: str
+    steam_profile_games_url: str
+    steam_profile_recent_games: str
+    redis_host: str = "localhost"
+    redis_port: int = 6379
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,

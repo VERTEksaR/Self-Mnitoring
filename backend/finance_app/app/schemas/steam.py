@@ -1,0 +1,13 @@
+from pydantic import BaseModel, ConfigDict
+
+
+class SteamUserRead(BaseModel):
+    id: int
+    steam_id: str
+    user_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SteamUserCreate(BaseModel):
+    steam_id: str
