@@ -288,7 +288,7 @@ async def get_news(steam_id: str, appids: list[int] = Query(...), count: int = 5
 
 
 @router.get("/ach-summary/{steam_id}", status_code=200)
-async def get_achievements(steam_id: str, appids: list[int] = Query(...), session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_achievements)):
+async def get_achievements_summary(steam_id: str, appids: list[int] = Query(...), session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_achievements)):
     keys = [f"steam:ach:{steam_id}:{appid}" for appid in appids]
 
     redis_object = await get_redis()

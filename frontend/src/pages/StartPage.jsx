@@ -4,8 +4,8 @@ import { useModules } from '../hooks/useModules';
 
 const sections = [
     { title: 'Финансы',    description: 'Транзакции, счета и категории',     path: '/finance',  accent: '#3ee07a', module: 'finances' },
-    { title: 'Тренировки', description: 'Журнал тренировок и упражнения',    path: '/workouts', accent: '#ff3b4e', module: 'workouts' },
-    { title: 'Steam',      description: 'Активность и статистика из Steam',  path: '/steam',    accent: '#8b5cf6', module: 'steam' },
+    { title: 'Тренировки', description: 'Журнал тренировок и упражнения',    path: '/workouts', accent: '#ff3b4e', module: 'trainings' },
+    { title: 'Steam',      description: 'Активность и статистика из Steam',  path: '/steam',    accent: '#8b5cf6', module: 'achievements' },
 ];
 
 export default function StartPage() {

@@ -43,13 +43,13 @@ function AppContent() {
                     <PrivateRoute><ModuleRoute module="finances"><FinancePage /></ModuleRoute></PrivateRoute>
                 } />
                 <Route path="/workouts" element={
-                    <PrivateRoute><ModuleRoute module="workouts"><WorkoutsPage /></ModuleRoute></PrivateRoute>
+                    <PrivateRoute><ModuleRoute module="trainings"><WorkoutsPage /></ModuleRoute></PrivateRoute>
                 } />
                 <Route path="/steam" element={
-                    <PrivateRoute><ModuleRoute module="steam"><SteamPage /></ModuleRoute></PrivateRoute>
+                    <PrivateRoute><ModuleRoute module="achievements"><SteamPage /></ModuleRoute></PrivateRoute>
                 } />
                 <Route path="/steam/achievements/:appid" element={
-                    <PrivateRoute><ModuleRoute module="steam"><SteamAchievementsDetailPage /></ModuleRoute></PrivateRoute>
+                    <PrivateRoute><ModuleRoute module="achievements"><SteamAchievementsDetailPage /></ModuleRoute></PrivateRoute>
                 } />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
