@@ -68,3 +68,19 @@ async def get_trainings(current_user: User = Depends(get_current_user), session:
         )
 
     return access_module
+
+
+async def get_achievements(current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    result = await session.execute(
+        select(ModulesUsers)
+        .join(Modules, Modules.id == ModulesUsers.module_id)
+        .where(ModulesUsers.user_id == current_user.id, Modules.name == "achievements")
+    )
+    access_module = result.scalar_one_or_none()
+
+    if not access_module:
+        raise HTTPException(
+            status_code=403, detail="Achievements are forbidden"
+        )
+
+    return access_module

@@ -14,9 +14,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.finance_app.app.db.redis import get_redis
 from backend.finance_app.app.core.config import settings
-from backend.finance_app.app.db.models import User, SteamUser, SteamTrackedGamse
+from backend.finance_app.app.db.models import User, SteamUser, SteamTrackedGamse, ModulesUsers
 from backend.finance_app.app.db.session import get_session
-from backend.finance_app.app.dependencies.auth import get_current_user
+from backend.finance_app.app.dependencies.auth import get_achievements
 from backend.finance_app.app.schemas.steam import SteamUserCreate, SteamUserRead, SteamTrackedGameRead, SteamTrackedGameCreate
 
 STEAM_ID_RE = re.compile(r"https?://steamcommunity\.com/openid/id/(\d+)")
@@ -73,25 +73,25 @@ async def steam_callback(request: Request):
 
 
 @router.get("/accounts", response_model=list[SteamUserRead])
-async def get_steam_accounts(current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+async def get_steam_accounts(current_user: ModulesUsers = Depends(get_achievements), session: AsyncSession = Depends(get_session)):
     result = await session.execute(
-        select(SteamUser).where(SteamUser.user_id == current_user.id)
+        select(SteamUser).where(SteamUser.user_id == current_user.user_id)
     )
     return result.scalars().all()
 
 
 @router.post("/link", response_model=SteamUserRead, status_code=201)
-async def link_steam(data: SteamUserCreate, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+async def link_steam(data: SteamUserCreate, current_user: ModulesUsers = Depends(get_achievements), session: AsyncSession = Depends(get_session)):
     existing = await session.execute(
         select(SteamUser)
-        .where(SteamUser.steam_id == data.steam_id, SteamUser.user_id == current_user.id)
+        .where(SteamUser.steam_id == data.steam_id, SteamUser.user_id == current_user.user_id)
     )
     existing = existing.scalar_one_or_none()
 
     if existing:
         return existing
 
-    new_entry = SteamUser(steam_id=data.steam_id, user_id=current_user.id)
+    new_entry = SteamUser(steam_id=data.steam_id, user_id=current_user.user_id)
     session.add(new_entry)
     await session.commit()
     await session.refresh(new_entry)
@@ -99,10 +99,10 @@ async def link_steam(data: SteamUserCreate, current_user: User = Depends(get_cur
 
 
 @router.delete("/link/{steam_id}", status_code=204)
-async def unlink_steam(steam_id: str, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+async def unlink_steam(steam_id: str, current_user: ModulesUsers = Depends(get_achievements), session: AsyncSession = Depends(get_session)):
     result = await session.execute(
         select(SteamUser)
-        .where(SteamUser.steam_id == steam_id, SteamUser.user_id == current_user.id)
+        .where(SteamUser.steam_id == steam_id, SteamUser.user_id == current_user.user_id)
     )
     entry = result.scalar_one_or_none()
 
@@ -114,15 +114,15 @@ async def unlink_steam(steam_id: str, current_user: User = Depends(get_current_u
 
 
 @router.get("/player-info/{steam_id}", status_code=200)
-async def get_steam_player_info(steam_id: str, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+async def get_steam_player_info(steam_id: str, current_user: ModulesUsers = Depends(get_achievements), session: AsyncSession = Depends(get_session)):
     result = await session.execute(
-        select(SteamUser).where(SteamUser.steam_id == steam_id, SteamUser.user_id == current_user.id)
+        select(SteamUser).where(SteamUser.steam_id == steam_id, SteamUser.user_id == current_user.user_id)
     )
     if not result.scalar_one_or_none():
         raise HTTPException(404, detail="Профиля Steam с таким id у текущего пользователя не найдено")
 
     redis_object = await get_redis()
-    cache_key = f'user_info_{steam_id}_{current_user.id}'
+    cache_key = f'user_info_{steam_id}_{current_user.user_id}'
     cache = await redis_object.get(cache_key)
 
     if cache:
@@ -173,8 +173,8 @@ async def fetch(client: httpx.AsyncClient, url: str) -> dict:
 
 
 @router.get("/tracked-games/{steam_id}", status_code=200)
-async def get_tracked_games(steam_id: str, page: int = 1, size: int = 10, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
-    su = await session.execute(select(SteamUser).where(SteamUser.steam_id == steam_id, SteamUser.user_id == current_user.id))
+async def get_tracked_games(steam_id: str, page: int = 1, size: int = 10, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_achievements)):
+    su = await session.execute(select(SteamUser).where(SteamUser.steam_id == steam_id, SteamUser.user_id == current_user.user_id))
     if not su.scalar_one_or_none():
         raise HTTPException(404, detail="Аккаунт Steam не найден")
 
@@ -196,8 +196,8 @@ async def get_tracked_games(steam_id: str, page: int = 1, size: int = 10, sessio
 
 
 @router.post("/tracked-games/{steam_id}", response_model=SteamTrackedGameRead, status_code=201)
-async def create_tracked_game(steam_id: str, data: SteamTrackedGameCreate, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
-    su = await session.execute(select(SteamUser).where(SteamUser.steam_id == steam_id, SteamUser.user_id == current_user.id))
+async def create_tracked_game(steam_id: str, data: SteamTrackedGameCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_achievements)):
+    su = await session.execute(select(SteamUser).where(SteamUser.steam_id == steam_id, SteamUser.user_id == current_user.user_id))
     if not su.scalar_one_or_none():
         raise HTTPException(404, detail="Аккаунт Steam не найден")
 
@@ -235,7 +235,7 @@ async def create_tracked_game(steam_id: str, data: SteamTrackedGameCreate, sessi
 
 
 @router.delete("/tracked-games/{steam_id}/{appid}", status_code=204)
-async def delete_tracked_app(steam_id: str, appid: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def delete_tracked_app(steam_id: str, appid: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_achievements)):
     result = await session.execute(
         select(SteamTrackedGamse).where(SteamTrackedGamse.steam_id == steam_id, SteamTrackedGamse.app_id == appid)
     )
@@ -249,7 +249,7 @@ async def delete_tracked_app(steam_id: str, appid: int, session: AsyncSession = 
 
 
 @router.get("/news/{steam_id}", status_code=200)
-async def get_news(steam_id: str, appids: list[int] = Query(...), count: int = 5, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_news(steam_id: str, appids: list[int] = Query(...), count: int = 5, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_achievements)):
     keys = [f"steam:news:{steam_id}:{appid}" for appid in appids]
 
     redis_object = await get_redis()
@@ -288,7 +288,7 @@ async def get_news(steam_id: str, appids: list[int] = Query(...), count: int = 5
 
 
 @router.get("/ach-summary/{steam_id}", status_code=200)
-async def get_achievements(steam_id: str, appids: list[int] = Query(...), session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_achievements(steam_id: str, appids: list[int] = Query(...), session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_achievements)):
     keys = [f"steam:ach:{steam_id}:{appid}" for appid in appids]
 
     redis_object = await get_redis()
@@ -321,7 +321,7 @@ async def get_achievements(steam_id: str, appids: list[int] = Query(...), sessio
 
 
 @router.get("/ach-detail/{steam_id}/{appid}", status_code=200)
-async def get_achievement_detail(steam_id: str, appid: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_achievement_detail(steam_id: str, appid: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_achievements)):
     result = await session.execute(
         select(SteamTrackedGamse).where(SteamTrackedGamse.steam_id == steam_id, SteamTrackedGamse.app_id == appid)
     )
