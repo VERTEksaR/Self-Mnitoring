@@ -257,13 +257,12 @@ async def get_news(steam_id: str, appids: list[int] = Query(...), count: int = 5
     hits, misses = {}, []
 
     for appid, value in zip(appids, cached):
-        # if value:
-        #     hits[str(appid)] = json.loads(value)
-        # else:
+        if value:
+            hits[str(appid)] = json.loads(value)
+        else:
             misses.append(appid)
 
     if misses:
-        print(1, misses)
         async with httpx.AsyncClient(timeout=10) as client:
             results = await asyncio.gather(*[
                 fetch(client, f"{settings.steam_profile_games_news}?appid={appid}&count={count}&maxlength=200&format=json")
@@ -271,9 +270,7 @@ async def get_news(steam_id: str, appids: list[int] = Query(...), count: int = 5
             ])
 
         for app_id, data in zip(misses, results):
-            print(2, app_id)
             news = data.get("appnews", {})
-            print(3, news)
 
             if news.get("newsitems", False):
                 json_data = [
