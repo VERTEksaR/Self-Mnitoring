@@ -391,17 +391,20 @@ function News({ steamId }) {
         try {
             const res = await getTrackedGames(steamId, page, 10);
             const games = res.data.items ?? [];
+            console.log('[News] tracked games loaded:', games);
             setTrackedGames(games);
             setTotalPages(res.data.pages ?? 1);
             if (games.length > 0) {
                 const appids = games.map(g => g.appid);
+                console.log('[News] requesting news for appids:', appids);
                 const newsRes = await getGameNews(steamId, appids, 3);
+                console.log('[News] news response:', newsRes.data);
                 setNewsMap(newsRes.data);
             } else {
                 setNewsMap({});
             }
         } catch (err) {
-            console.error('[News] loadPage failed:', err?.response?.status);
+            console.error('[News] loadPage failed:', err);
         } finally {
             setLoading(false);
         }
