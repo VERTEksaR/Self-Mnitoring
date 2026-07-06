@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from backend.finance_app.app.core.config import settings
-from backend.finance_app.app.db.models import User
+from backend.finance_app.app.db.models import User, ModulesUsers, Modules
 from backend.finance_app.app.db.session import get_session
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -36,3 +36,19 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: AsyncSe
         )
 
     return user
+
+
+async def get_finances(current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    result = await session.execute(
+        select(ModulesUsers)
+        .join(Modules, Modules.id == ModulesUsers.module_id)
+        .where(ModulesUsers.user_id == current_user.id, Modules.name == "finances")
+    )
+    access_module = result.scalar_one_or_none()
+
+    if not access_module:
+        raise HTTPException(
+            status_code=403, detail="Finances are forbidden"
+        )
+
+    return access_module

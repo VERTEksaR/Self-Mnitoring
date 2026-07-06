@@ -4,10 +4,11 @@ from math import ceil
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from backend.finance_app.app.dependencies.auth import get_current_user
 from backend.finance_app.app.db.session import get_session
-from backend.finance_app.app.db.models import User
-from backend.finance_app.app.schemas.user import UserRead, UserFilter
+from backend.finance_app.app.db.models import User, ModulesUsers
+from backend.finance_app.app.schemas.user import UserRead, UserFilter, ModulesUserRead
 from backend.finance_app.app.schemas.common import Page
 
 router = APIRouter()
@@ -19,6 +20,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+@router.get("/me/modules", response_model=list[ModulesUserRead], status_code=200)
+async def get_modules(session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+    result = await session.execute(
+        select(ModulesUsers)
+        .options(selectinload(ModulesUsers.module))
+        .where(ModulesUsers.user_id == current_user.id)
+    )
+    return result.scalars().all()
 
 
 @router.get('/{user_id}', response_model=UserRead, status_code=200)

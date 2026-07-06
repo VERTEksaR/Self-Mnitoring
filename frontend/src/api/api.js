@@ -60,6 +60,8 @@ export const createCategory = (data) => api.post('categories/', data);
 export const updateCategory = (id, data) => api.patch(`categories/${id}`, data);
 export const createAccount = (data) => api.post('accounts/', data);
 
+export const getMyModules = () => api.get('users/me/modules');
+
 export const getSteamAccounts = () => api.get('steam/accounts');
 export const linkSteam = (steam_id) => api.post('steam/link', { steam_id });
 export const unlinkSteam = (steam_id) => api.delete(`steam/link/${steam_id}`);
