@@ -24,6 +24,7 @@ export default defineConfig({
       '/steam/tracked-games': 'http://localhost:8000',
       '/steam/ach-summary': 'http://localhost:8000',
       '/steam/ach-detail': 'http://localhost:8000',
+      '/steam/news': 'http://localhost:8000',
     },
   },
 });
