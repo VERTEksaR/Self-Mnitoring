@@ -1,3 +1,4 @@
+import html
 import json
 import re
 import asyncio
@@ -280,7 +281,7 @@ async def get_news(steam_id: str, appids: list[int] = Query(...), count: int = 5
                         "title": new.get("title"),
                         "url": new.get("url"),
                         "date": new.get("date"),
-                        "contents": re.sub(r'^(?:.*?\.(?:png|jpe?g|gif)\s*)+', '', new.get("contents", "")),
+                        "contents": clean_news_contents(new.get("contents", "")),
                     } for new in news["newsitems"]
                 ]
                 await redis_object.set(f"steam:news:{steam_id}:{app_id}", json.dumps(json_data), ex=86400)
@@ -368,3 +369,14 @@ async def get_achievement_detail(steam_id: str, appid: int, session: AsyncSessio
     }
     await redis_object.set(cache_key, json.dumps(response_data), ex=86400)
     return response_data
+
+
+NEWS_IMAGE_PREFIX_RE = re.compile(r'^(?:.*?\.(?:png|jpe?g|gif)\s*)+')
+NEWS_TAG_RE = re.compile(r'<[^>]+>|\[/?\w+(?:=[^]]*)?\]')
+
+
+def clean_news_contents(text: str) -> str:
+    text = NEWS_IMAGE_PREFIX_RE.sub('', text)
+    text = NEWS_TAG_RE.sub('', text)
+    return html.unescape(text).strip()
+
