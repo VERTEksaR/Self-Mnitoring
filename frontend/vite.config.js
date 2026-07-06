@@ -21,6 +21,10 @@ export default defineConfig({
       '/steam/accounts': 'http://localhost:8000',
       '/steam/link': 'http://localhost:8000',
       '/steam/player-info': 'http://localhost:8000',
+      '/steam/tracked-games': 'http://localhost:8000',
+      '/steam/ach-summary': 'http://localhost:8000',
+      '/steam/ach-detail': 'http://localhost:8000',
+      '/steam/news': 'http://localhost:8000',
     },
   },
 });

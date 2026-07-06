@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     steam_profile_info_url: str
     steam_profile_games_url: str
     steam_profile_recent_games: str
+    steam_profile_games_achievements: str
+    steam_profile_games_news: str
     redis_host: str = "localhost"
     redis_port: int = 6379
 

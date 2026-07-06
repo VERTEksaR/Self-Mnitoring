@@ -88,7 +88,7 @@ async def delete_account(account_id: int, session: AsyncSession = Depends(get_se
 
     await session.delete(account)
     await session.commit()
-    logger.info(f"Счет с id {account_id} был удален")
+    logger.info(f"С чет с id {account_id} был удален")
     return None
 
 
