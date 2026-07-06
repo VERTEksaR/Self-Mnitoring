@@ -247,6 +247,45 @@ async def delete_tracked_app(steam_id: str, appid: int, session: AsyncSession = 
     await session.commit()
 
 
+@router.get("/news/{steam_id}", status_code=200)
+async def get_news(steam_id: str, appids: list[int] = Query(...), count: int = 5, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+    keys = [f"steam:news:{steam_id}:{appid}" for appid in appids]
+
+    redis_object = await get_redis()
+    cached = await redis_object.mget(*keys)
+    hits, misses = {}, []
+
+    for appid, value in zip(appids, cached):
+        if value:
+            hits[str(appid)] = json.loads(value)
+        else:
+            misses.append(appid)
+
+    if misses:
+        async with httpx.AsyncClient(timeout=10) as client:
+            results = await asyncio.gather(*[
+                fetch(client, f"{settings.steam_profile_games_news}?appid={appid}&count={count}&maxlength=200&format=json")
+                for appid in misses
+            ])
+
+        for app_id, data in zip(misses, results):
+            news = data.get("appnews", {})
+
+            if news.get("newsitems", False):
+                json_data = [
+                    {
+                        "title": new.get("title"),
+                        "url": new.get("url"),
+                        "date": new.get("date"),
+                        "contents": re.sub(r'^(?:.*?\.(?:png|jpe?g|gif)\s*)+', '', new.get("contents", "")),
+                    } for new in news["newsitems"]
+                ]
+                await redis_object.set(f"steam:news:{steam_id}:{app_id}", json.dumps(json_data), ex=86400)
+                hits[str(app_id)] = json_data
+
+    return hits
+
+
 @router.get("/ach-summary/{steam_id}", status_code=200)
 async def get_achievements(steam_id: str, appids: list[int] = Query(...), session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
     keys = [f"steam:ach:{steam_id}:{appid}" for appid in appids]

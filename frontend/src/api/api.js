@@ -75,3 +75,6 @@ export const getAchievementsSummary = (steam_id, appids) =>
     api.get(`steam/ach-summary/${steam_id}`, { params: { appids } });
 export const getAchievementsDetail = (steam_id, appid) =>
     api.get(`steam/ach-detail/${steam_id}/${appid}`);
+
+export const getGameNews = (steam_id, appids, count = 3) =>
+    api.get(`steam/news/${steam_id}`, { params: { appids, count } });

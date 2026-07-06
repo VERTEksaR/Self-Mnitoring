@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSteamAccounts, linkSteam, unlinkSteam, getPlayerInfo, getTrackedGames, addTrackedGame, removeTrackedGame, getAchievementsSummary } from '../api/api';
+import { getSteamAccounts, linkSteam, unlinkSteam, getPlayerInfo, getTrackedGames, addTrackedGame, removeTrackedGame, getAchievementsSummary, getGameNews } from '../api/api';
 import './steam.css';
 
 // ── icons ──
@@ -16,7 +16,6 @@ const SteamIcon    = () => <Ico><line x1="6" x2="10" y1="11" y2="11" /><line x1=
 const UserIcon     = () => <Ico><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></Ico>;
 const NewsIcon     = () => <Ico><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" /><path d="M18 14h-8M15 18h-5M10 6h8v4h-8V6Z" /></Ico>;
 const TrophyIcon   = () => <Ico><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></Ico>;
-const WrenchIcon   = () => <Ico><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></Ico>;
 
 const nf = (n) => Number(n).toLocaleString('ru-RU');
 
@@ -369,18 +368,187 @@ function Achievements({ steamId }) {
     );
 }
 
-// ── "В разработке" заглушка ──
-function WIP({ label }) {
-    return (
-        <div className="card empty" style={{ minHeight: 320 }}>
-            <div className="empty__icon" style={{ width: 52, height: 52, color: 'var(--brand)' }}>
-                <WrenchIcon />
-            </div>
-            <div className="empty__title" style={{ color: 'var(--text-strong)', fontSize: 16 }}>В разработке</div>
-            <div className="empty__hint" style={{ maxWidth: 280 }}>
-                Раздел «{label}» будет доступен после подключения Steam API на бэкенде.
-            </div>
+// ── News section ──
+// Список отслеживаемых игр общий с разделом «Достижения» (одна и та же таблица
+// на бэке) — игру, добавленную здесь, сразу видно там, и наоборот.
+function News({ steamId }) {
+    const [trackedGames, setTrackedGames] = useState([]);
+    const [newsMap, setNewsMap] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [appIdInput, setAppIdInput] = useState('');
+    const [adding, setAdding] = useState(false);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+
+    useEffect(() => {
+        if (!steamId) { setLoading(false); return; }
+        loadPage();
+    }, [steamId, page]);
+
+    const loadPage = async () => {
+        setLoading(true);
+        try {
+            const res = await getTrackedGames(steamId, page, 10);
+            const games = res.data.items ?? [];
+            setTrackedGames(games);
+            setTotalPages(res.data.pages ?? 1);
+            if (games.length > 0) {
+                const appids = games.map(g => g.appid);
+                const newsRes = await getGameNews(steamId, appids, 3);
+                setNewsMap(newsRes.data);
+            } else {
+                setNewsMap({});
+            }
+        } catch (err) {
+            console.error('[News] loadPage failed:', err?.response?.status);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAdd = async () => {
+        const appid = parseInt(appIdInput.trim());
+        if (!appid) return;
+        setAdding(true);
+        try {
+            await addTrackedGame(steamId, appid);
+            setAppIdInput('');
+            if (page !== 1) setPage(1);
+            else loadPage();
+        } catch (err) {
+            console.error('[News] add failed:', err?.response?.data);
+        } finally {
+            setAdding(false);
+        }
+    };
+
+    const handleRemove = async (appid) => {
+        try {
+            await removeTrackedGame(steamId, appid);
+            setTrackedGames(prev => prev.filter(g => g.appid !== appid));
+        } catch (err) {
+            console.error('[News] remove failed:', err?.response?.data);
+        }
+    };
+
+    const filtered = search
+        ? trackedGames.filter(g => g.game_name.toLowerCase().includes(search.toLowerCase()))
+        : trackedGames;
+
+    if (!steamId) return (
+        <div className="card empty" style={{ minHeight: 200 }}>
+            <div className="empty__title">Выберите аккаунт</div>
+            <div className="empty__hint">Привяжите Steam аккаунт выше, чтобы видеть новости по играм.</div>
         </div>
+    );
+
+    return (
+        <>
+            {/* top bar */}
+            <div className="card" style={{ padding: '12px 16px', marginBottom: 14, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                <input
+                    className="input"
+                    placeholder="Поиск по названию..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    style={{ flex: 1, minWidth: 160 }}
+                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                        className="input"
+                        placeholder="App ID"
+                        value={appIdInput}
+                        onChange={e => setAppIdInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                        style={{ width: 110 }}
+                    />
+                    <button
+                        className="btn btn-primary btn-sm"
+                        onClick={handleAdd}
+                        disabled={adding || !appIdInput.trim()}
+                    >
+                        {adding ? '...' : '+ Добавить'}
+                    </button>
+                </div>
+            </div>
+
+            {loading ? (
+                <div className="card empty" style={{ minHeight: 200 }}>
+                    <div className="empty__hint">Загрузка...</div>
+                </div>
+            ) : filtered.length === 0 ? (
+                <div className="card empty" style={{ minHeight: 200 }}>
+                    <div className="empty__title">{search ? 'Ничего не найдено' : 'Нет отслеживаемых игр'}</div>
+                    {!search && (
+                        <div className="empty__hint">
+                            Введите App ID из URL магазина Steam и нажмите «+ Добавить».<br />
+                            <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>
+                                Пример: store.steampowered.com/app/<strong>440</strong>/
+                            </span>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    {filtered.map(game => {
+                        const items = newsMap[String(game.appid)];
+                        return (
+                            <div key={game.appid} className="card" style={{ overflow: 'hidden' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
+                                    <img
+                                        className="ach-row__img"
+                                        src={`https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`}
+                                        alt={game.game_name}
+                                        onError={e => { e.target.style.display = 'none'; }}
+                                    />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div className="ach-row__name">{game.game_name}</div>
+                                        <div className="ach-row__appid steam-mono">App ID: {game.appid}</div>
+                                    </div>
+                                    <button
+                                        className="btn btn-ghost btn-sm"
+                                        onClick={() => handleRemove(game.appid)}
+                                        title="Убрать из отслеживаемых"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+
+                                {items === undefined ? (
+                                    <div style={{ padding: '14px 16px', fontSize: 12, color: 'var(--text-muted)' }}>Загрузка новостей...</div>
+                                ) : items.length === 0 ? (
+                                    <div style={{ padding: '14px 16px', fontSize: 12, color: 'var(--text-muted)' }}>Новостей нет</div>
+                                ) : (
+                                    items.map((n, i) => (
+                                        <div key={i} className="steam-news-item">
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 4 }}>
+                                                    <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text-strong)' }}>{n.title}</span>
+                                                    <span style={{ fontSize: 11, color: 'var(--text-faint)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                                        {n.date ? new Date(n.date * 1000).toLocaleDateString('ru-RU') : ''}
+                                                    </span>
+                                                </div>
+                                                {n.contents && <div className="steam-news-excerpt">{n.contents}</div>}
+                                                <a className="steam-link" href={n.url} target="_blank" rel="noreferrer">Читать в Steam →</a>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {totalPages > 1 && !loading && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20 }}>
+                    <button className="btn btn-ghost btn-sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>←</button>
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{page} / {totalPages}</span>
+                    <button className="btn btn-ghost btn-sm" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>→</button>
+                </div>
+            )}
+        </>
     );
 }
 
@@ -502,7 +670,7 @@ if (steamId) {
                         onUnlink={handleUnlink}
                     />
                     {active === 'profile'      && <Profile steamId={selectedSteamId} />}
-                    {active === 'news'         && <WIP label="Новости" />}
+                    {active === 'news'         && <News steamId={selectedSteamId} />}
                     {active === 'achievements' && <Achievements steamId={selectedSteamId} />}
                 </main>
             </div>
