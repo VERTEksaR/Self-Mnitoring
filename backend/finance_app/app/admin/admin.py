@@ -66,4 +66,6 @@ def create_admin(app):
     admin.add_view(CategoryAdmin)
     admin.add_view(AccountAdmin)
     admin.add_view(TransactionAdmin)
+    admin.add_view(ModulesAdmin)
+    admin.add_view(ModulesUsersAdmin)
 
