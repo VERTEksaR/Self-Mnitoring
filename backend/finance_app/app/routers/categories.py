@@ -7,9 +7,9 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.finance_app.app.db.redis import get_redis
-from backend.finance_app.app.dependencies.auth import get_current_user
+from backend.finance_app.app.dependencies.auth import get_finances
 from backend.finance_app.app.db.session import get_session
-from backend.finance_app.app.db.models import Category, User
+from backend.finance_app.app.db.models import Category, User, ModulesUsers
 from backend.finance_app.app.schemas.category import CategoryRead, CategoryCreate, CategoryChange
 from backend.finance_app.app.schemas.common import Page
 
@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 
 
 @router.get('/{category_id}', response_model=CategoryRead, status_code=200)
-async def get_category(category_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_category(category_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     result = await session.execute(
-        select(Category).where((Category.id == category_id) & (Category.user_id == current_user.id))
+        select(Category).where((Category.id == category_id) & (Category.user_id == current_user.user_id))
     )
     category = result.scalar_one_or_none()
 
@@ -39,7 +39,7 @@ async def get_category(category_id: int, session: AsyncSession = Depends(get_ses
 
 
 @router.delete('/{category_id}', status_code=204)
-async def delete_category(category_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def delete_category(category_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     category = await session.get(Category, category_id)
 
     if not category:
@@ -53,7 +53,7 @@ async def delete_category(category_id: int, session: AsyncSession = Depends(get_
 
 
 @router.patch('/{category_id}', response_model=CategoryRead, status_code=200)
-async def change_category(category_id: int, data: CategoryChange, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def change_category(category_id: int, data: CategoryChange, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     category = await session.get(Category, category_id)
 
     if not category:
@@ -71,8 +71,8 @@ async def change_category(category_id: int, data: CategoryChange, session: Async
 
 
 @router.post('/', response_model=CategoryRead, status_code=201)
-async def create_category(category_data: CategoryCreate, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
-    category = Category(**category_data.model_dump(), user_id=current_user.id)
+async def create_category(category_data: CategoryCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+    category = Category(**category_data.model_dump(), user_id=current_user.user_id)
     session.add(category)
     await session.commit()
     logger.info(f"Категория с id {category.id} была создана")
@@ -80,11 +80,11 @@ async def create_category(category_data: CategoryCreate, session: AsyncSession =
 
 
 @router.get('/', response_model=Page[CategoryRead], status_code=200)
-async def get_all_categories(page: int = 1, size: int = 10, name: str = '', session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_all_categories(page: int = 1, size: int = 10, name: str = '', session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     redis_object = await get_redis()
 
     total_result = await session.execute(
-        select(func.count()).where((Category.name.like(f"%{name}%")) & (Category.user_id == current_user.id))
+        select(func.count()).where((Category.name.like(f"%{name}%")) & (Category.user_id == current_user.user_id))
     )
     total = total_result.scalar_one()
 
@@ -95,7 +95,7 @@ async def get_all_categories(page: int = 1, size: int = 10, name: str = '', sess
         return json.loads(cache)
 
     result = await session.execute(
-        select(Category).where((Category.name.like(f"%{name}%")) & (Category.user_id == current_user.id))
+        select(Category).where((Category.name.like(f"%{name}%")) & (Category.user_id == current_user.user_id))
     )
     categories = result.scalars().all()
     pages = ceil(total / size) if total > 0 else 1

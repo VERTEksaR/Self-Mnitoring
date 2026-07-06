@@ -4,9 +4,9 @@ from math import ceil
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.finance_app.app.dependencies.auth import get_current_user
+from backend.finance_app.app.dependencies.auth import get_trainings
 from backend.finance_app.app.db.session import get_session
-from backend.finance_app.app.db.models import Exercises, User
+from backend.finance_app.app.db.models import Exercises, User, ModulesUsers
 from backend.finance_app.app.schemas.exercises import ExerciseRead, ExerciseChange, ExerciseCreate
 from backend.finance_app.app.schemas.common import Page
 
@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/{exercise_id}", response_model=ExerciseRead, status_code=200)
-async def get_exercise(exercise_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_exercise(exercise_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
-        select(Exercises).where(Exercises.id == exercise_id, Exercises.user_id == current_user.id)
+        select(Exercises).where(Exercises.id == exercise_id, Exercises.user_id == current_user.user_id)
     )
     exercise = result.scalar_one_or_none()
 
@@ -37,9 +37,9 @@ async def get_exercise(exercise_id: int, session: AsyncSession = Depends(get_ses
 
 
 @router.delete("/{exercise_id}", status_code=204)
-async def delete_exercise(exercise_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def delete_exercise(exercise_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
-        select(Exercises).where(Exercises.id == exercise_id, Exercises.user_id == current_user.id)
+        select(Exercises).where(Exercises.id == exercise_id, Exercises.user_id == current_user.user_id)
     )
     exercise = result.scalar_one_or_none()
 
@@ -54,8 +54,8 @@ async def delete_exercise(exercise_id: int, session: AsyncSession = Depends(get_
 
 
 @router.post('/', response_model=ExerciseRead, status_code=201)
-async def create_exercise(exercise_data: ExerciseCreate, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
-    exercise = Exercises(**exercise_data.model_dump(), user_id=current_user.id)
+async def create_exercise(exercise_data: ExerciseCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
+    exercise = Exercises(**exercise_data.model_dump(), user_id=current_user.user_id)
     session.add(exercise)
     await session.commit()
     await session.refresh(exercise)
@@ -64,9 +64,9 @@ async def create_exercise(exercise_data: ExerciseCreate, session: AsyncSession =
 
 
 @router.patch("/{exercise_id}", response_model=ExerciseRead, status_code=200)
-async def change_exercise(exercise_id: int, exercise_data: ExerciseChange, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def change_exercise(exercise_id: int, exercise_data: ExerciseChange, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
-        select(Exercises).where(Exercises.id == exercise_id, Exercises.user_id == current_user.id)
+        select(Exercises).where(Exercises.id == exercise_id, Exercises.user_id == current_user.user_id)
     )
     exercise = result.scalar_one_or_none()
 
@@ -85,14 +85,14 @@ async def change_exercise(exercise_id: int, exercise_data: ExerciseChange, sessi
 
 
 @router.get("/", response_model=Page[ExerciseRead], status_code=200)
-async def get_exercises(page: int = 1, size: int = 10, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_exercises(page: int = 1, size: int = 10, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     total_result = await session.execute(
-        select(func.count()).where(Exercises.user_id == current_user.id)
+        select(func.count()).where(Exercises.user_id == current_user.user_id)
     )
     total = total_result.scalar_one()
 
     result = await session.execute(
-        select(Exercises).where(Exercises.user_id == current_user.id)
+        select(Exercises).where(Exercises.user_id == current_user.user_id)
         .offset((page - 1) * size)
         .limit(size)
     )

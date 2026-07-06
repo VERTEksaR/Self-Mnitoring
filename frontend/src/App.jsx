@@ -6,10 +6,22 @@ import SteamPage from './pages/SteamPage';
 import SteamAchievementsDetailPage from './pages/SteamAchievementsDetailPage';
 import LoginPage from './pages/LoginPage';
 import StartPage from './pages/StartPage';
+import { useModules } from './hooks/useModules';
 
 function PrivateRoute({ children }) {
     const token = localStorage.getItem('access_token');
     return token ? children : <Navigate to="/login" replace />;
+}
+
+// Пускает на страницу, только если у пользователя есть соответствующий модуль
+// (по данным GET /users/me/modules). Пока грузится список — ничего не рендерим.
+function ModuleRoute({ module, children }) {
+    const { modules, loading } = useModules();
+
+    if (loading) return null;
+    if (!modules.has(module)) return <Navigate to="/" replace />;
+
+    return children;
 }
 
 function AppContent() {
@@ -28,16 +40,16 @@ function AppContent() {
                     <PrivateRoute><StartPage /></PrivateRoute>
                 } />
                 <Route path="/finance" element={
-                    <PrivateRoute><FinancePage /></PrivateRoute>
+                    <PrivateRoute><ModuleRoute module="finances"><FinancePage /></ModuleRoute></PrivateRoute>
                 } />
                 <Route path="/workouts" element={
-                    <PrivateRoute><WorkoutsPage /></PrivateRoute>
+                    <PrivateRoute><ModuleRoute module="trainings"><WorkoutsPage /></ModuleRoute></PrivateRoute>
                 } />
                 <Route path="/steam" element={
-                    <PrivateRoute><SteamPage /></PrivateRoute>
+                    <PrivateRoute><ModuleRoute module="achievements"><SteamPage /></ModuleRoute></PrivateRoute>
                 } />
                 <Route path="/steam/achievements/:appid" element={
-                    <PrivateRoute><SteamAchievementsDetailPage /></PrivateRoute>
+                    <PrivateRoute><ModuleRoute module="achievements"><SteamAchievementsDetailPage /></ModuleRoute></PrivateRoute>
                 } />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

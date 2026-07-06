@@ -38,3 +38,19 @@ class UserFilter(BaseModel):
     email: Optional[EmailStr] = None
     is_active: Optional[bool] = None
     is_admin: Optional[bool] = None
+
+
+class ModuleRead(BaseModel):
+    id: int
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ModulesUserRead(BaseModel):
+    id: int
+    user_id: int
+    module_id: int
+    module: ModuleRead
+
+    model_config = ConfigDict(from_attributes=True)

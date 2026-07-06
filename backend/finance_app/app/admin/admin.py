@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.finance_app.app.core.config import settings
 from backend.finance_app.app.core.security import verify_password
 from backend.finance_app.app.db.session import engine, get_session
-from backend.finance_app.app.db.models import User, Category, Account, Transaction
+from backend.finance_app.app.db.models import User, Category, Account, Transaction, Modules, ModulesUsers
 
 
 class AdminAuth(AuthenticationBackend):
@@ -51,6 +51,14 @@ class TransactionAdmin(ModelView, model=Transaction):
     column_list = ["id", "amount", "cashback", "replenishment", "transaction_date"]
 
 
+class ModulesAdmin(ModelView, model=Modules):
+    column_list = ["id", "name"]
+
+
+class ModulesUsersAdmin(ModelView, model=ModulesUsers):
+    column_list = ["id", "user", "module"]
+
+
 def create_admin(app):
     authentication_backend = AdminAuth(secret_key=settings.secret_key)
     admin = Admin(app=app, engine=engine, authentication_backend=authentication_backend)
@@ -58,4 +66,6 @@ def create_admin(app):
     admin.add_view(CategoryAdmin)
     admin.add_view(AccountAdmin)
     admin.add_view(TransactionAdmin)
+    admin.add_view(ModulesAdmin)
+    admin.add_view(ModulesUsersAdmin)
 

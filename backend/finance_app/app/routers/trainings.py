@@ -4,9 +4,9 @@ from math import ceil
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.finance_app.app.dependencies.auth import get_current_user
+from backend.finance_app.app.dependencies.auth import get_trainings
 from backend.finance_app.app.db.session import get_session
-from backend.finance_app.app.db.models import Trainings, User
+from backend.finance_app.app.db.models import Trainings, User, ModulesUsers
 from backend.finance_app.app.schemas.trainings import TrainingRead, TrainingChange, TrainingCreate
 from backend.finance_app.app.schemas.common import Page
 
@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/{training_id}", response_model=TrainingRead, status_code=200)
-async def get_training(training_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_training(training_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
-        select(Trainings).where(Trainings.id == training_id, Trainings.user_id == current_user.id)
+        select(Trainings).where(Trainings.id == training_id, Trainings.user_id == current_user.user_id)
     )
     training = result.scalar_one_or_none()
     if not training:
@@ -33,9 +33,9 @@ async def get_training(training_id: int, session: AsyncSession = Depends(get_ses
 
 
 @router.delete("/{training_id}", status_code=204)
-async def delete_training(training_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def delete_training(training_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
-        select(Trainings).where(Trainings.id == training_id, Trainings.user_id == current_user.id)
+        select(Trainings).where(Trainings.id == training_id, Trainings.user_id == current_user.user_id)
     )
     training = result.scalar_one_or_none()
     if not training:
@@ -46,8 +46,8 @@ async def delete_training(training_id: int, session: AsyncSession = Depends(get_
 
 
 @router.post("/", response_model=TrainingRead, status_code=201)
-async def create_training(training_data: TrainingCreate, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
-    training = Trainings(**training_data.model_dump(), user_id=current_user.id)
+async def create_training(training_data: TrainingCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
+    training = Trainings(**training_data.model_dump(), user_id=current_user.user_id)
     session.add(training)
     await session.commit()
     await session.refresh(training)
@@ -56,9 +56,9 @@ async def create_training(training_data: TrainingCreate, session: AsyncSession =
 
 
 @router.patch("/{training_id}", response_model=TrainingRead, status_code=200)
-async def change_training(training_id: int, training_data: TrainingChange, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def change_training(training_id: int, training_data: TrainingChange, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
-        select(Trainings).where(Trainings.id == training_id, Trainings.user_id == current_user.id)
+        select(Trainings).where(Trainings.id == training_id, Trainings.user_id == current_user.user_id)
     )
     training = result.scalar_one_or_none()
     if not training:
@@ -73,14 +73,14 @@ async def change_training(training_id: int, training_data: TrainingChange, sessi
 
 
 @router.get("/", response_model=Page[TrainingRead], status_code=200)
-async def get_trainings(page: int = 1, size: int = 10, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_trainings(page: int = 1, size: int = 10, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     total = (await session.execute(
-        select(func.count()).where(Trainings.user_id == current_user.id)
+        select(func.count()).where(Trainings.user_id == current_user.user_id)
     )).scalar_one()
 
     trainings = (await session.execute(
         select(Trainings)
-        .where(Trainings.user_id == current_user.id)
+        .where(Trainings.user_id == current_user.user_id)
         .offset((page - 1) * size)
         .limit(size)
     )).scalars().all()
