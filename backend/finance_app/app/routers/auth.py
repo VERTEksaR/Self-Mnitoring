@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from backend.finance_app.app.db.session import get_session
-from backend.finance_app.app.db.models import User, TelegramUser
+from backend.finance_app.app.db.models import User, TelegramUser, ModulesUsers, Modules
 from backend.finance_app.app.schemas.user import UserLogin, UserCreate, UserRead, Token
 from backend.finance_app.app.core.security import hash_password, verify_password, create_access_token
 
@@ -27,6 +27,20 @@ async def register_user(user_data: UserCreate, session: AsyncSession = Depends(g
         is_admin=user_data.is_admin,
     )
     session.add(new_user)
+    await session.flush()
+
+    module = await session.execute(
+        select(Modules)
+        .where(Modules.name == 'finances')
+    )
+    module = module.scalar_one_or_none()
+
+    if module:
+        session.add(ModulesUsers(
+            user_id=new_user.id,
+            module_id=module.id)
+        )
+
     await session.commit()
 
     access_token = create_access_token({'sub': new_user.email})
