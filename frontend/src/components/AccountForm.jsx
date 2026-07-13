@@ -28,7 +28,7 @@ export function AccountForm({ form, setForm, onClose, onSubmit }) {
                     <div className="form-group">
                         <label className="form-label">Тип счёта</label>
                         <select
-                            className="input"
+                            className="select"
                             value={form.account_type}
                             onChange={e => setForm({ ...form, account_type: e.target.value })}
                         >

@@ -14,6 +14,8 @@ class CategoryRead(BaseModel):
     user_id: int
     show_analytics: bool
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class CategoryChange(BaseModel):
     name: Optional[str] = None
