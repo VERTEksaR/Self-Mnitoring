@@ -12,6 +12,7 @@ import { CategoryModel, AddCategoryModel } from '../components/CategoryModel';
 import { AccountItem } from '../components/AccountItem';
 import { AccountModel, AddAccountModel } from '../components/AccountModel';
 import { FinanceAnalytics } from '../components/FinanceAnalytics';
+import { Savings } from '../components/Savings';
 
 // ── Helpers ──────────────────────────────────────────────────
 const fmt = (n) =>
@@ -77,6 +78,12 @@ const LayoutIcon = () => (
 const BarChartIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+);
+const PiggyBankIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 5c-1.5 0-2.7 1.1-3 2.5-3.7-1.3-11-.2-11 5 0 1.4.5 2.3 1 3v3.5h3V17h4v1.5h3V15c1-.6 1.7-1.7 2-3h2V8h-2c-.2-1.1-.7-2-3-3Z"/>
+        <path d="M9 12h.01"/>
     </svg>
 );
 
@@ -256,8 +263,9 @@ export default function FinancePage() {
     const isNewUser = allTransactions.length === 0 && (categories.length === 0 || accounts.length === 0);
 
     const sections = [
-        { id: 'overview',   label: 'Общая информация', icon: <LayoutIcon />   },
+        { id: 'overview',   label: 'Общая информация', icon: <LayoutIcon />    },
         { id: 'analytics',  label: 'Аналитика',         icon: <BarChartIcon /> },
+        { id: 'savings',    label: 'Накопления',        icon: <PiggyBankIcon /> },
     ];
 
     if (loading) return <div className="loading">Загрузка...</div>;
@@ -528,6 +536,10 @@ export default function FinancePage() {
                             accountsMap={accountsMap}
                         />
                     )}
+
+                    {activeSection === 'savings' && (
+                        <Savings categoriesMap={categoriesMap} />
+                    )}
                 </main>
             </div>
 
@@ -566,7 +578,12 @@ export default function FinancePage() {
             {selectedAccount && (
                 <AccountModel account={selectedAccount}
                     onClose={() => setSelectedAccount(null)}
-                    onDelete={async (id) => { await deleteAccount(id); setAccounts(p => p.filter(a => a.id !== id)); setSelectedAccount(null); }} />
+                    onDelete={async (id) => { await deleteAccount(id); setAccounts(p => p.filter(a => a.id !== id)); setSelectedAccount(null); }}
+                    onUpdate={(updated) => {
+                        setAccounts(p => p.map(a => a.id === updated.id ? updated : a));
+                        setSelectedAccount(updated);
+                    }}
+                />
             )}
             {addAccount && (
                 <AddAccountModel onClose={() => setAddAccount(null)}

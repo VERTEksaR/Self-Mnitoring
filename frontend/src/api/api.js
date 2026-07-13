@@ -59,6 +59,7 @@ export const updateTransaction = (id, data) => api.patch(`transactions/${id}`, d
 export const createCategory = (data) => api.post('categories/', data);
 export const updateCategory = (id, data) => api.patch(`categories/${id}`, data);
 export const createAccount = (data) => api.post('accounts/', data);
+export const updateAccount = (id, data) => api.patch(`accounts/${id}`, data);
 
 export const getMyModules = () => api.get('users/me/modules');
 

@@ -72,11 +72,28 @@ class Category(Base):
         return self.name
 
 
+class AccountType(str, enum.Enum):
+    CHECKING = "Обычный"
+    SAVINGS = "Накопительный"
+    INVESTMENT = "Инвестиционный"
+
+    def __str__(self):
+        return self.value
+
+
 class Account(Base):
     __tablename__ = "accounts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    account_type: Mapped[AccountType] = mapped_column(
+        Enum(
+            AccountType,
+            values_callable=lambda c: [e.value for e in c],
+            native_enum=False
+        ), nullable=False, server_default=AccountType.CHECKING
+    )
+    goal_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=True)
 
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", back_populates="account")
 
