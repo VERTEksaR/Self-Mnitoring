@@ -14,10 +14,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.finance_app.app.db.redis import get_redis
 from backend.finance_app.app.core.config import settings
-from backend.finance_app.app.db.models import User, SteamUser, SteamTrackedGamse, ModulesUsers
+from backend.finance_app.app.db.models import SteamUser, SteamTrackedGamse, ModulesUsers
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.dependencies.auth import get_achievements
-from backend.finance_app.app.schemas.steam import SteamUserCreate, SteamUserRead, SteamTrackedGameRead, SteamTrackedGameCreate
+from backend.finance_app.app.schemas.steam.steam import SteamUserCreate, SteamUserRead, SteamTrackedGameRead, SteamTrackedGameCreate
 
 STEAM_ID_RE = re.compile(r"https?://steamcommunity\.com/openid/id/(\d+)")
 

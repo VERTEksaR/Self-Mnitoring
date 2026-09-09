@@ -13,9 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.finance_app.app.db.redis import get_redis
 from backend.finance_app.app.dependencies.auth import get_finances
 from backend.finance_app.app.db.session import get_session
-from backend.finance_app.app.db.models import Account, User, Transaction, ModulesUsers, AccountType
-from backend.finance_app.app.schemas.account import AccountRead, AccountCreate, AccountBalancesRead, AccountChange
-from backend.finance_app.app.schemas.common import Page
+from backend.finance_app.app.db.models import Account, Transaction, ModulesUsers, AccountType
+from backend.finance_app.app.schemas.finances.account import AccountRead, AccountCreate, AccountBalancesRead, AccountChange
+from backend.finance_app.app.schemas.common.common import Page
 from backend.finance_app.app.utils.redis_cache_key import make_cache_key, invalidate_cache
 
 router = APIRouter()

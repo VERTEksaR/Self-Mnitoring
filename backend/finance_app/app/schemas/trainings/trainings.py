@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel, ConfigDict
 
-from backend.finance_app.app.schemas.exercises import ExerciseTrainingReadFull
+from backend.finance_app.app.schemas.trainings.exercises import ExerciseTrainingReadFull
 
 
 class TrainingCreate(BaseModel):

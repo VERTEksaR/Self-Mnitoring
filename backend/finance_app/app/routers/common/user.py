@@ -8,8 +8,8 @@ from sqlalchemy.orm import selectinload
 from backend.finance_app.app.dependencies.auth import get_current_user
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import User, ModulesUsers
-from backend.finance_app.app.schemas.user import UserRead, UserFilter, ModulesUserRead
-from backend.finance_app.app.schemas.common import Page
+from backend.finance_app.app.schemas.common.user import UserRead, UserFilter, ModulesUserRead
+from backend.finance_app.app.schemas.common.common import Page
 
 router = APIRouter()
 

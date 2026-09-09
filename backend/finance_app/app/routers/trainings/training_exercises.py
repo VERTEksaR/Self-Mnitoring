@@ -6,9 +6,9 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.finance_app.app.dependencies.auth import get_trainings
 from backend.finance_app.app.db.session import get_session
-from backend.finance_app.app.db.models import TrainingExercises, User, ModulesUsers
-from backend.finance_app.app.schemas.exercises import ExerciseTrainingRead, ExerciseTrainingChange, ExerciseTrainingCreate
-from backend.finance_app.app.schemas.common import Page
+from backend.finance_app.app.db.models import TrainingExercises, ModulesUsers
+from backend.finance_app.app.schemas.trainings.exercises import ExerciseTrainingRead, ExerciseTrainingChange, ExerciseTrainingCreate
+from backend.finance_app.app.schemas.common.common import Page
 
 
 router = APIRouter()
