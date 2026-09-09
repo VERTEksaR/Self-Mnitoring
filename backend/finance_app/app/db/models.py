@@ -3,7 +3,7 @@ from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 
-from sqlalchemy import String, Integer, Boolean, Float, DATE, ForeignKey, UniqueConstraint, Numeric, Enum
+from sqlalchemy import String, Integer, Boolean, DATE, ForeignKey, UniqueConstraint, Numeric, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.finance_app.app.db.base import Base
 
@@ -111,8 +111,8 @@ class Transaction(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     destination: Mapped[str] = mapped_column(String, nullable=True)
-    amount: Mapped[float] = mapped_column(Float, nullable=False)
-    cashback: Mapped[float] = mapped_column(Float, nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    cashback: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     replenishment: Mapped[bool] = mapped_column(Boolean, default=False)
     transaction_date: Mapped[date] = mapped_column(DATE, nullable=True)
 
