@@ -16,6 +16,7 @@ from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Account, User, Transaction, ModulesUsers, AccountType
 from backend.finance_app.app.schemas.account import AccountRead, AccountCreate, AccountBalancesRead, AccountChange
 from backend.finance_app.app.schemas.common import Page
+from backend.finance_app.app.utils.redis_cache_key import make_cache_key, invalidate_cache
 
 router = APIRouter()
 
@@ -149,6 +150,9 @@ async def change_account(account_id: int, data: AccountChange, session: AsyncSes
 
     await session.commit()
     await session.refresh(account)
+    await invalidate_cache(redis_object=await get_redis(),
+                           prefix="accounts",
+                           user_id=current_user.user_id)
     return account
 
 
@@ -166,6 +170,9 @@ async def delete_account(account_id: int, session: AsyncSession = Depends(get_se
     await session.delete(account)
     await session.commit()
     logger.info(f"С чет с id {account_id} был удален")
+    await invalidate_cache(redis_object=await get_redis(),
+                           prefix="accounts",
+                           user_id=current_user.user_id)
     return None
 
 
@@ -175,6 +182,9 @@ async def create_account(account_data: AccountCreate, session: AsyncSession = De
     session.add(account)
     await session.commit()
     logger.info(f"Счет с id {account.id} был создан")
+    await invalidate_cache(redis_object=await get_redis(),
+                           prefix="accounts",
+                           user_id=current_user.user_id)
     return account
 
 
@@ -187,11 +197,18 @@ async def get_accounts(page: int = 1, size: int = 10, name: str = '', session: A
     )
     total = total_result.scalar_one()
 
-    cache_key = f'accounts_{current_user.user_id}_{page}_{size}_{total}'
+    cache_key = await make_cache_key("accounts", current_user.user_id,
+                               page=page, size=size, name=name)
     cache = await redis_object.get(cache_key)
 
     if cache:
-        return json.loads(cache)
+        return {
+            'items': json.loads(cache),
+            'total': total,
+            'pages': ceil(total / size) if total > 0 else 1,
+            'page': page,
+            'size': size,
+        }
 
     result = await session.execute(
         select(Account).where((Account.name.like(f"%{name}%")) & (Account.user_id == current_user.user_id))
@@ -199,6 +216,11 @@ async def get_accounts(page: int = 1, size: int = 10, name: str = '', session: A
     accounts = result.scalars().all()
     pages = ceil(total / size) if total > 0 else 1
     logger.info(f"Всего было найдено {total} счетов")
+
+    await redis_object.set(cache_key,
+                           json.dumps([AccountRead.model_validate(a).model_dump(mode="json") for a in accounts]),
+                           3600)
+
     result = {
         'items': [AccountRead.model_validate(a).model_dump(mode="json") for a in accounts],
         'total': total,
@@ -206,5 +228,4 @@ async def get_accounts(page: int = 1, size: int = 10, name: str = '', session: A
         'page': page,
         'size': size,
     }
-    await redis_object.set(cache_key, json.dumps(result), ex=3600)
     return result
