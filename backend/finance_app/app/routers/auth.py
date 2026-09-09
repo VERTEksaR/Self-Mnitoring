@@ -24,7 +24,7 @@ async def register_user(user_data: UserCreate, session: AsyncSession = Depends(g
         email=user_data.email,
         hashed_password=hash_password(user_data.password),
         nickname=user_data.nickname,
-        is_admin=user_data.is_admin,
+        is_admin=False,
     )
     session.add(new_user)
     await session.flush()
