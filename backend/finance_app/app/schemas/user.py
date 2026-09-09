@@ -8,7 +8,6 @@ class UserCreate(BaseModel):
     telegram_id: Optional[str] = None
     email: EmailStr
     password: str
-    is_admin: bool
 
 
 class UserLogin(BaseModel):
