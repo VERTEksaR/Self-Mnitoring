@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createCategory, updateCategory } from '../api/api';
+import { createCategory, updateCategory } from "../api/finance/categories.ts";
 import { CategoryForm } from './CategoryForm';
 
 
@@ -16,10 +16,10 @@ export function AddCategoryModel({ onClose, onSaved }) {
         e.preventDefault();
         try {
             const res = await createCategory(form);
-            onSaved(res.data);
+            onSaved(res);
             onClose();
         } catch (err) {
-            console.log(err.response?.data || err);
+            console.log(err.response || err);
         }
     };
 
@@ -40,9 +40,9 @@ export function CategoryModel({ category, onClose, onDelete, onUpdate }) {
         setLoading(true);
         try {
             const res = await updateCategory(category.id, { show_analytics: !category.show_analytics });
-            onUpdate?.(res.data);
+            onUpdate?.(res);
         } catch (err) {
-            console.log(err.response?.data || err);
+            console.log(err.response || err);
         } finally {
             setLoading(false);
         }

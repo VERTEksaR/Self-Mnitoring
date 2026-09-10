@@ -28,7 +28,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@router.get("/balances", response_model=List[AccountBalancesRead], status_code=200)
+@router.get("/balances/", response_model=List[AccountBalancesRead], status_code=200)
 async def get_balances_accounts(
     date_from: date = Query(...),
     date_to: date = Query(...),
@@ -66,7 +66,7 @@ async def get_balances_accounts(
     return rows
 
 
-@router.get("/savings/trend", status_code=200)
+@router.get("/savings/trend/", status_code=200)
 async def get_trend_savings(months: int = Query(...), session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     current_date = datetime.date.today()
     pre_date = current_date - relativedelta(months=months)
@@ -94,7 +94,7 @@ async def get_trend_savings(months: int = Query(...), session: AsyncSession = De
     return rows
 
 
-@router.get("/savings", status_code=200)
+@router.get("/savings/", status_code=200)
 async def get_savings_accounts(session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     result_data = await session.execute(
         select(
@@ -117,7 +117,7 @@ async def get_savings_accounts(session: AsyncSession = Depends(get_session), cur
     return rows
 
 
-@router.get("/{account_id}", response_model=AccountRead, status_code=200)
+@router.get("/{account_id}/", response_model=AccountRead, status_code=200)
 async def get_account(account_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     result = await session.execute(
         select(Account).where((Account.id == account_id) & (Account.user_id == current_user.user_id))
@@ -132,7 +132,7 @@ async def get_account(account_id: int, session: AsyncSession = Depends(get_sessi
     return account
 
 
-@router.patch("/{account_id}", response_model=AccountRead, status_code=200)
+@router.patch("/{account_id}/", response_model=AccountRead, status_code=200)
 async def change_account(account_id: int, data: AccountChange, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     result = await session.execute(
         select(Account).where((Account.id == account_id) & (Account.user_id == current_user.user_id))
@@ -156,7 +156,7 @@ async def change_account(account_id: int, data: AccountChange, session: AsyncSes
     return account
 
 
-@router.delete("/{account_id}", status_code=204)
+@router.delete("/{account_id}/", status_code=204)
 async def delete_account(account_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     result = await session.execute(
         select(Account).where((Account.id == account_id) & (Account.user_id == current_user.user_id))

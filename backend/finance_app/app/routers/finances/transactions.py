@@ -25,7 +25,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@router.get("/{transaction_id}", response_model=TransactionRead, status_code=200)
+@router.get("/{transaction_id}/", response_model=TransactionRead, status_code=200)
 async def get_transaction(transaction_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     result = await session.execute(
         select(Transaction).where((Transaction.id == transaction_id) & (Transaction.user_id == current_user.user_id))
@@ -40,7 +40,7 @@ async def get_transaction(transaction_id: int, session: AsyncSession = Depends(g
     return transaction
 
 
-@router.delete("/{transaction_id}", status_code=204)
+@router.delete("/{transaction_id}/", status_code=204)
 async def delete_transaction(transaction_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     result = await session.execute(
         select(Transaction)
@@ -75,7 +75,7 @@ async def create_transaction(transaction_data: TransactionCreate, session: Async
     return transaction
 
 
-@router.patch("/{transaction_id}", response_model=TransactionRead, status_code=200)
+@router.patch("/{transaction_id}/", response_model=TransactionRead, status_code=200)
 async def change_transaction(transaction_id: int, transaction_data: TransactionChange, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     result = await session.execute(
         select(Transaction)

@@ -17,7 +17,6 @@ class TransactionCreate(BaseModel):
 
 
 class TransactionChange(BaseModel):
-    id: Optional[int] = None
     destination: Optional[str] = None
     amount: Optional[Decimal] = None
     cashback: Optional[Decimal] = None

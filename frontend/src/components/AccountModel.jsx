@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createAccount, updateAccount } from '../api/api';
+import { createAccount, updateAccount } from "../api/finance/accounts.ts";
 import { AccountForm } from './AccountForm';
 
 
@@ -20,10 +20,10 @@ export function AddAccountModel({ onClose, onSaved }) {
                 account_type: form.account_type,
                 goal_amount: form.goal_amount === '' ? null : Number(form.goal_amount),
             });
-            onSaved(res.data);
+            onSaved(res);
             onClose();
         } catch (err) {
-            console.log(err.response?.data || err);
+            console.log(err.response || err);
         }
     };
 
@@ -53,10 +53,10 @@ export function AccountModel({ account, onClose, onDelete, onUpdate }) {
                 account_type: form.account_type,
                 goal_amount: form.goal_amount === '' ? null : Number(form.goal_amount),
             });
-            onUpdate?.(res.data);
+            onUpdate?.(res);
             setEditing(false);
         } catch (err) {
-            console.log(err.response?.data || err);
+            console.log(err.response || err);
         }
     };
 

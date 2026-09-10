@@ -45,22 +45,6 @@ api.interceptors.response.use(
 export default api;
 
 // DELETE используют path-параметр /{id}, как ожидает бэк
-export const deleteTransaction = (id) => api.delete(`transactions/${id}`);
-export const deleteCategory = (id) => api.delete(`categories/${id}`);
-export const deleteAccount = (id) => api.delete(`accounts/${id}`);
-
-export const getTransactions = (params) => api.get('transactions/', { params });
-export const getCategories = () => api.get('categories/');
-export const getAccounts = () => api.get('accounts/');
-
-export const createTransaction = (data) => api.post('transactions/', data);
-export const updateTransaction = (id, data) => api.patch(`transactions/${id}`, data);
-
-export const createCategory = (data) => api.post('categories/', data);
-export const updateCategory = (id, data) => api.patch(`categories/${id}`, data);
-export const createAccount = (data) => api.post('accounts/', data);
-export const updateAccount = (id, data) => api.patch(`accounts/${id}`, data);
-
 export const getMyModules = () => api.get('users/me/modules');
 
 export const getSteamAccounts = () => api.get('steam/accounts');

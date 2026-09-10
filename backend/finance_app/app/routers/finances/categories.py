@@ -24,7 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@router.get('/{category_id}', response_model=CategoryRead, status_code=200)
+@router.get('/{category_id}/', response_model=CategoryRead, status_code=200)
 async def get_category(category_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     result = await session.execute(
         select(Category).where((Category.id == category_id) & (Category.user_id == current_user.user_id))
@@ -39,7 +39,7 @@ async def get_category(category_id: int, session: AsyncSession = Depends(get_ses
     return category
 
 
-@router.delete('/{category_id}', status_code=204)
+@router.delete('/{category_id}/', status_code=204)
 async def delete_category(category_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     result = await session.execute(
         select(Category)
@@ -62,7 +62,7 @@ async def delete_category(category_id: int, session: AsyncSession = Depends(get_
     return None
 
 
-@router.patch('/{category_id}', response_model=CategoryRead, status_code=200)
+@router.patch('/{category_id}/', response_model=CategoryRead, status_code=200)
 async def change_category(category_id: int, data: CategoryChange, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     result = await session.execute(
         select(Category)

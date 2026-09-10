@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { getSavingsAccounts, getSavingsTrend, getTransactions } from '../api/finance';
-import { TransactionItem } from './TransactionItem';
+import { getAccountsSavings, getAccountsSavingsTrend } from '../../api/finance/accounts.ts';
+import { getTransactions } from '../../api/finance/transactions.ts';
+import { TransactionItem } from '../TransactionItem.jsx';
 
 const fmt  = (n) => Number(n).toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const fmtK = (n) => Math.abs(n) >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(Math.round(n));
@@ -91,7 +92,7 @@ function AccountTransactionsModal({ account, categoriesMap, onClose }) {
 
     useEffect(() => {
         getTransactions({ account_id: [account.account_id], size: 200 })
-            .then(res => setTransactions(res.data.items ?? []))
+            .then(res => setTransactions(res.items ?? []))
             .catch(err => console.error('[Savings] transactions load failed:', err?.response?.status))
             .finally(() => setLoading(false));
     }, [account.account_id]);
@@ -136,10 +137,10 @@ export function Savings({ categoriesMap }) {
     const [selectedAccount, setSelectedAccount] = useState(null);
 
     useEffect(() => {
-        Promise.all([getSavingsAccounts(), getSavingsTrend(6)])
+        Promise.all([getAccountsSavings(), getAccountsSavingsTrend({months: 6})])
             .then(([accRes, trendRes]) => {
-                setAccounts(accRes.data ?? []);
-                setTrend((trendRes.data ?? []).map(p => ({ ...p, label: monthLabel(p.month) })));
+                setAccounts(accRes ?? []);
+                setTrend((trendRes ?? []).map(p => ({ ...p, label: monthLabel(p.month) })));
             })
             .catch(err => console.error('[Savings] load failed:', err?.response?.status))
             .finally(() => setLoading(false));
