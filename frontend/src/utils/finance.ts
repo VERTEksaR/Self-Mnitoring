@@ -11,7 +11,7 @@ export function daysAgoStr(n: number) {
     return new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
 }
 
-export function dateLabel(iso) {
+export function dateLabel(iso: string) {
     const t = todayStr();
     const y = daysAgoStr(1);
 
