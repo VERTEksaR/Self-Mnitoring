@@ -48,12 +48,12 @@ export function FinanceSummaryCard({ transactions }) {
                 {[
                     {
                         label: 'Доходы',
-                        value: transactions.filter(t => t.replenishment).reduce((s, t) => s + Number(t.amount, 0)),
+                        value: transactions.filter(t => t.replenishment).reduce((s, t) => s + Number(t.amount), 0),
                         color: 'var(--brand)'
                     },
                     {
                         label: 'Расходы',
-                        value: transactions.filter(t => !t.replenishment).reduce((s, t) => s + Number(t.amount, 0)),
+                        value: transactions.filter(t => !t.replenishment).reduce((s, t) => s + Number(t.amount), 0),
                         color: '#ef4444'
                     },
                 ].map(item => (

@@ -13,7 +13,7 @@ from backend.finance_app.app.db.models import Transaction, ModulesUsers
 from backend.finance_app.app.schemas.finances.transaction import TransactionRead, TransactionCreate, TransactionFilter, \
     TransactionChange
 from backend.finance_app.app.schemas.common.common import Page
-from backend.finance_app.app.utils.redis_cache_key import make_cache_key, invalidate_cache
+from backend.finance_app.app.utils.redis_cache_key import make_cache_key, invalidate_cache, safe_get, safe_set
 
 router = APIRouter()
 
@@ -151,7 +151,7 @@ async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFi
 
     cache_key = await make_cache_key("transactions", current_user.user_id,
                                page=page, size=size, **filters.model_dump(exclude_none=True))
-    cache = await redis_object.get(cache_key)
+    cache = await safe_get(redis_object, cache_key)
 
     if cache:
         return {
@@ -169,9 +169,9 @@ async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFi
     )
     transactions = result.scalars().all()
 
-    await redis_object.set(cache_key,
-                            json.dumps([TransactionRead.model_validate(t).model_dump(mode='json') for t in transactions]),
-                           3600)
+    await safe_set(redis_object, cache_key,
+                   json.dumps([TransactionRead.model_validate(t).model_dump(mode='json') for t in transactions]),
+                   ex=3600)
 
     logger.info(f"Всего было найдено {total} транзакций")
     result = {

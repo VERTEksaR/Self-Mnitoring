@@ -18,6 +18,7 @@ from backend.finance_app.app.db.models import SteamUser, SteamTrackedGamse, Modu
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.dependencies.auth import get_achievements
 from backend.finance_app.app.schemas.steam.steam import SteamUserCreate, SteamUserRead, SteamTrackedGameRead, SteamTrackedGameCreate
+from backend.finance_app.app.utils.redis_cache_key import safe_get, safe_set, safe_mget
 
 STEAM_ID_RE = re.compile(r"https?://steamcommunity\.com/openid/id/(\d+)")
 
@@ -123,7 +124,7 @@ async def get_steam_player_info(steam_id: str, current_user: ModulesUsers = Depe
 
     redis_object = await get_redis()
     cache_key = f'user_info_{steam_id}_{current_user.user_id}'
-    cache = await redis_object.get(cache_key)
+    cache = await safe_get(redis_object, cache_key)
 
     if cache:
         return json.loads(cache)
@@ -159,7 +160,7 @@ async def get_steam_player_info(steam_id: str, current_user: ModulesUsers = Depe
         "playtime": round(playtime_all),
         "games": games,
     }
-    await redis_object.set(cache_key, json.dumps(result), ex=3600)
+    await safe_set(redis_object, cache_key, json.dumps(result), ex=3600)
     return result
 
 
@@ -253,7 +254,7 @@ async def get_news(steam_id: str, appids: list[int] = Query(...), count: int = 5
     keys = [f"steam:news:{steam_id}:{appid}" for appid in appids]
 
     redis_object = await get_redis()
-    cached = await redis_object.mget(*keys)
+    cached = await safe_mget(redis_object, keys)
     hits, misses = {}, []
 
     for appid, value in zip(appids, cached):
@@ -281,7 +282,7 @@ async def get_news(steam_id: str, appids: list[int] = Query(...), count: int = 5
                         "contents": clean_news_contents(new.get("contents", "")),
                     } for new in news["newsitems"]
                 ]
-                await redis_object.set(f"steam:news:{steam_id}:{app_id}", json.dumps(json_data), ex=86400)
+                await safe_set(redis_object, f"steam:news:{steam_id}:{app_id}", json.dumps(json_data), ex=86400)
                 hits[str(app_id)] = json_data
 
     return hits
@@ -292,7 +293,7 @@ async def get_achievements_summary(steam_id: str, appids: list[int] = Query(...)
     keys = [f"steam:ach:{steam_id}:{appid}" for appid in appids]
 
     redis_object = await get_redis()
-    cached = await redis_object.mget(*keys)
+    cached = await safe_mget(redis_object, keys)
     hits, misses = {}, []
 
     for appid, value in zip(appids, cached):
@@ -314,7 +315,7 @@ async def get_achievements_summary(steam_id: str, appids: list[int] = Query(...)
                 "total": len(achievements),
                 "achieved": sum(1 for x in achievements if x.get("achieved") == 1),
             }
-            await redis_object.set(f"steam:ach:{steam_id}:{app_id}", json.dumps(json_data), ex=86400)
+            await safe_set(redis_object, f"steam:ach:{steam_id}:{app_id}", json.dumps(json_data), ex=86400)
             hits[str(app_id)] = json_data
 
     return hits
@@ -332,7 +333,7 @@ async def get_achievement_detail(steam_id: str, appid: int, session: AsyncSessio
 
     redis_object = await get_redis()
     cache_key = f"steam:ach:detail:{steam_id}:{appid}"
-    cached = await redis_object.get(cache_key)
+    cached = await safe_get(redis_object, cache_key)
     if cached:
         return json.loads(cached)
 
@@ -364,7 +365,7 @@ async def get_achievement_detail(steam_id: str, appid: int, session: AsyncSessio
         "achieved_count": sum(1 for a in achievements if a["achieved"]),
         "achievements": achievements,
     }
-    await redis_object.set(cache_key, json.dumps(response_data), ex=86400)
+    await safe_set(redis_object, cache_key, json.dumps(response_data), ex=86400)
     return response_data
 
 

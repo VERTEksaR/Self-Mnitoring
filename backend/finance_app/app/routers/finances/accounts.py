@@ -16,7 +16,7 @@ from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Account, Transaction, ModulesUsers, AccountType
 from backend.finance_app.app.schemas.finances.account import AccountRead, AccountCreate, AccountBalancesRead, AccountChange
 from backend.finance_app.app.schemas.common.common import Page
-from backend.finance_app.app.utils.redis_cache_key import make_cache_key, invalidate_cache
+from backend.finance_app.app.utils.redis_cache_key import make_cache_key, invalidate_cache, safe_get, safe_set
 
 router = APIRouter()
 
@@ -199,7 +199,7 @@ async def get_accounts(page: int = 1, size: int = 10, name: str = '', session: A
 
     cache_key = await make_cache_key("accounts", current_user.user_id,
                                page=page, size=size, name=name)
-    cache = await redis_object.get(cache_key)
+    cache = await safe_get(redis_object, cache_key)
 
     if cache:
         return {
@@ -217,9 +217,9 @@ async def get_accounts(page: int = 1, size: int = 10, name: str = '', session: A
     pages = ceil(total / size) if total > 0 else 1
     logger.info(f"Всего было найдено {total} счетов")
 
-    await redis_object.set(cache_key,
-                           json.dumps([AccountRead.model_validate(a).model_dump(mode="json") for a in accounts]),
-                           3600)
+    await safe_set(redis_object, cache_key,
+                   json.dumps([AccountRead.model_validate(a).model_dump(mode="json") for a in accounts]),
+                   ex=3600)
 
     result = {
         'items': [AccountRead.model_validate(a).model_dump(mode="json") for a in accounts],

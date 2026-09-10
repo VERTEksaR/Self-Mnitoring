@@ -12,7 +12,7 @@ from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Category, ModulesUsers
 from backend.finance_app.app.schemas.finances.category import CategoryRead, CategoryCreate, CategoryChange
 from backend.finance_app.app.schemas.common.common import Page
-from backend.finance_app.app.utils.redis_cache_key import invalidate_cache, make_cache_key
+from backend.finance_app.app.utils.redis_cache_key import invalidate_cache, make_cache_key, safe_get, safe_set
 
 router = APIRouter()
 
@@ -104,7 +104,7 @@ async def create_category(category_data: CategoryCreate, session: AsyncSession =
 @router.get('/', response_model=Page[CategoryRead], status_code=200)
 async def get_categories(page: int = 1, size: int = 10, name: str = '', session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     redis_object = await get_redis()
-    filters = {"name": name, "user_id": current_user.user_id}
+    filters = {"name": name}
 
     total_result = await session.execute(
         select(func.count())
@@ -112,9 +112,9 @@ async def get_categories(page: int = 1, size: int = 10, name: str = '', session:
     )
     total = total_result.scalar_one()
 
-    cache_key = await make_cache_key("categories", current_user.user_id,
+    cache_key = await make_cache_key("categories", user_id=current_user.user_id,
                                      page=page, size=size, **filters)
-    cache = await redis_object.get(cache_key)
+    cache = await safe_get(redis_object, cache_key)
 
     if cache:
         return {
@@ -130,10 +130,10 @@ async def get_categories(page: int = 1, size: int = 10, name: str = '', session:
     )
     categories = result.scalars().all()
 
-    await redis_object.set(cache_key,
-                           json.dumps(
-                               [CategoryRead.model_validate(t).model_dump(mode='json') for t in categories]),
-                           3600)
+    await safe_set(redis_object, cache_key,
+                   json.dumps(
+                       [CategoryRead.model_validate(t).model_dump(mode='json') for t in categories]),
+                   ex=3600)
 
     logger.info(f"Всего было найдено {total} категорий")
     result = {
