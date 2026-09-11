@@ -21,7 +21,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@router.get("/{exercise_id}", response_model=ExerciseRead, status_code=200)
+@router.get("/{exercise_id}/", response_model=ExerciseRead, status_code=200)
 async def get_exercise(exercise_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
         select(Exercises).where(Exercises.id == exercise_id, Exercises.user_id == current_user.user_id)
@@ -36,7 +36,7 @@ async def get_exercise(exercise_id: int, session: AsyncSession = Depends(get_ses
     return exercise
 
 
-@router.delete("/{exercise_id}", status_code=204)
+@router.delete("/{exercise_id}/", status_code=204)
 async def delete_exercise(exercise_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
         select(Exercises).where(Exercises.id == exercise_id, Exercises.user_id == current_user.user_id)
@@ -63,7 +63,7 @@ async def create_exercise(exercise_data: ExerciseCreate, session: AsyncSession =
     return exercise
 
 
-@router.patch("/{exercise_id}", response_model=ExerciseRead, status_code=200)
+@router.patch("/{exercise_id}/", response_model=ExerciseRead, status_code=200)
 async def change_exercise(exercise_id: int, exercise_data: ExerciseChange, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
         select(Exercises).where(Exercises.id == exercise_id, Exercises.user_id == current_user.user_id)
