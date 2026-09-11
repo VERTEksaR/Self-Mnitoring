@@ -3,7 +3,7 @@ from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 
-from sqlalchemy import String, Integer, Boolean, Float, DATE, ForeignKey, UniqueConstraint, Numeric, Enum
+from sqlalchemy import String, Integer, Boolean, DATE, ForeignKey, UniqueConstraint, Numeric, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.finance_app.app.db.base import Base
 
@@ -72,11 +72,28 @@ class Category(Base):
         return self.name
 
 
+class AccountType(str, enum.Enum):
+    CHECKING = "Обычный"
+    SAVINGS = "Накопительный"
+    INVESTMENT = "Инвестиционный"
+
+    def __str__(self):
+        return self.value
+
+
 class Account(Base):
     __tablename__ = "accounts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    account_type: Mapped[AccountType] = mapped_column(
+        Enum(
+            AccountType,
+            values_callable=lambda c: [e.value for e in c],
+            native_enum=False
+        ), nullable=False, server_default=AccountType.CHECKING
+    )
+    goal_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=True)
 
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", back_populates="account")
 
@@ -94,8 +111,8 @@ class Transaction(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     destination: Mapped[str] = mapped_column(String, nullable=True)
-    amount: Mapped[float] = mapped_column(Float, nullable=False)
-    cashback: Mapped[float] = mapped_column(Float, nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    cashback: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     replenishment: Mapped[bool] = mapped_column(Boolean, default=False)
     transaction_date: Mapped[date] = mapped_column(DATE, nullable=True)
 

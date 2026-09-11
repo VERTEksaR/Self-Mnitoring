@@ -1,0 +1,231 @@
+import datetime
+import logging
+import json
+from math import ceil
+from datetime import date
+from typing import List
+
+from dateutil.relativedelta import relativedelta
+from fastapi import APIRouter, HTTPException, Depends, Query
+from sqlalchemy import select, func, case
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.finance_app.app.db.redis import get_redis
+from backend.finance_app.app.dependencies.auth import get_finances
+from backend.finance_app.app.db.session import get_session
+from backend.finance_app.app.db.models import Account, Transaction, ModulesUsers, AccountType
+from backend.finance_app.app.schemas.finances.account import AccountRead, AccountCreate, AccountBalancesRead, AccountChange
+from backend.finance_app.app.schemas.common.common import Page
+from backend.finance_app.app.utils.redis_cache_key import make_cache_key, invalidate_cache, safe_get, safe_set
+
+router = APIRouter()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s - %(name)s - %(asctime)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+
+
+@router.get("/balances/", response_model=List[AccountBalancesRead], status_code=200)
+async def get_balances_accounts(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    session: AsyncSession = Depends(get_session),
+    current_user: ModulesUsers = Depends(get_finances),
+):
+    result_data = await session.execute(
+        select(
+            Account.id.label('account_id'),
+            Account.name.label('account_name'),
+            func.coalesce(func.sum(case(
+                (Transaction.replenishment.is_(True), Transaction.amount),
+                else_=0
+            )), 0).label('income'),
+            func.coalesce(func.sum(case(
+                (Transaction.replenishment.is_(False), Transaction.amount),
+                else_=0
+            )), 0).label('expense'),
+            func.coalesce(func.sum(case(
+                (Transaction.replenishment.is_(True), Transaction.amount),
+                else_=-Transaction.amount
+            )), 0).label('balance'),
+        )
+        .join(Transaction, Account.id == Transaction.account_id)
+        .where(
+            Account.user_id == current_user.user_id,
+            Transaction.user_id == current_user.user_id,
+            Transaction.transaction_date.between(date_from, date_to),
+        )
+        .group_by(Account.id, Account.name)
+        .order_by(Account.name)
+    )
+    rows = result_data.fetchall()
+    logger.info(f"Балансы по {len(rows)} счетам получены для пользователя {current_user.user_id}")
+    return rows
+
+
+@router.get("/savings/trend/", status_code=200)
+async def get_trend_savings(months: int = Query(...), session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+    current_date = datetime.date.today()
+    pre_date = current_date - relativedelta(months=months)
+    month_label = func.to_char(Transaction.transaction_date, 'YYYY-MM').label('month')
+    result_data = await session.execute(
+        select(
+            month_label,
+            func.coalesce(func.sum(case(
+                (Transaction.replenishment.is_(True), Transaction.amount),
+                else_=-Transaction.amount
+            )), 0).label('net'),
+        )
+        .join(Account, Account.id == Transaction.account_id)
+        .where(
+            Account.user_id == current_user.user_id,
+            Account.account_type == AccountType.SAVINGS,
+            Transaction.user_id == current_user.user_id,
+            Transaction.transaction_date.between(pre_date, current_date),
+        )
+        .group_by(month_label)
+        .order_by(month_label)
+    )
+    rows = result_data.fetchall()
+    logger.info(f"Тренд накоплений за {months} мес. получен для пользователя {current_user.user_id}")
+    return rows
+
+
+@router.get("/savings/", status_code=200)
+async def get_savings_accounts(session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+    result_data = await session.execute(
+        select(
+            Account.id.label('account_id'),
+            Account.name.label('account_name'),
+            Account.goal_amount,
+            func.coalesce(func.sum(case(
+                (Transaction.replenishment.is_(True), Transaction.amount),
+                else_=-Transaction.amount
+            )), 0).label('balance')
+        )
+        .where(
+            Account.user_id == current_user.user_id,
+            Account.account_type == AccountType.SAVINGS,
+        )
+        .group_by(Account.id)
+        .order_by(Account.id)
+    )
+    rows = result_data.fetchall()
+    return rows
+
+
+@router.get("/{account_id}/", response_model=AccountRead, status_code=200)
+async def get_account(account_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+    result = await session.execute(
+        select(Account).where((Account.id == account_id) & (Account.user_id == current_user.user_id))
+    )
+    account = result.scalar_one_or_none()
+
+    if not account:
+        logger.error(f"Счет с id {account_id} не был найден")
+        raise HTTPException(status_code=404, detail=f"Счет с id {account_id} не был найден")
+
+    logger.info(f"Счет с id {account_id} был найден")
+    return account
+
+
+@router.patch("/{account_id}/", response_model=AccountRead, status_code=200)
+async def change_account(account_id: int, data: AccountChange, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+    result = await session.execute(
+        select(Account).where((Account.id == account_id) & (Account.user_id == current_user.user_id))
+    )
+    account = result.scalar_one_or_none()
+
+    if not account:
+        logger.error(f"Счет с id {account_id} не был найден")
+        raise HTTPException(status_code=404, detail=f"Счет с id {account_id} не был найден")
+
+    updated_data = data.model_dump(exclude_unset=True)
+
+    for field, value in updated_data.items():
+        setattr(account, field, value)
+
+    await session.commit()
+    await session.refresh(account)
+    await invalidate_cache(redis_object=await get_redis(),
+                           prefix="accounts",
+                           user_id=current_user.user_id)
+    return account
+
+
+@router.delete("/{account_id}/", status_code=204)
+async def delete_account(account_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+    result = await session.execute(
+        select(Account).where((Account.id == account_id) & (Account.user_id == current_user.user_id))
+    )
+    account = result.scalar_one_or_none()
+
+    if not account:
+        logger.error(f"Счет с id {account_id} не был найден")
+        raise HTTPException(status_code=404, detail=f"Счет с id {account_id} не был найден")
+
+    await session.delete(account)
+    await session.commit()
+    logger.info(f"С чет с id {account_id} был удален")
+    await invalidate_cache(redis_object=await get_redis(),
+                           prefix="accounts",
+                           user_id=current_user.user_id)
+    return None
+
+
+@router.post("/", response_model=AccountRead, status_code=201)
+async def create_account(account_data: AccountCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+    account = Account(**account_data.model_dump(), user_id=current_user.user_id)
+    session.add(account)
+    await session.commit()
+    logger.info(f"Счет с id {account.id} был создан")
+    await invalidate_cache(redis_object=await get_redis(),
+                           prefix="accounts",
+                           user_id=current_user.user_id)
+    return account
+
+
+@router.get("/", response_model=Page[AccountRead], status_code=200)
+async def get_accounts(page: int = 1, size: int = 10, name: str = '', session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+    redis_object = await get_redis()
+
+    total_result = await session.execute(
+        select(func.count()).where((Account.name.like(f"%{name}%")) & (Account.user_id == current_user.user_id))
+    )
+    total = total_result.scalar_one()
+
+    cache_key = await make_cache_key("accounts", current_user.user_id,
+                               page=page, size=size, name=name)
+    cache = await safe_get(redis_object, cache_key)
+
+    if cache:
+        return {
+            'items': json.loads(cache),
+            'total': total,
+            'pages': ceil(total / size) if total > 0 else 1,
+            'page': page,
+            'size': size,
+        }
+
+    result = await session.execute(
+        select(Account).where((Account.name.like(f"%{name}%")) & (Account.user_id == current_user.user_id))
+    )
+    accounts = result.scalars().all()
+    pages = ceil(total / size) if total > 0 else 1
+    logger.info(f"Всего было найдено {total} счетов")
+
+    await safe_set(redis_object, cache_key,
+                   json.dumps([AccountRead.model_validate(a).model_dump(mode="json") for a in accounts]),
+                   ex=3600)
+
+    result = {
+        'items': [AccountRead.model_validate(a).model_dump(mode="json") for a in accounts],
+        'total': total,
+        'pages': pages,
+        'page': page,
+        'size': size,
+    }
+    return result

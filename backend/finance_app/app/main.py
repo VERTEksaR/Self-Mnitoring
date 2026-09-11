@@ -1,14 +1,16 @@
 from fastapi import FastAPI
 
 from backend.finance_app.app.admin.admin import create_admin
-from backend.finance_app.app.routers import categories, transactions, accounts, auth, user, exercises, trainings, training_exercises, steam
+from backend.finance_app.app.routers.common import auth, user
+from backend.finance_app.app.routers.steam import steam
+from backend.finance_app.app.routers.trainings import exercises, training_exercises, trainings
+from backend.finance_app.app.routers.finances import categories, accounts, transactions
 
 app = FastAPI(title="Finance API")
 
 create_admin(app)
 
 app.include_router(auth.router, prefix='/auth', tags=["auth"])
-
 app.include_router(categories.router, prefix='/categories', tags=["categories"])
 app.include_router(accounts.router, prefix='/accounts', tags=["accounts"])
 app.include_router(transactions.router, prefix='/transactions', tags=["transactions"])

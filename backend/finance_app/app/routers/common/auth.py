@@ -4,7 +4,7 @@ from sqlalchemy import select
 
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import User, TelegramUser, ModulesUsers, Modules
-from backend.finance_app.app.schemas.user import UserLogin, UserCreate, UserRead, Token
+from backend.finance_app.app.schemas.common.user import UserLogin, UserCreate, Token
 from backend.finance_app.app.core.security import hash_password, verify_password, create_access_token
 
 router = APIRouter()
@@ -24,7 +24,7 @@ async def register_user(user_data: UserCreate, session: AsyncSession = Depends(g
         email=user_data.email,
         hashed_password=hash_password(user_data.password),
         nickname=user_data.nickname,
-        is_admin=user_data.is_admin,
+        is_admin=False,
     )
     session.add(new_user)
     await session.flush()

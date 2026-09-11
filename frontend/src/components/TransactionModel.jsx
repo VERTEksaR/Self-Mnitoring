@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { getCategories, getAccounts, createTransaction, updateTransaction } from '../api/api';
+import { createTransaction, updateTransaction } from "../api/finance/transactions.ts";
+import { getCategories } from "../api/finance/categories.ts";
+import { getAccounts } from "../api/finance/accounts.ts";
 import { TransactionForm } from './TransactionForm';
 
 const fmt = (amount) =>
@@ -17,8 +19,8 @@ export function AddTransactionModel({ onClose, onSaved }) {
     });
 
     useEffect(() => {
-        getAccounts().then(res => setAccounts(res.data.items ?? []));
-        getCategories().then(res => setCategories(res.data.items ?? []));
+        getAccounts().then(res => setAccounts(res.items ?? []));
+        getCategories().then(res => setCategories(res.items ?? []));
     }, []);
 
     useEffect(() => {
@@ -37,10 +39,10 @@ export function AddTransactionModel({ onClose, onSaved }) {
                 account_id: Number(accountId),
                 category_id: Number(categoryId),
             });
-            onSaved(res.data);
+            onSaved(res);
             onClose();
         } catch (err) {
-            console.error(err.response?.data || err);
+            console.error(err.response || err);
         }
     };
 
@@ -70,8 +72,8 @@ export function EditTransactionModel({ transaction, onClose, onSaved }) {
     });
 
     useEffect(() => {
-        getAccounts().then(res => setAccounts(res.data.items ?? []));
-        getCategories().then(res => setCategories(res.data.items ?? []));
+        getAccounts().then(res => setAccounts(res.items ?? []));
+        getCategories().then(res => setCategories(res.items ?? []));
     }, []);
 
     const handleSubmit = async (e) => {
@@ -84,10 +86,10 @@ export function EditTransactionModel({ transaction, onClose, onSaved }) {
                 account_id: Number(accountId),
                 category_id: Number(categoryId),
             });
-            onSaved(res.data);
+            onSaved(res);
             onClose();
         } catch (err) {
-            console.error(err.response?.data || err);
+            console.error(err.response || err);
         }
     };
 

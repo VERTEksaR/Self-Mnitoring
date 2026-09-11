@@ -9,10 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.finance_app.app.db.redis import get_redis
 from backend.finance_app.app.dependencies.auth import get_finances
 from backend.finance_app.app.db.session import get_session
-from backend.finance_app.app.db.models import Transaction, User, ModulesUsers
-from backend.finance_app.app.schemas.transaction import TransactionRead, TransactionCreate, TransactionFilter, \
+from backend.finance_app.app.db.models import Transaction, ModulesUsers
+from backend.finance_app.app.schemas.finances.transaction import TransactionRead, TransactionCreate, TransactionFilter, \
     TransactionChange
-from backend.finance_app.app.schemas.common import Page
+from backend.finance_app.app.schemas.common.common import Page
+from backend.finance_app.app.utils.redis_cache_key import make_cache_key, invalidate_cache, safe_get, safe_set
 
 router = APIRouter()
 
@@ -24,7 +25,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@router.get("/{transaction_id}", response_model=TransactionRead, status_code=200)
+@router.get("/{transaction_id}/", response_model=TransactionRead, status_code=200)
 async def get_transaction(transaction_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     result = await session.execute(
         select(Transaction).where((Transaction.id == transaction_id) & (Transaction.user_id == current_user.user_id))
@@ -39,9 +40,15 @@ async def get_transaction(transaction_id: int, session: AsyncSession = Depends(g
     return transaction
 
 
-@router.delete("/{transaction_id}", status_code=204)
+@router.delete("/{transaction_id}/", status_code=204)
 async def delete_transaction(transaction_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
-    transaction = await session.get(Transaction, transaction_id)
+    result = await session.execute(
+        select(Transaction)
+        .where(Transaction.id == transaction_id,
+               Transaction.user_id == current_user.user_id)
+    )
+
+    transaction = result.scalar_one_or_none()
 
     if not transaction:
         logger.error(f"Транзакция с id {transaction_id} не была найдена")
@@ -49,6 +56,9 @@ async def delete_transaction(transaction_id: int, session: AsyncSession = Depend
 
     await session.delete(transaction)
     await session.commit()
+    await invalidate_cache(redis_object=await get_redis(),
+                           prefix="transactions",
+                           user_id=current_user.user_id)
     logger.info(f"Транзакция с id {transaction_id} была удалена")
     return None
 
@@ -59,12 +69,21 @@ async def create_transaction(transaction_data: TransactionCreate, session: Async
     session.add(transaction)
     await session.commit()
     logger.info(f"Транзакция с id {transaction.id} была создана")
+    await invalidate_cache(redis_object=await get_redis(),
+                           prefix="transactions",
+                           user_id=current_user.user_id)
     return transaction
 
 
-@router.patch("/{transaction_id}", response_model=TransactionRead, status_code=200)
+@router.patch("/{transaction_id}/", response_model=TransactionRead, status_code=200)
 async def change_transaction(transaction_id: int, transaction_data: TransactionChange, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
-    transaction = await session.get(Transaction, transaction_id)
+    result = await session.execute(
+        select(Transaction)
+        .where(Transaction.id == transaction_id,
+               Transaction.user_id == current_user.user_id)
+    )
+
+    transaction = result.scalar_one_or_none()
 
     if not transaction:
         logger.error(f"Транзакция с id {transaction_id} не была найдена")
@@ -77,6 +96,9 @@ async def change_transaction(transaction_id: int, transaction_data: TransactionC
 
     await session.commit()
     await session.refresh(transaction)
+    await invalidate_cache(redis_object=await get_redis(),
+                           prefix="transactions",
+                           user_id=current_user.user_id)
     return transaction
 
 
@@ -127,11 +149,18 @@ async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFi
     )
     total = total_result.scalar_one()
 
-    cache_key = f'transactions_{current_user.user_id}_{page}_{size}_{total}'
-    cache = await redis_object.get(cache_key)
+    cache_key = await make_cache_key("transactions", current_user.user_id,
+                               page=page, size=size, **filters.model_dump(exclude_none=True))
+    cache = await safe_get(redis_object, cache_key)
 
     if cache:
-        return json.loads(cache)
+        return {
+            'items': json.loads(cache),
+            'total': total,
+            'pages': ceil(total / size) if total > 0 else 1,
+            'page': page,
+            'size': size,
+        }
 
     result = await session.execute(
         select(Transaction).where(*conditions)
@@ -139,14 +168,17 @@ async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFi
         .limit(size)
     )
     transactions = result.scalars().all()
-    pages = ceil(total / size) if total > 0 else 1
+
+    await safe_set(redis_object, cache_key,
+                   json.dumps([TransactionRead.model_validate(t).model_dump(mode='json') for t in transactions]),
+                   ex=3600)
+
     logger.info(f"Всего было найдено {total} транзакций")
     result = {
         'items': [TransactionRead.model_validate(t).model_dump(mode='json') for t in transactions],
         'total': total,
-        'pages': pages,
+        'pages': ceil(total / size) if total > 0 else 1,
         'page': page,
         'size': size,
     }
-    await redis_object.set(cache_key, json.dumps(result), 3600)
     return result
