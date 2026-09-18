@@ -40,11 +40,11 @@ export async function createTrainingExercise(payload: ExerciseTrainingCreate): P
 
 export async function updateTrainingExercise(exerciseId: number, trainingId: number, payload: ExerciseTrainingUpdate): Promise<ExerciseTraining> {
     const response = await api.patch("training-exercises/ex_training", payload,
-        {params: {exerciseId: exerciseId, trainingId: trainingId}});
+        {params: {exercise_id: exerciseId, training_id: trainingId}});
     return response.data;
 }
 
 export async function deleteTrainingExercise(exerciseId: number, trainingId: number): Promise<void> {
     await api.delete("training-exercises/ex_training",
-        {params: {exerciseId: exerciseId, trainingId: trainingId}})
+        {params: {exercise_id: exerciseId, training_id: trainingId}})
 }
