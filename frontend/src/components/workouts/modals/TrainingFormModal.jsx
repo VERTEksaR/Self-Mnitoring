@@ -1,5 +1,5 @@
 import {X} from "lucide-react";
-import {WkModal} from "../WorkoutModal.jsx";
+import {WkModal} from "./WorkoutModal.jsx";
 import {WK_RED, WK_RED_BD, WK_RED_SUBTLE} from "../../../utils/workouts.ts";
 
 export function TrainingFormModal({ setTrainForm, trainForm, saveTraining,

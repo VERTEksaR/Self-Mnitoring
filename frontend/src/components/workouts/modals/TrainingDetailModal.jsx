@@ -1,5 +1,5 @@
 import { Trash2, Pencil } from 'lucide-react';
-import { WkModal} from "../WorkoutModal.jsx";
+import { WkModal} from "./WorkoutModal.jsx";
 import { fmtDate, WK_RED} from "../../../utils/workouts.ts";
 
 export function TrainingDetailModal({ training, onClose, onDelete, onEdit }) {

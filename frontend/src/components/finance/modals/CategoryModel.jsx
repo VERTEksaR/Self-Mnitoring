@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { createCategory, updateCategory } from "../api/finance/categories.ts";
-import { CategoryForm } from './CategoryForm';
+import { createCategory, updateCategory } from "../../../api/finance/categories.ts";
+import { CategoryForm } from '../forms/CategoryForm.jsx';
 
 
 export function AddCategoryModel({ onClose, onSaved }) {

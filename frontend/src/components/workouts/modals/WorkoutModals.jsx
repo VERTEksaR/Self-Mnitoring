@@ -1,6 +1,6 @@
-import { TrainingDetailModal } from "./modals/TrainingDetailModal.jsx";
-import { TrainingFormModal } from "./modals/TrainingFormModal.jsx";
-import {ExerciseFromModal} from "./modals/ExerciseFromModal.jsx";
+import { TrainingDetailModal } from "./TrainingDetailModal.jsx";
+import { TrainingFormModal } from "./TrainingFormModal.jsx";
+import {ExerciseFromModal} from "./ExerciseFromModal.jsx";
 
 
 export function WorkoutModals({ detailTraining, setDetailTraining,

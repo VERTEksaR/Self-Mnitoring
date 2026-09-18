@@ -13,11 +13,11 @@ import {
     createTrainingExercise, updateTrainingExercise, deleteTrainingExercise,
 } from '../api/trainings/trainings';
 import {fmtDate, TODAY, WK_RED_SUBTLE} from "../utils/workouts.ts";
-import {WkModal} from "../components/workouts/WorkoutModal.jsx";
+import {WkModal} from "../components/workouts/modals/WorkoutModal.jsx";
 import {AnalyticsSection} from "../components/workouts/AnalyticSection.jsx";
 import {OverviewSection} from "../components/workouts/OverviewSection.jsx";
 import {ExerciseProfileSection} from "../components/workouts/ExerciseSection.jsx";
-import {WorkoutModals} from "../components/workouts/WorkoutModals.jsx";
+import {WorkoutModals} from "../components/workouts/modals/WorkoutModals.jsx";
 
 const WK_RED        = '#ff3b4e';
 

@@ -1,4 +1,4 @@
-import {WkModal} from "../WorkoutModal.jsx";
+import {WkModal} from "./WorkoutModal.jsx";
 import {EXERCISE_TYPES, MUSCLE_GROUPS, WK_RED} from "../../../utils/workouts.ts";
 
 export function ExerciseFromModal({exForm, saveExercise, setExForm}) {

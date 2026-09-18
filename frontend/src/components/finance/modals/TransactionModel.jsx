@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { createTransaction, updateTransaction } from "../api/finance/transactions.ts";
-import { getCategories } from "../api/finance/categories.ts";
-import { getAccounts } from "../api/finance/accounts.ts";
-import { TransactionForm } from './TransactionForm';
+import { createTransaction, updateTransaction } from "../../../api/finance/transactions.ts";
+import { getCategories } from "../../../api/finance/categories.ts";
+import { getAccounts } from "../../../api/finance/accounts.ts";
+import { TransactionForm } from '../forms/TransactionForm.jsx';
 
 const fmt = (amount) =>
     Number(amount).toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 });

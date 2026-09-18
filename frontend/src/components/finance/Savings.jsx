@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { getAccountsSavings, getAccountsSavingsTrend } from '../../api/finance/accounts.ts';
 import { getTransactions } from '../../api/finance/transactions.ts';
-import { TransactionItem } from '../TransactionItem.jsx';
+import { TransactionItem } from './items/TransactionItem.jsx';
 
 const fmt  = (n) => Number(n).toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const fmtK = (n) => Math.abs(n) >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(Math.round(n));

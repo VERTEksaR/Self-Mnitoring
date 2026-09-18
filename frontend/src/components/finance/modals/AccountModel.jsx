@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { createAccount, updateAccount } from "../api/finance/accounts.ts";
-import { AccountForm } from './AccountForm';
+import { createAccount, updateAccount } from "../../../api/finance/accounts.ts";
+import { AccountForm } from '../forms/AccountForm.jsx';
 
 
 export function AddAccountModel({ onClose, onSaved }) {
