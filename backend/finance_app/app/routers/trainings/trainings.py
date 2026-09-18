@@ -21,7 +21,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@router.get("/{training_id}", response_model=TrainingRead, status_code=200)
+@router.get("/{training_id}/", response_model=TrainingRead, status_code=200)
 async def get_training(training_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
         select(Trainings).where(Trainings.id == training_id, Trainings.user_id == current_user.user_id)
@@ -32,7 +32,7 @@ async def get_training(training_id: int, session: AsyncSession = Depends(get_ses
     return training
 
 
-@router.delete("/{training_id}", status_code=204)
+@router.delete("/{training_id}/", status_code=204)
 async def delete_training(training_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
         select(Trainings).where(Trainings.id == training_id, Trainings.user_id == current_user.user_id)
@@ -55,7 +55,7 @@ async def create_training(training_data: TrainingCreate, session: AsyncSession =
     return training
 
 
-@router.patch("/{training_id}", response_model=TrainingRead, status_code=200)
+@router.patch("/{training_id}/", response_model=TrainingRead, status_code=200)
 async def change_training(training_id: int, training_data: TrainingChange, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
         select(Trainings).where(Trainings.id == training_id, Trainings.user_id == current_user.user_id)

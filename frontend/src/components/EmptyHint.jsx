@@ -1,4 +1,4 @@
-export function EmptyHint(title, hint, action, onAction) {
+export function EmptyHint({title, hint, action, onAction}) {
     return (
         <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
@@ -11,6 +11,17 @@ export function EmptyHint(title, hint, action, onAction) {
                     {action}
                 </button>
             )}
+        </div>
+    );
+}
+
+export function ChartEmpty({ text, height, padding = 24 }) {
+    return (
+        <div style={{
+            ...(height ? { height, display: 'flex', alignItems: 'center', justifyContent: 'center' } : { padding, textAlign: 'center' }),
+            color: 'var(--text-muted)', fontSize: 13,
+        }}>
+            {text}
         </div>
     );
 }
