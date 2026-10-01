@@ -6,7 +6,8 @@ import {
 } from 'recharts';
 
 // ── Constants ─────────────────────────────────────────────────
-const TODAY      = new Date().toISOString().slice(0, 10);
+const toLocalISO = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const TODAY      = toLocalISO(new Date());
 const YEAR_START = `${new Date().getFullYear()}-01-01`;
 const MONTH_NAMES = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
 const DAY_NAMES   = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
@@ -56,20 +57,18 @@ function calcTotals(transactions, dateFrom, dateTo) {
 }
 
 function getPreviousPeriod(dateFrom, dateTo) {
-    const from  = new Date(dateFrom + 'T00:00:00');
-    const to    = new Date(dateTo   + 'T00:00:00');
-    const diffMs = to - from;
-    const prevTo   = new Date(from.getTime() - 86400000);
-    const prevFrom = new Date(prevTo.getTime() - diffMs);
-    return {
-        from: prevFrom.toISOString().slice(0, 10),
-        to:   prevTo.toISOString().slice(0, 10),
-    };
+    const from = new Date(dateFrom + 'T00:00:00');
+    const to   = new Date(dateTo   + 'T00:00:00');
+    if (isNaN(from) || isNaN(to) || from > to) return null;
+    const days = Math.round((to - from) / 86400000);
+    const prevTo   = new Date(from); prevTo.setDate(prevTo.getDate() - 1);
+    const prevFrom = new Date(prevTo); prevFrom.setDate(prevFrom.getDate() - days);
+    return { from: toLocalISO(prevFrom), to: toLocalISO(prevTo) };
 }
 
 function pctDelta(current, previous) {
     if (!previous) return null;
-    return Math.round((current - previous) / previous * 100);
+    return Math.round((current - previous) / Math.abs(previous) * 100);
 }
 
 function buildTimeSeries(transactions, gran, dateFrom, dateTo) {
@@ -125,8 +124,9 @@ function buildDayOfWeek(transactions, txType, dateFrom, dateTo) {
 
 function calcMonthlyAvg(transactions, dateFrom, dateTo) {
     const txs    = filterByPeriod(transactions, dateFrom, dateTo);
-    const months = new Set(txs.map(t => t.transaction_date?.slice(0, 7)).filter(Boolean));
-    const n      = Math.max(months.size, 1);
+    const from = new Date(dateFrom + 'T00:00:00');
+    const to   = new Date(dateTo   + 'T00:00:00');
+    const n    = Math.max((to.getFullYear() - from.getFullYear()) * 12 + to.getMonth() - from.getMonth() + 1, 1);
     const income  = txs.filter(t =>  t.replenishment).reduce((s, t) => s + Number(t.amount), 0);
     const expense = txs.filter(t => !t.replenishment).reduce((s, t) => s + Number(t.amount), 0);
     return { avgIncome: Math.round(income / n), avgExpense: Math.round(expense / n), months: n };
@@ -273,7 +273,7 @@ export function FinanceAnalytics({ transactions, categories = [], categoriesMap,
 
     // ── Computed ──
     const current  = useMemo(() => calcTotals(transactions, dateFrom, dateTo), [transactions, dateFrom, dateTo]);
-    const prevPeriod = useMemo(() => getPreviousPeriod(dateFrom, dateTo), [dateFrom, dateTo]);
+    const prevPeriod = useMemo(() => getPreviousPeriod(dateFrom, dateTo) ?? { from: '', to: '' }, [dateFrom, dateTo]);
     const previous = useMemo(() => calcTotals(transactions, prevPeriod.from, prevPeriod.to), [transactions, prevPeriod]);
 
     const savRate  = current.income > 0 ? Math.round((current.income - current.expense) / current.income * 100) : null;
@@ -299,7 +299,7 @@ export function FinanceAnalytics({ transactions, categories = [], categoriesMap,
 
     const typeLabel = txType === 'expense' ? 'расходам' : 'доходам';
 
-    const fmtDate = (iso) => { const [y,m,d] = iso.split('-'); return `${d}.${m}.${y}`; };
+    const fmtDate = (iso) => { if (!iso) return '—'; const [y,m,d] = iso.split('-'); return `${d}.${m}.${y}`; };
 
     return (
         <div>

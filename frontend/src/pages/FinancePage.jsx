@@ -19,6 +19,7 @@ export default function FinancePage() {
     const [allTransactions, setAllTransactions] = useState([]);
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(null);
 
     const [activeSection, setActiveSection] = useState('overview');
 
@@ -43,6 +44,11 @@ export default function FinancePage() {
                 setAllTransactions(txRes.items ?? []);
                 setAccounts(accRes.items ?? []);
             })
+            .catch(err => setLoadError(
+                err?.response?.status === 403
+                    ? 'Нет доступа к модулю «Финансы».'
+                    : 'Не удалось загрузить данные. Проверьте соединение и попробуйте ещё раз.'
+            ))
             .finally(() => setLoading(false));
     }, []);
 
@@ -61,12 +67,14 @@ export default function FinancePage() {
     ];
 
     if (loading) return <div className="loading">Загрузка...</div>;
+    if (loadError) return <div className="loading">{loadError}</div>;
 
     return (
         <div className="finance-page">
             <nav className="finance-nav">
                 <div className="finance-nav-group">
                     <button className="btn btn-ghost btn-icon" onClick={() => navigate('/')} aria-label="Назад">
+                        ←
                     </button>
                     <span className="finance-nav-brand">Финансы</span>
                 </div>
@@ -110,7 +118,7 @@ export default function FinancePage() {
                             color: s.id === activeSection ? 'var(--brand)' : 'var(--text-body)',
                             background: s.id === activeSection ? 'var(--brand-subtle)' : 'transparent',
                         }}>
-                            {s.icon}<span>{s.label}</span>
+                            <span>{s.label}</span>
                         </button>
                     ))}
                 </aside>

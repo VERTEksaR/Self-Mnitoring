@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.finance_app.app.db.redis import get_redis
 from backend.finance_app.app.dependencies.auth import get_finances
 from backend.finance_app.app.db.session import get_session
-from backend.finance_app.app.db.models import Category, ModulesUsers
+from backend.finance_app.app.db.models import Category, ModulesUsers, Transaction
 from backend.finance_app.app.schemas.finances.category import CategoryRead, CategoryCreate, CategoryChange
 from backend.finance_app.app.schemas.common.common import Page
 from backend.finance_app.app.utils.redis_cache_key import invalidate_cache, make_cache_key, safe_get, safe_set
@@ -52,6 +52,12 @@ async def delete_category(category_id: int, session: AsyncSession = Depends(get_
     if not category:
         logger.error(f"Категория с id {category_id} не была найдена")
         raise HTTPException(status_code=404, detail=f"Категория с id {category_id} не была найдена")
+
+    has_transactions = await session.scalar(
+        select(func.count()).select_from(Transaction).where(Transaction.category_id == category_id)
+    )
+    if has_transactions:
+        raise HTTPException(status_code=409, detail="Нельзя удалить категорию, по которой есть транзакции")
 
     await session.delete(category)
     await session.commit()
@@ -126,7 +132,10 @@ async def get_categories(page: int = 1, size: int = 10, name: str = '', session:
         }
 
     result = await session.execute(
-        select(Category).where((Category.name.like(f"%{name}%")) & (Category.user_id == current_user.user_id))
+        select(Category)
+        .where((Category.name.like(f"%{name}%")) & (Category.user_id == current_user.user_id))
+        .offset((page - 1) * size)
+        .limit(size)
     )
     categories = result.scalars().all()
 

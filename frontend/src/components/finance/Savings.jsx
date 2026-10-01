@@ -57,7 +57,7 @@ function SavingsTrendChart({ data }) {
 function SavingsAccountCard({ account, onClick }) {
     const hasGoal = account.goal_amount != null;
     const pct = hasGoal && account.goal_amount > 0
-        ? Math.min(100, Math.round(account.balance / account.goal_amount * 100))
+        ? Math.max(0, Math.min(100, Math.round(account.balance / account.goal_amount * 100)))
         : null;
 
     return (

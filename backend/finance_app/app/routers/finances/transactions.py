@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.finance_app.app.db.redis import get_redis
 from backend.finance_app.app.dependencies.auth import get_finances
 from backend.finance_app.app.db.session import get_session
-from backend.finance_app.app.db.models import Transaction, ModulesUsers
+from backend.finance_app.app.db.models import Transaction, ModulesUsers, Category, Account
 from backend.finance_app.app.schemas.finances.transaction import TransactionRead, TransactionCreate, TransactionFilter, \
     TransactionChange
 from backend.finance_app.app.schemas.common.common import Page
@@ -65,6 +65,13 @@ async def delete_transaction(transaction_id: int, session: AsyncSession = Depend
 
 @router.post('/', response_model=TransactionRead, status_code=201)
 async def create_transaction(transaction_data: TransactionCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+    category = await session.get(Category, transaction_data.category_id)
+    account = await session.get(Account, transaction_data.account_id)
+
+    if (not category or category.user_id != current_user.user_id
+            or not account or account.user_id != current_user.user_id):
+        raise HTTPException(status_code=404, detail="Категория или счет не найдены")
+
     transaction = Transaction(**transaction_data.model_dump(), user_id=current_user.user_id)
     session.add(transaction)
     await session.commit()
@@ -73,6 +80,7 @@ async def create_transaction(transaction_data: TransactionCreate, session: Async
                            prefix="transactions",
                            user_id=current_user.user_id)
     return transaction
+
 
 
 @router.patch("/{transaction_id}/", response_model=TransactionRead, status_code=200)
@@ -111,22 +119,22 @@ async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFi
     if filters.destination:
         conditions.append(Transaction.destination.like(f'%{filters.destination}%'))
 
-    if filters.min_amount:
+    if filters.min_amount is not None:
         conditions.append(Transaction.amount >= filters.min_amount)
 
-    if filters.max_amount:
+    if filters.max_amount is not None:
         conditions.append(Transaction.amount <= filters.max_amount)
 
-    if filters.amount:
+    if filters.amount is not None:
         conditions.append(Transaction.amount == filters.amount)
 
-    if filters.min_cashback:
+    if filters.min_cashback is not None:
         conditions.append(Transaction.cashback >= filters.min_cashback)
 
-    if filters.max_cashback:
+    if filters.max_cashback is not None:
         conditions.append(Transaction.cashback <= filters.max_cashback)
 
-    if filters.cashback:
+    if filters.cashback is not None:
         conditions.append(Transaction.cashback == filters.cashback)
 
     if filters.category_id:
@@ -164,6 +172,7 @@ async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFi
 
     result = await session.execute(
         select(Transaction).where(*conditions)
+        .order_by(Transaction.transaction_date.desc())
         .offset((page - 1) * size)
         .limit(size)
     )

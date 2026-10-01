@@ -103,9 +103,11 @@ async def get_savings_accounts(session: AsyncSession = Depends(get_session), cur
             Account.goal_amount,
             func.coalesce(func.sum(case(
                 (Transaction.replenishment.is_(True), Transaction.amount),
-                else_=-Transaction.amount
+                (Transaction.replenishment.is_(False), -Transaction.amount),
+                else_=0
             )), 0).label('balance')
         )
+        .outerjoin(Transaction, (Transaction.account_id == Account.id) & (Transaction.user_id == current_user.user_id))
         .where(
             Account.user_id == current_user.user_id,
             Account.account_type == AccountType.SAVINGS,
@@ -167,6 +169,12 @@ async def delete_account(account_id: int, session: AsyncSession = Depends(get_se
         logger.error(f"Счет с id {account_id} не был найден")
         raise HTTPException(status_code=404, detail=f"Счет с id {account_id} не был найден")
 
+    has_transactions = await session.scalar(
+        select(func.count()).select_from(Transaction).where(Transaction.account_id == account_id)
+    )
+    if has_transactions:
+        raise HTTPException(status_code=409, detail="Нельзя удалить счёт, по которому есть транзакции")
+
     await session.delete(account)
     await session.commit()
     logger.info(f"С чет с id {account_id} был удален")
@@ -211,7 +219,10 @@ async def get_accounts(page: int = 1, size: int = 10, name: str = '', session: A
         }
 
     result = await session.execute(
-        select(Account).where((Account.name.like(f"%{name}%")) & (Account.user_id == current_user.user_id))
+        select(Account)
+        .where((Account.name.like(f"%{name}%")) & (Account.user_id == current_user.user_id))
+        .offset((page - 1) * size)
+        .limit(size)
     )
     accounts = result.scalars().all()
     pages = ceil(total / size) if total > 0 else 1

@@ -3,12 +3,21 @@ import {Transaction} from "../types/finances/transaction";
 export const fmt = (n: string) =>
     Number(n).toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
+// Дата в локальном часовом поясе (toISOString даёт UTC и сдвигает день)
+export function toLocalISO(d: Date) {
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}-${m}-${day}`;
+}
+
 export function todayStr() {
-    return new Date().toISOString().slice(0, 10);
+    return toLocalISO(new Date());
 }
 
 export function daysAgoStr(n: number) {
-    return new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    return toLocalISO(d);
 }
 
 export function dateLabel(iso: string) {
@@ -29,7 +38,7 @@ export function groupByDate(transactions: [Transaction]) {
     const map = new Map();
 
     for (const tx of transactions) {
-        const key = tx.transaction_date ?? "Неизвестно";
+        const key = tx.transaction_date ?? "unknown";
 
         if (!map.has(key)) map.set(key, []);
         map.get(key).push(tx);

@@ -5,6 +5,8 @@ import { deleteTransaction } from '../../api/finance/transactions.ts';
 import { deleteCategory } from '../../api/finance/categories.ts';
 import { deleteAccount } from '../../api/finance/accounts.ts';
 
+const errText = (e) => e?.response?.data?.detail ?? 'Не удалось удалить. Попробуйте ещё раз.';
+
 export function FinanceModals({
       selectedTransaction, setSelectedTransaction,
       addTransaction, setAddTransaction,
@@ -20,7 +22,7 @@ export function FinanceModals({
         {selectedTransaction && (
                 <TransactionModel transaction={selectedTransaction}
                     onClose={() => setSelectedTransaction(null)}
-                    onDelete={async (id) => { await deleteTransaction(id); setAllTransactions(p => p.filter(t => t.id !== id)); setSelectedTransaction(null); }}
+                    onDelete={async (id) => { try { await deleteTransaction(id); setAllTransactions(p => p.filter(t => t.id !== id)); setSelectedTransaction(null); } catch (e) { window.alert(errText(e)); } }}
                     onEdit={(tx) => { setSelectedTransaction(null); setEditTransaction(tx); }}
                     categoriesMap={categoriesMap} accountsMap={accountsMap}
                 />
@@ -37,7 +39,7 @@ export function FinanceModals({
             {selectedCategory && (
                 <CategoryModel category={selectedCategory}
                     onClose={() => setSelectedCategory(null)}
-                    onDelete={async (id) => { await deleteCategory(id); setCategories(p => p.filter(c => c.id !== id)); setSelectedCategory(null); }}
+                    onDelete={async (id) => { try { await deleteCategory(id); setCategories(p => p.filter(c => c.id !== id)); setSelectedCategory(null); } catch (e) { window.alert(errText(e)); } }}
                     onUpdate={(updated) => {
                         setCategories(p => p.map(c => c.id === updated.id ? updated : c));
                         setSelectedCategory(updated);
@@ -51,7 +53,7 @@ export function FinanceModals({
             {selectedAccount && (
                 <AccountModel account={selectedAccount}
                     onClose={() => setSelectedAccount(null)}
-                    onDelete={async (id) => { await deleteAccount(id); setAccounts(p => p.filter(a => a.id !== id)); setSelectedAccount(null); }}
+                    onDelete={async (id) => { try { await deleteAccount(id); setAccounts(p => p.filter(a => a.id !== id)); setSelectedAccount(null); } catch (e) { window.alert(errText(e)); } }}
                     onUpdate={(updated) => {
                         setAccounts(p => p.map(a => a.id === updated.id ? updated : a));
                         setSelectedAccount(updated);
