@@ -17,12 +17,13 @@
 
 ## Этап 1. Бэкенд: языки, слова, конспекты
 
-**1.1 Модели** (`db/models.py`)
-- [ ] `Language`: `name`, `code` (`en-US`, `es-ES` — для озвучки), `current_level` / `target_level` (enum A1–C2, nullable), `user_id`; `UniqueConstraint("name", "user_id")`
-- [ ] `Word`: `word`, `translation`, `transcription?`, `part_of_speech?` (enum), `example?`, `note?`, `created_at`, `language_id`, `user_id`; поля SRS `box` (int, default 0), `next_review_date`; `UniqueConstraint("word", "language_id")`
-- [ ] `LanguageNote`: `title`, `content` (`Text`), `created_at`, `updated_at`, `language_id`, `user_id`
-- [ ] Связи у `Language` с `cascade="all, delete-orphan"`; `back_populates` в `User`
-- [ ] Enum'ы по образцу `MuscleGroup` (`native_enum=False`, `values_callable`)
+**1.1 Модели** (`db/models/languages/`, по образцу `db/models/trainings/`)
+- [x] `Language`: `name`, `code` (`en-US`, `es-ES` — для озвучки), `current_level` / `target_level` (enum A1–C2, обязательные), `user_id`; `UniqueConstraint("name", "user_id")`
+- [x] `Word`: `word`, `translation`, `transcription?`, `part_of_speech?` (enum), `example?`, `note?`, `created_at`, `language_id`, `user_id`; поля SRS `box` (int, default 0), `next_review_date`; `UniqueConstraint("word", "language_id")`
+- [x] `LanguageNote`: `title`, `content` (`Text`), `created_at`, `updated_at`, `language_id`, `user_id`
+- [x] Связи у `Language` с `cascade="all, delete-orphan"`; `back_populates` в `User` (`db/models/common/user.py`, импорт в блок `TYPE_CHECKING`)
+- [x] Enum'ы по образцу `MuscleGroup` (`native_enum=False`, `values_callable`)
+- [x] Новые модели добавлены в `db/models/__init__.py`, иначе Alembic их не увидит
 
 **1.2 Миграция**
 - [ ] `alembic revision --autogenerate -m "add languages module"` — прочитать сгенерированный файл (enum, `server_default`)
