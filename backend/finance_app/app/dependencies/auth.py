@@ -60,3 +60,4 @@ def require_module(name: str):
 get_finances = require_module("finances")
 get_achievements = require_module("achievements")
 get_trainings = require_module("trainings")
+get_languages = require_module("languages")

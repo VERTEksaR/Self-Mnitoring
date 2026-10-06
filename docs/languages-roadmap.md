@@ -26,12 +26,12 @@
 - [x] Новые модели добавлены в `db/models/__init__.py`, иначе Alembic их не увидит
 
 **1.2 Миграция**
-- [ ] `alembic revision --autogenerate -m "add languages module"` — прочитать сгенерированный файл (enum, `server_default`)
-- [ ] `alembic upgrade head`
+- [x] `alembic revision --autogenerate -m "add languages module"` — прочитать сгенерированный файл (enum, `server_default`)
+- [x] `alembic upgrade head`
 
 **1.3 Доступ**
-- [ ] В админке: `Modules(name="languages")` + связь в `ModulesUsers`
-- [ ] `get_languages` через `require_module("languages")`
+- [x] В админке: `Modules(name="languages")` + связь в `ModulesUsers`
+- [x] `get_languages` через `require_module("languages")`
 
 **1.4 Схемы** (`schemas/languages/`)
 - [ ] Create / Change / Read для языка, слова, конспекта
@@ -49,6 +49,7 @@
 
 ## Этап 2. Фронтенд: база
 
+- [ ] `'/languages'` в `proxy` в `frontend/vite.config.js` — иначе запросы с фронта не дойдут до бэка
 - [ ] `types/languages/*.ts`, `api/languages/*.ts` по образцу `api/trainings/trainings.ts`
 - [ ] Роуты `/languages` и `/languages/:languageId` через `ModuleRoute module="languages"`
 - [ ] Новый цвет неона (`NeonBackground` + `AppContent`), карточка на `StartPage`
