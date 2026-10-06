@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import  JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,49 +38,25 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: AsyncSe
     return user
 
 
-async def get_finances(current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    result = await session.execute(
-        select(ModulesUsers)
-        .join(Modules, Modules.id == ModulesUsers.module_id)
-        .where(ModulesUsers.user_id == current_user.id, Modules.name == "finances")
-    )
-    access_module = result.scalar_one_or_none()
-
-    if not access_module:
-        raise HTTPException(
-            status_code=403, detail="Finances are forbidden"
+def require_module(name: str):
+    async def dependency(current_user: User = Depends(get_current_user),
+                         session: AsyncSession = Depends(get_session)):
+        result = await session.execute(
+            select(ModulesUsers)
+            .join(Modules, Modules.id == ModulesUsers.module_id)
+            .where(ModulesUsers.user_id == current_user.id, Modules.name == name)
         )
+        access_module = result.scalar_one_or_none()
 
-    return access_module
+        if not access_module:
+            raise HTTPException(
+                status_code=403, detail=f"{name.capitalize()} are forbidden"
+            )
 
-
-async def get_trainings(current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    result = await session.execute(
-        select(ModulesUsers)
-        .join(Modules, Modules.id == ModulesUsers.module_id)
-        .where(ModulesUsers.user_id == current_user.id, Modules.name == "trainings")
-    )
-    access_module = result.scalar_one_or_none()
-
-    if not access_module:
-        raise HTTPException(
-            status_code=403, detail="Trainings are forbidden"
-        )
-
-    return access_module
+        return access_module
+    return dependency
 
 
-async def get_achievements(current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    result = await session.execute(
-        select(ModulesUsers)
-        .join(Modules, Modules.id == ModulesUsers.module_id)
-        .where(ModulesUsers.user_id == current_user.id, Modules.name == "achievements")
-    )
-    access_module = result.scalar_one_or_none()
-
-    if not access_module:
-        raise HTTPException(
-            status_code=403, detail="Achievements are forbidden"
-        )
-
-    return access_module
+get_finances = require_module("finances")
+get_achievements = require_module("achievements")
+get_trainings = require_module("trainings")
