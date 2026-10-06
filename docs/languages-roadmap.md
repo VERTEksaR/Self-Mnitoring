@@ -34,9 +34,9 @@
 - [x] `get_languages` через `require_module("languages")`
 
 **1.4 Схемы** (`schemas/languages/`)
-- [ ] Create / Change / Read для языка, слова, конспекта
-- [ ] `box` и `next_review_date` — только в Read
-- [ ] `LanguageRead` без вложенного списка слов
+- [x] Create / Change / Read для языка, слова, конспекта
+- [x] `box` и `next_review_date` — только в Read
+- [x] `LanguageRead` без вложенного списка слов
 
 **1.5 Роутеры** (`routers/languages/`)
 - [ ] `/languages/` — CRUD языков (без пагинации)
