@@ -25,6 +25,7 @@ export default defineConfig({
       '/steam/ach-summary': 'http://localhost:8000',
       '/steam/ach-detail': 'http://localhost:8000',
       '/steam/news': 'http://localhost:8000',
+      '/languages': 'http://localhost:8000',
     },
   },
 });

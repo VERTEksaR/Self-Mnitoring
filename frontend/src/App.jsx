@@ -4,6 +4,8 @@ import FinancePage from './pages/FinancePage';
 import WorkoutsPage from './pages/WorkoutsPage';
 import SteamPage from './pages/SteamPage';
 import SteamAchievementsDetailPage from './pages/SteamAchievementsDetailPage';
+import LanguagesPage from './pages/LanguagesPage';
+import LanguageDetailPage from './pages/LanguageDetailPage';
 import LoginPage from './pages/LoginPage';
 import StartPage from './pages/StartPage';
 import { useModules } from './hooks/useModules';
@@ -44,6 +46,13 @@ function AppContent() {
                 } />
                 <Route path="/workouts" element={
                     <PrivateRoute><ModuleRoute module="trainings"><WorkoutsPage /></ModuleRoute></PrivateRoute>
+                } />
+                {/* /learn, а не /languages: префикс /languages проксируется на бэк (vite.config.js) */}
+                <Route path="/learn" element={
+                    <PrivateRoute><ModuleRoute module="languages"><LanguagesPage /></ModuleRoute></PrivateRoute>
+                } />
+                <Route path="/learn/:languageId" element={
+                    <PrivateRoute><ModuleRoute module="languages"><LanguageDetailPage /></ModuleRoute></PrivateRoute>
                 } />
                 <Route path="/steam" element={
                     <PrivateRoute><ModuleRoute module="achievements"><SteamPage /></ModuleRoute></PrivateRoute>
