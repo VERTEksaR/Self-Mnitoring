@@ -11,7 +11,7 @@ from backend.finance_app.app.dependencies.auth import get_finances
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Category, ModulesUsers
 from backend.finance_app.app.schemas.finances.category import CategoryRead, CategoryCreate, CategoryChange
-from backend.finance_app.app.schemas.common.common import Page
+from backend.finance_app.app.schemas.common.common import Page, PageNumber, PageSize
 from backend.finance_app.app.utils.redis_cache_key import invalidate_cache, make_cache_key, safe_get, safe_set
 
 router = APIRouter()
@@ -102,7 +102,7 @@ async def create_category(category_data: CategoryCreate, session: AsyncSession =
 
 
 @router.get('/', response_model=Page[CategoryRead], status_code=200)
-async def get_categories(page: int = 1, size: int = 10, name: str = '', session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+async def get_categories(page: PageNumber = 1, size: PageSize = 10, name: str = '', session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     redis_object = await get_redis()
     filters = {"name": name}
 

@@ -15,7 +15,7 @@ from backend.finance_app.app.dependencies.auth import get_finances
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Account, Transaction, ModulesUsers, AccountType
 from backend.finance_app.app.schemas.finances.account import AccountRead, AccountCreate, AccountBalancesRead, AccountChange
-from backend.finance_app.app.schemas.common.common import Page
+from backend.finance_app.app.schemas.common.common import Page, PageNumber, PageSize
 from backend.finance_app.app.utils.redis_cache_key import make_cache_key, invalidate_cache, safe_get, safe_set
 
 router = APIRouter()
@@ -189,7 +189,7 @@ async def create_account(account_data: AccountCreate, session: AsyncSession = De
 
 
 @router.get("/", response_model=Page[AccountRead], status_code=200)
-async def get_accounts(page: int = 1, size: int = 10, name: str = '', session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+async def get_accounts(page: PageNumber = 1, size: PageSize = 10, name: str = '', session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     redis_object = await get_redis()
 
     total_result = await session.execute(

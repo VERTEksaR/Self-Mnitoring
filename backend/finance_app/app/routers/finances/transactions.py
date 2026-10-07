@@ -12,7 +12,7 @@ from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Transaction, ModulesUsers
 from backend.finance_app.app.schemas.finances.transaction import TransactionRead, TransactionCreate, TransactionFilter, \
     TransactionChange
-from backend.finance_app.app.schemas.common.common import Page
+from backend.finance_app.app.schemas.common.common import Page, PageNumber, PageSize
 from backend.finance_app.app.utils.redis_cache_key import make_cache_key, invalidate_cache, safe_get, safe_set
 
 router = APIRouter()
@@ -103,7 +103,7 @@ async def change_transaction(transaction_id: int, transaction_data: TransactionC
 
 
 @router.get('/', response_model=Page[TransactionRead], status_code=200)
-async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFilter = Depends(), session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+async def get_transactions(page: PageNumber = 1, size: PageSize = 10, filters: TransactionFilter = Depends(), session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     conditions = [Transaction.user_id == current_user.user_id]
 
     redis_object = await get_redis()

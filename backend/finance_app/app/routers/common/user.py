@@ -9,7 +9,7 @@ from backend.finance_app.app.dependencies.auth import get_current_user
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import User, ModulesUsers
 from backend.finance_app.app.schemas.common.user import UserRead, UserFilter, ModulesUserRead
-from backend.finance_app.app.schemas.common.common import Page
+from backend.finance_app.app.schemas.common.common import Page, PageNumber, PageSize
 
 router = APIRouter()
 
@@ -44,7 +44,7 @@ async def get_user(user_id: int, session: AsyncSession = Depends(get_session), c
 
 
 @router.get('/', response_model=Page[UserRead], status_code=200)
-async def get_users(page: int = 1, size: int = 10, filters: UserFilter = Depends(), session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_users(page: PageNumber = 1, size: PageSize = 10, filters: UserFilter = Depends(), session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
     conditions = []
 
     if filters.email:

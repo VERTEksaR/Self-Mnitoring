@@ -8,7 +8,7 @@ from backend.finance_app.app.dependencies.auth import get_trainings
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Exercises, ModulesUsers
 from backend.finance_app.app.schemas.trainings.exercises import ExerciseRead, ExerciseChange, ExerciseCreate
-from backend.finance_app.app.schemas.common.common import Page
+from backend.finance_app.app.schemas.common.common import Page, PageNumber, PageSize
 
 
 router = APIRouter()
@@ -85,7 +85,7 @@ async def change_exercise(exercise_id: int, exercise_data: ExerciseChange, sessi
 
 
 @router.get("/", response_model=Page[ExerciseRead], status_code=200)
-async def get_exercises(page: int = 1, size: int = 10, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
+async def get_exercises(page: PageNumber = 1, size: PageSize = 10, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     total_result = await session.execute(
         select(func.count()).where(Exercises.user_id == current_user.user_id)
     )
