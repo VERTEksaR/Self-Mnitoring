@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
 from backend.finance_app.app.db.models import PartOfSpeech
+from backend.finance_app.app.schemas.common.common import forbid_null
 
 
 # language_id приходит из пути /languages/{language_id}/words/, а box и next_review_date
@@ -24,6 +25,8 @@ class WordChange(BaseModel):
     part_of_speech: Optional[PartOfSpeech] = None
     example: Optional[str] = None
     note: Optional[str] = None
+
+    check_not_null = forbid_null("word", "translation")
 
 
 class WordRead(BaseModel):

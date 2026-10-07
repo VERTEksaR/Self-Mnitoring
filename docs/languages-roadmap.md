@@ -39,11 +39,11 @@
 - [x] `LanguageRead` без вложенного списка слов
 
 **1.5 Роутеры** (`routers/languages/`)
-- [ ] `/languages/` — CRUD языков (без пагинации)
-- [ ] `/languages/{language_id}/words/` — CRUD слов; список `Page[...]` + `search` (`ilike` по слову и переводу)
-- [ ] `/languages/{language_id}/notes/` — CRUD конспектов
-- [ ] Хелпер `get_user_language(...)` → язык или 404; вызывается в каждом эндпоинте слов/конспектов
-- [ ] Регистрация в `main.py`
+- [x] `/languages/` — CRUD языков (без пагинации)
+- [x] `/languages/{language_id}/words/` — CRUD слов; список `Page[...]` + поиск `word` / `translation` (`ilike`)
+- [x] `/languages/{language_id}/notes/` — CRUD конспектов
+- [x] Хелпер `check_availability(...)` (`utils/check_availability.py`) → объект или 404; вызывается в каждом эндпоинте слов/конспектов
+- [x] Регистрация в `main.py`
 
 **Готово, когда:** в `/docs` работает весь сценарий; чужой `language_id` → 404; удаление языка удаляет его слова и конспекты.
 
@@ -85,6 +85,18 @@
 
 - [ ] Мерж `languages` → `main`
 - [ ] Обновить README
+
+---
+
+## Техдолг: проверка владения связанными сущностями (после MVP)
+
+Сейчас незаметно, потому что пользователь в БД один; со вторым пользователем это станет реальной дырой.
+
+- [ ] `create_transaction` и `change_transaction` (`routers/finances/transactions.py`): `category_id` и `account_id` из тела запроса принадлежат текущему пользователю, иначе 404 — сейчас можно создать транзакцию на чужой счёт/категорию
+- [ ] `create_ex_training` (`routers/trainings/training_exercises.py`): `training_id` и `exercise_id` принадлежат текущему пользователю — сейчас можно добавить упражнение в чужую тренировку
+- [ ] Change-схемы во всех модулях: явный `null` в обязательном поле (`{"name": null}`) даёт 500 от БД вместо 422 — добавить `check_not_null = forbid_null(...)` из `schemas/common/common.py`, как в языках
+- [ ] Дубли по `UniqueConstraint` (категории, счета, упражнения, тренировки) дают 500 — заменить `session.commit()` на `commit_or_conflict` из `utils/commit.py`
+- [ ] Проверить всё со вторым тестовым пользователем
 
 ---
 
