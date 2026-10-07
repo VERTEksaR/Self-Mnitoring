@@ -30,6 +30,7 @@ function AppContent() {
     const location = useLocation();
     const neonVariant = location.pathname.startsWith('/workouts') ? 'red'
         : location.pathname.startsWith('/steam') ? 'purple'
+        : location.pathname.startsWith('/learn') ? 'cyan'
         : location.pathname === '/' ? 'white'
         : 'green';
 

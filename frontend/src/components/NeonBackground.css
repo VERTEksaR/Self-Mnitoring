@@ -150,3 +150,19 @@
 #neon.neon-red .np--slow {
   stroke: #ffaab2;
 }
+
+/* ── Голубой вариант (языки) ── */
+#neon.neon-cyan .nl {
+  stroke: #22d3ee;
+  filter: drop-shadow(0 0 3px rgba(34,211,238,.85)) drop-shadow(0 0 9px rgba(34,211,238,.5));
+}
+#neon.neon-cyan .nl--faint {
+  stroke: #22d3ee;
+}
+#neon.neon-cyan .np {
+  stroke: #cffafe;
+  filter: drop-shadow(0 0 5px rgba(165,243,252,.95)) drop-shadow(0 0 16px rgba(34,211,238,.85));
+}
+#neon.neon-cyan .np--slow {
+  stroke: #a5f3fc;
+}

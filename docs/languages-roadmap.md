@@ -52,7 +52,7 @@
 - [x] `'/languages'` в `proxy` в `frontend/vite.config.js` — иначе запросы с фронта не дойдут до бэка
 - [x] `types/languages/*.ts`, `api/languages/*.ts` по образцу `api/trainings/trainings.ts`
 - [x] Роуты `/learn` и `/learn/:languageId` через `ModuleRoute module="languages"` (не `/languages`: этот префикс проксируется на бэк); заглушки `LanguagesPage` и `LanguageDetailPage`
-- [ ] Новый цвет неона (`NeonBackground` + `AppContent`), карточка на `StartPage`
+- [x] Новый цвет неона (`NeonBackground` + `AppContent`), карточка на `StartPage` — голубой `#22d3ee`, вариант `cyan`
 - [ ] Вкладка «Словарь»: поиск, пагинация, модалка создания/редактирования
 - [ ] Вкладка «Конспекты»: список, просмотр, редактирование (`textarea`, вывод с `white-space: pre-wrap`)
 
