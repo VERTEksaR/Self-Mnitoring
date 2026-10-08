@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.finance_app.app.db.models.languages.word import WordTag
 from backend.finance_app.app.dependencies.auth import get_languages
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import ModulesUsers, LanguageNote, Language, Word
@@ -14,6 +15,7 @@ from backend.finance_app.app.schemas.languages.word import WordRead, WordChange,
 from backend.finance_app.app.schemas.languages.note import LanguageNoteRead, LanguageNoteChange, LanguageNoteCreate
 from backend.finance_app.app.utils.check_availability import check_availability
 from backend.finance_app.app.utils.commit import commit_or_conflict
+from backend.finance_app.app.utils.language_tags import get_language_tags
 
 router = APIRouter()
 
@@ -77,23 +79,25 @@ async def get_language(language_id: int, user: ModulesUsers = Depends(get_langua
 
 
 @router.get("/{language_id}/words/", response_model=Page[WordRead], status_code=200)
-async def get_language_words(language_id: int, search: str = '',
+async def get_language_words(language_id: int, tag_id: int | None = None, search: str = '',
                              page: PageNumber = 1, size: PageSize = 10, user: ModulesUsers = Depends(get_languages),
                              session: AsyncSession = Depends(get_session)):
     await check_availability(language_id, user.user_id, Language, session)
+    conditions = [Word.language_id == language_id, Word.user_id == user.user_id,
+                  or_(Word.word.ilike(f'%{search}%'), Word.translation.ilike(f'%{search}%'))]
+
+    if tag_id is not None:
+        conditions.append(Word.tags.any(WordTag.id == tag_id))
+
     total_result = await session.execute(
         select(func.count())
-        .where(Word.language_id == language_id, Word.user_id == user.user_id,
-               or_(Word.word.ilike(f'%{search}%'), Word.translation.ilike(f'%{search}%'))
-               )
+        .where(*conditions)
     )
     total = total_result.scalar_one()
 
     result = await session.execute(
         select(Word)
-        .where(Word.language_id == language_id, Word.user_id == user.user_id,
-               or_(Word.word.ilike(f'%{search}%'), Word.translation.ilike(f'%{search}%'))
-               )
+        .where(*conditions)
         .offset((page - 1) * size).limit(size)
         .order_by(Word.id.desc())
     )
@@ -116,7 +120,8 @@ async def get_language_words(language_id: int, search: str = '',
 async def create_language_word(language_id: int, data: WordCreate, user: ModulesUsers = Depends(get_languages),
                                session: AsyncSession = Depends(get_session)):
     await check_availability(language_id, user.user_id, Language, session)
-    word = Word(**data.model_dump(), user_id=user.user_id, language_id=language_id)
+    word = Word(**data.model_dump(exclude={"tag_ids"}), user_id=user.user_id, language_id=language_id)
+    word.tags = await get_language_tags(data.tag_ids, language_id, user.user_id, session)
     session.add(word)
     await commit_or_conflict(session, f"Слово «{data.word}» уже есть в этом языке")
     return word
@@ -160,9 +165,13 @@ async def change_language_word(language_id: int, word_id: int,
         raise HTTPException(status_code=404, detail=f"Слово с id {word_id} не было найдено")
 
     updated_data = data.model_dump(exclude_unset=True)
+    tag_ids = updated_data.pop("tag_ids", None)
 
     for field, value in updated_data.items():
         setattr(word, field, value)
+
+    if tag_ids is not None:
+        word.tags = await get_language_tags(tag_ids, language_id, user.user_id, session)
 
     await commit_or_conflict(session, f"Слово «{word.word}» уже есть в этом языке")
     await session.refresh(word)

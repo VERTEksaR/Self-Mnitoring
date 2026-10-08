@@ -5,10 +5,9 @@ from pydantic import BaseModel, ConfigDict
 
 from backend.finance_app.app.db.models import PartOfSpeech
 from backend.finance_app.app.schemas.common.common import forbid_null
+from backend.finance_app.app.schemas.languages.tag import TagRead
 
 
-# language_id приходит из пути /languages/{language_id}/words/, а box и next_review_date
-# меняет только логика повторения — поэтому их нет в Create/Change
 class WordCreate(BaseModel):
     word: str
     translation: str
@@ -16,6 +15,7 @@ class WordCreate(BaseModel):
     part_of_speech: Optional[PartOfSpeech] = None
     example: Optional[str] = None
     note: Optional[str] = None
+    tag_ids: list[int] = []
 
 
 class WordChange(BaseModel):
@@ -25,8 +25,9 @@ class WordChange(BaseModel):
     part_of_speech: Optional[PartOfSpeech] = None
     example: Optional[str] = None
     note: Optional[str] = None
+    tag_ids: list[int] = []
 
-    check_not_null = forbid_null("word", "translation")
+    check_not_null = forbid_null("word", "translation", "tag_ids")
 
 
 class WordRead(BaseModel):
@@ -42,5 +43,6 @@ class WordRead(BaseModel):
     next_review_date: Optional[date] = None
     language_id: int
     user_id: int
+    tags: list[TagRead] = []
 
     model_config = ConfigDict(from_attributes=True)

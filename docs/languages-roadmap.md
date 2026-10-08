@@ -64,7 +64,7 @@
 
 - [x] Модель `WordTag` (таблица `word_tags`) + модель-связь `WordTagLinks` (`word_tag_links`, `ondelete=CASCADE`), всё в `db/models/languages/word.py`
 - [x] `Word.tags` с `lazy="selectin"` (иначе `MissingGreenlet` в async), `secondary="word_tag_links"`
-- [ ] CRUD тегов; `tag_ids` в Create/Change слова; фильтр `?tag_id=`; проверка, что теги из того же языка
+- [x] CRUD тегов (`routers/languages/tags.py`, имя нормализуется: «  ЕДА » → «Еда»); `tag_ids` в Create/Change слова, `tags` в `WordRead`; фильтр `?tag_id=`; проверка, что теги из того же языка (`utils/language_tags.py`)
 - [ ] Фронт: чипсы тегов, мультиселект в форме, фильтр в словаре
 
 ## Этап 4. Интервальное повторение (коробки Лейтнера)
