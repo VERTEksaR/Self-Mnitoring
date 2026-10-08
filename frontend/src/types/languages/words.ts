@@ -36,8 +36,7 @@ export interface WordChange {
 }
 
 export interface WordFilter {
-    translation?: string;
+    search?: string;
     page?: number;
     size?: number;
-    word?: string;
 }

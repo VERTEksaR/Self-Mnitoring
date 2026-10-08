@@ -1,22 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser, registerUser, getUsers } from '../api/auth';
-
-function extractErrorMessage(err, fallback) {
-    const detail = err.response?.data?.detail;
-    if (!detail) return fallback;
-    if (typeof detail === 'string') return detail;
-    if (Array.isArray(detail)) {
-        return detail
-            .map(d => {
-                const field = Array.isArray(d.loc) ? d.loc[d.loc.length - 1] : null;
-                return field ? `${field}: ${d.msg}` : d.msg;
-            })
-            .filter(Boolean)
-            .join('; ') || fallback;
-    }
-    return fallback;
-}
+import {extractErrorMessage} from "../utils/errors.ts";
 
 export default function LoginPage() {
     const [mode, setMode] = useState('login');
