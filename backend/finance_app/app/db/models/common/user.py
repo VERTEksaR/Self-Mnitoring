@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from backend.finance_app.app.db.models.trainings.exercises import Exercises, TrainingExercises
     from backend.finance_app.app.db.models.trainings.trainings import Trainings
     from backend.finance_app.app.db.models.languages.language import Language
-    from backend.finance_app.app.db.models.languages.word import Word
+    from backend.finance_app.app.db.models.languages.word import Word, WordTag
     from backend.finance_app.app.db.models.languages.note import LanguageNote
 
 
@@ -39,6 +39,7 @@ class User(Base):
     languages: Mapped[List["Language"]] = relationship("Language", back_populates="user")
     words: Mapped[List["Word"]] = relationship("Word", back_populates="user")
     language_notes: Mapped[List["LanguageNote"]] = relationship("LanguageNote", back_populates="user")
+    word_tags: Mapped[List["WordTag"]] = relationship("WordTag", back_populates="user")
 
     def __str__(self):
         return self.email

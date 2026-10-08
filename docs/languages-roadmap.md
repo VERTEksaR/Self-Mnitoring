@@ -62,8 +62,8 @@
 
 ## Этап 3. Теги для слов
 
-- [ ] Модель `WordTag` (unique `(name, language_id)`) + таблица связи `word_tags` (`secondary=`)
-- [ ] `Word.tags` с `lazy="selectin"` (иначе `MissingGreenlet` в async)
+- [x] Модель `WordTag` (таблица `word_tags`) + модель-связь `WordTagLinks` (`word_tag_links`, `ondelete=CASCADE`), всё в `db/models/languages/word.py`
+- [x] `Word.tags` с `lazy="selectin"` (иначе `MissingGreenlet` в async), `secondary="word_tag_links"`
 - [ ] CRUD тегов; `tag_ids` в Create/Change слова; фильтр `?tag_id=`; проверка, что теги из того же языка
 - [ ] Фронт: чипсы тегов, мультиселект в форме, фильтр в словаре
 

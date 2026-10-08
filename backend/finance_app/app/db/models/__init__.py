@@ -10,12 +10,12 @@ from backend.finance_app.app.db.models.trainings.trainings import Trainings
 from backend.finance_app.app.db.models.steam.steam import SteamUser, SteamTrackedGamse
 from backend.finance_app.app.db.models.languages.language import Language, LanguageLevels
 from backend.finance_app.app.db.models.languages.note import LanguageNote
-from backend.finance_app.app.db.models.languages.word import Word, PartOfSpeech
+from backend.finance_app.app.db.models.languages.word import Word, PartOfSpeech, WordTag
 
 __all__ = [
     "User", "TelegramUser", "Modules", "ModulesUsers",
     "Category", "AccountType", "Account", "Transaction",
     "MuscleGroup", "ExerciseType", "Exercises", "TrainingExercises", "Trainings",
     "SteamUser", "SteamTrackedGamse",
-    "Language", "LanguageLevels", "Word", "PartOfSpeech", "LanguageNote",
+    "Language", "LanguageLevels", "Word", "PartOfSpeech", "LanguageNote", "WordTag"
 ]

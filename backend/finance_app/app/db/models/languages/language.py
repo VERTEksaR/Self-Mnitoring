@@ -8,7 +8,7 @@ from backend.finance_app.app.db.base import Base
 if TYPE_CHECKING:
     from backend.finance_app.app.db.models.common.user import User
     from backend.finance_app.app.db.models.languages.note import LanguageNote
-    from backend.finance_app.app.db.models.languages.word import Word
+    from backend.finance_app.app.db.models.languages.word import Word, WordTag
 
 
 class LanguageLevels(str, enum.Enum):
@@ -43,6 +43,7 @@ class Language(Base):
     user: Mapped["User"] = relationship("User", back_populates="languages")
     words: Mapped[List["Word"]] = relationship("Word", cascade="all, delete-orphan", back_populates="language")
     notes: Mapped[List["LanguageNote"]] = relationship("LanguageNote", cascade="all, delete-orphan", back_populates="language")
+    tags: Mapped[List["WordTag"]] = relationship("WordTag", back_populates="language", cascade="all, delete-orphan")
 
     __table_args__ = (UniqueConstraint("name", "user_id"),)
 

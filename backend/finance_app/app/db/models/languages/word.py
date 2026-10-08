@@ -1,6 +1,6 @@
 import enum
 from datetime import date, datetime
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 
 from sqlalchemy import String, Integer, DateTime, ForeignKey, UniqueConstraint, Enum, func, Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -48,8 +48,33 @@ class Word(Base):
     user: Mapped["User"] = relationship("User", back_populates="words")
     box: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     next_review_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    tags: Mapped[List["WordTag"]] = relationship("WordTag", secondary="word_tag_links",
+                                                 lazy="selectin", order_by="WordTag.name")
 
     __table_args__ = (UniqueConstraint("word", "language_id", "user_id"),)
 
     def __str__(self):
         return self.word
+
+
+class WordTagLinks(Base):
+    __tablename__ = "word_tag_links"
+
+    word_id: Mapped[int] = mapped_column(ForeignKey('words.id', ondelete='CASCADE'), primary_key=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey('word_tags.id', ondelete='CASCADE'), primary_key=True)
+
+
+class WordTag(Base):
+    __tablename__ = "word_tags"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    language_id: Mapped[int] = mapped_column(ForeignKey('languages.id'), nullable=False)
+    language: Mapped["Language"] = relationship("Language", back_populates="tags")
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="word_tags")
+
+    __table_args__ = (UniqueConstraint("name", "language_id", "user_id"),)
+
+    def __str__(self):
+        return self.name
