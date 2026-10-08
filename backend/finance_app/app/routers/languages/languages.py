@@ -2,7 +2,7 @@ import logging
 from math import ceil
 
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.finance_app.app.dependencies.auth import get_languages
@@ -77,23 +77,25 @@ async def get_language(language_id: int, user: ModulesUsers = Depends(get_langua
 
 
 @router.get("/{language_id}/words/", response_model=Page[WordRead], status_code=200)
-async def get_language_words(language_id: int, translation: str = '',
-                             page: PageNumber = 1, size: PageSize = 10, word: str = '', user: ModulesUsers = Depends(get_languages),
+async def get_language_words(language_id: int, search: str = '',
+                             page: PageNumber = 1, size: PageSize = 10, user: ModulesUsers = Depends(get_languages),
                              session: AsyncSession = Depends(get_session)):
     await check_availability(language_id, user.user_id, Language, session)
     total_result = await session.execute(
         select(func.count())
         .where(Word.language_id == language_id, Word.user_id == user.user_id,
-               Word.word.ilike(f'%{word}%'), Word.translation.ilike(f'%{translation}%'))
+               or_(Word.word.ilike(f'%{search}%'), Word.translation.ilike(f'%{search}%'))
+               )
     )
     total = total_result.scalar_one()
 
     result = await session.execute(
         select(Word)
         .where(Word.language_id == language_id, Word.user_id == user.user_id,
-               Word.word.ilike(f'%{word}%'), Word.translation.ilike(f'%{translation}%'))
+               or_(Word.word.ilike(f'%{search}%'), Word.translation.ilike(f'%{search}%'))
+               )
         .offset((page - 1) * size).limit(size)
-        .order_by(Word.id)
+        .order_by(Word.id.desc())
     )
     words = result.scalars().all()
     pages = ceil(total / size) if total > 0 else 1
