@@ -4,6 +4,7 @@ import {useEffect, useState} from "react";
 import {getLanguage} from "../api/languages/languages.ts";
 import {ArrowLeft, BookOpen, Languages, NotebookPen} from "lucide-react";
 import {DictionarySection} from "../components/languages/DictionarySection.jsx";
+import {NotesSection} from "../components/languages/NotesSection.jsx";
 
 const TABS = [
     { id: 'dictionary', label: 'Словарь',   icon: <BookOpen size={16} /> },
@@ -76,7 +77,7 @@ export default function LanguageDetailPage() {
                 </aside>
                 <main className="finance-main">
                     {tab === 'dictionary' && <DictionarySection languageId={id} />}
-                    {tab === 'notes' && <EmptyHint title="Конспекты" hint="Появятся в следующем пункте" />}
+                    {tab === 'notes' && <NotesSection languageId={id} />}
                 </main>
             </div>
         </div>

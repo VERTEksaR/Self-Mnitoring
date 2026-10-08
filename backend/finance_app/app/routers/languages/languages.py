@@ -203,7 +203,7 @@ async def get_language_notes(language_id: int, page: PageNumber = 1, size: PageS
         select(LanguageNote)
         .where(LanguageNote.language_id == language_id, LanguageNote.user_id == user.user_id)
         .offset((page - 1) * size).limit(size)
-        .order_by(LanguageNote.id)
+        .order_by(LanguageNote.id.desc())
     )
     notes = result.scalars().all()
     pages = ceil(total / size) if total > 0 else 1
