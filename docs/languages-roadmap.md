@@ -65,7 +65,8 @@
 - [x] Модель `WordTag` (таблица `word_tags`) + модель-связь `WordTagLinks` (`word_tag_links`, `ondelete=CASCADE`), всё в `db/models/languages/word.py`
 - [x] `Word.tags` с `lazy="selectin"` (иначе `MissingGreenlet` в async), `secondary="word_tag_links"`
 - [x] CRUD тегов (`routers/languages/tags.py`, имя нормализуется: «  ЕДА » → «Еда»); `tag_ids` в Create/Change слова, `tags` в `WordRead`; фильтр `?tag_id=`; проверка, что теги из того же языка (`utils/language_tags.py`)
-- [ ] Фронт: чипсы тегов, мультиселект в форме, фильтр в словаре
+- [x] Фронт: теги на строке слова, выбор и быстрое создание тегов в форме слова, фильтр по тегу в словаре
+- [ ] (опц.) Управление тегами в UI: переименование и удаление (API уже есть)
 
 ## Этап 4. Интервальное повторение (коробки Лейтнера)
 

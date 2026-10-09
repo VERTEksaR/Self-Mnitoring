@@ -1,3 +1,5 @@
+import type { Tag } from "./tags";
+
 export type PartOfSpeech =
     | "Существительное" | "Глагол" | "Прилагательное" | "Наречие" | "Местоимение"
     | "Числительное" | "Предлог" | "Союз" | "Междометие" | "Фраза";
@@ -15,6 +17,7 @@ export interface Word {
     next_review_date?: string | null;
     language_id: number;
     user_id: number;
+    tags: Tag[];
 }
 
 export interface WordCreate {
@@ -24,6 +27,7 @@ export interface WordCreate {
     part_of_speech?: PartOfSpeech | null;
     example?: string | null;
     note?: string | null;
+    tag_ids?: number[];
 }
 
 export interface WordChange {
@@ -33,10 +37,12 @@ export interface WordChange {
     part_of_speech?: PartOfSpeech | null;
     example?: string | null;
     note?: string | null;
+    tag_ids?: number[];
 }
 
 export interface WordFilter {
     search?: string;
     page?: number;
     size?: number;
+    tag_id?: number;
 }

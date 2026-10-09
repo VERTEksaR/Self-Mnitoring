@@ -5,6 +5,7 @@ import {EmptyHint} from "../EmptyHint.jsx";
 import {WordRow} from "./WordRow.jsx";
 import {WordFormModal} from "./WordFormModal.jsx";
 import {WORD_FORM_DEFAULT, formToWord, wordToForm} from "../../utils/languages.ts";
+import {createTag, getTags} from "../../api/languages/tags.ts";
 
 const PAGE_SIZE = 20;
 
@@ -16,16 +17,37 @@ export function DictionarySection({ languageId }) {
     const [loading, setLoading] = useState(true);
     const [wordForm, setWordForm] = useState(null);
 
+    const [tags, setTags] = useState([]);
+    const [tagId, setTagId] = useState(null);
+
+    const loadTags = useCallback(() => {
+        getTags(languageId)
+            .then(setTags)
+            .catch(err => console.error('[Tags] load failed:', err?.response?.status));
+    }, [languageId]);
+
+    useEffect(() => {
+        loadTags();
+    }, [loadTags]);
+
+    const pickTag = (id) => { setTagId(id); setPage(1); };
+
+    const createTagInline = async (name) => {
+        const tag = await createTag(languageId, { name });
+        setTags(prev => [...prev, tag].sort((a, b) => a.name.localeCompare(b.name)));
+        return tag;
+    };
+
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            setData(await getWords(languageId, { page, size: PAGE_SIZE, search: query }));
+            setData(await getWords(languageId, { page, size: PAGE_SIZE, search: query, tag_id: tagId ?? undefined }));
         } catch (err) {
             console.error('[Dictionary] load failed:', err?.response?.status);
         } finally {
             setLoading(false);
         }
-    }, [languageId, page, query]);
+    }, [languageId, page, query, tagId]);
 
     useEffect(() => {
         load();
@@ -78,12 +100,22 @@ export function DictionarySection({ languageId }) {
                 <input className="input" placeholder="Поиск по слову или переводу…"
                        value={search} onChange={e => setSearch(e.target.value)}
                        style={{ marginBottom: 12 }} />
+                {tags.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                        <button className={'btn btn-sm ' + (tagId === null ? 'btn-primary' : 'btn-ghost')}
+                                onClick={() => pickTag(null)}>Все</button>
+                        {tags.map(t => (
+                            <button key={t.id} className={'btn btn-sm ' + (tagId === t.id ? 'btn-primary' : 'btn-ghost')}
+                                    onClick={() => pickTag(t.id)}>#{t.name}</button>
+                        ))}
+                    </div>
+                )}
 
                 {/* затемняем, а не прячем: при каждом поиске список не мигает */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, opacity: loading ? 0.5 : 1 }}>
                     {data.items.length === 0 && !loading ? (
-                        <EmptyHint title={query ? 'Ничего не найдено' : 'Словарь пуст'}
-                                 hint={query ? 'Попробуй другой запрос' : 'Добавь первое слово'} />
+                        <EmptyHint title={query || tagId ? 'Ничего не найдено' : 'Словарь пуст'}
+                                   hint={query || tagId ? 'Попробуй другой запрос или тег' : 'Добавь первое слово'} />
                         ) : data.items.map(w => (
                         <WordRow key={w.id} word={w} onEdit={() => setWordForm(wordToForm(w))} onDelete={() => removeWord(w)} />
                     ))}
@@ -99,7 +131,10 @@ export function DictionarySection({ languageId }) {
             </div>
 
             {/* Вне .card: у неё backdrop-filter, и position: fixed оверлея считался бы от карточки, а не от экрана */}
-            {wordForm && <WordFormModal form={wordForm} setForm={setWordForm} onSave={saveWord} />}
+            {wordForm && (
+                <WordFormModal form={wordForm} setForm={setWordForm} onSave={saveWord}
+                               tags={tags} onCreateTag={createTagInline} />
+            )}
         </>
     );
 }
