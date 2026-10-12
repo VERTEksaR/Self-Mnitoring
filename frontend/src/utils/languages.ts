@@ -43,3 +43,8 @@ export const formatNoteDate = (n: Note) => new Date(n.updated_at ?? n.created_at
     .toLocaleString("ru-RU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 export const wordStatus = (box: number) => (box === 0 ? "Новое" : box >= 5 ? "Выучено" : "Изучаю");
+
+export const wordStatusStyle = (box: number) =>
+    box === 0 ? { color: "var(--text-muted)", background: "var(--surface-sunken)", border: "1px solid var(--border)" }       // Новое
+    : box >= 5 ? { color: "var(--brand-on)", background: "var(--brand)", border: "1px solid var(--brand)" }                   // Выучено — залитый
+    : { color: "var(--brand)", background: "var(--brand-subtle)", border: "1px solid var(--brand-subtle-bd)" };     // Изучаю — контур

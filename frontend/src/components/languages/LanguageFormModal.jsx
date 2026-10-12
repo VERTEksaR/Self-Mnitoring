@@ -4,7 +4,7 @@ import {WkModal} from "../workouts/modals/WorkoutModal";
 import {LANGUAGE_LEVELS} from "../../utils/languages";
 import {FormError} from "../FormError.jsx";
 
-export function LanguageFormModal({ form, setForm, onSave }) {
+export function LanguageFormModal({ form, setForm, onSave, onDelete }) {
     const [error, setError] = useState(null);
     const [saving, setSaving] = useState(false);
     const close = () => setForm(null);
@@ -24,7 +24,12 @@ export function LanguageFormModal({ form, setForm, onSave }) {
     };
 
     return (
-        <WkModal open title="Новый язык" onClose={close} footer={<>
+        <WkModal open title={form.id ? 'Изменить язык' : 'Новый язык'} onClose={close} footer={<>
+            {onDelete && (
+                <button className="btn btn-danger btn-sm" style={{ marginRight: 'auto' }} onClick={onDelete}>
+                    Удалить язык
+                </button>
+            )}
             <button className="btn btn-secondary btn-sm" onClick={close}>Отмена</button>
             <button className="btn btn-primary btn-sm" disabled={saving || !form.name.trim()} onClick={submit}>
                 {saving ? 'Сохраняю…' : 'Сохранить'}
