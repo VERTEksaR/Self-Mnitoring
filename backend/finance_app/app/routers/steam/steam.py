@@ -18,6 +18,7 @@ from backend.finance_app.app.db.models import SteamUser, SteamTrackedGamse, Modu
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.dependencies.auth import get_achievements
 from backend.finance_app.app.schemas.steam.steam import SteamUserCreate, SteamUserRead, SteamTrackedGameRead, SteamTrackedGameCreate
+from backend.finance_app.app.schemas.common.common import PageNumber, PageSize
 from backend.finance_app.app.utils.redis_cache_key import safe_get, safe_set, safe_mget
 
 STEAM_ID_RE = re.compile(r"https?://steamcommunity\.com/openid/id/(\d+)")
@@ -174,7 +175,7 @@ async def fetch(client: httpx.AsyncClient, url: str) -> dict:
 
 
 @router.get("/tracked-games/{steam_id}", status_code=200)
-async def get_tracked_games(steam_id: str, page: int = 1, size: int = 10, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_achievements)):
+async def get_tracked_games(steam_id: str, page: PageNumber = 1, size: PageSize = 10, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_achievements)):
     su = await session.execute(select(SteamUser).where(SteamUser.steam_id == steam_id, SteamUser.user_id == current_user.user_id))
     if not su.scalar_one_or_none():
         raise HTTPException(404, detail="Аккаунт Steam не найден")
