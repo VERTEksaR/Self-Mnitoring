@@ -5,8 +5,10 @@ import {useEffect, useState} from "react";
 import {createLanguage, getLanguages} from "../api/languages/languages.ts";
 import {emptyToNull, LANGUAGE_FORM_DEFAULT} from "../utils/languages.ts";
 import {LanguageFormModal} from "../components/languages/LanguageFormModal.jsx";
+import {useBodyClass} from "../hooks/useBodyClass.js";
 
 export default function LanguagesPage() {
+    useBodyClass('ln-body');   // голубая тема модуля вместо зелёной по умолчанию
     const navigate = useNavigate();
     const [languages, setLanguages] = useState([]);
     const [loading, setLoading] = useState(true);

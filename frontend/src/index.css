@@ -108,6 +108,45 @@ body.wk-body {
   --text-faint:      #6b5e5e;
 }
 
+/* ── Голубая тема модуля «Языки» (ставится на body страницами /learn) ── */
+body.ln-body {
+  background:
+    radial-gradient(120% 90%  at 14% -10%, #1f2a2e 0%, rgba(17,23,25,0) 52%),
+    radial-gradient(120% 120% at 88%   6%, #1a2428 0%, rgba(12,16,18,0) 46%),
+    radial-gradient(140% 130% at 50%  62%, rgba(9,12,13,0) 0%, #080b0c 100%),
+    linear-gradient(160deg, #0e1315 0%, #090c0d 100%);
+
+  /* Бренд-цвет → голубой */
+  --brand:           #22d3ee;
+  --brand-hover:     #67e8f9;
+  --brand-active:    #06b6d4;
+  --brand-subtle:    rgba(34, 211, 238, 0.13);
+  --brand-subtle-bd: rgba(34, 211, 238, 0.34);
+  --brand-on:        #031a1f;
+  --text-link:       #67e8f9;
+
+  /* Фокус и обводка */
+  --border-focus:    #22d3ee;
+  --ring:            0 0 0 3px rgba(34, 211, 238, 0.30);
+
+  /* Бордеры и карточки с холодным оттенком вместо зелёного */
+  --border:          rgba(110, 190, 210, 0.15);
+  --border-strong:   rgba(110, 190, 210, 0.30);
+  --surface-card:    rgba(15, 20, 23, 0.82);
+  --surface-raised:  rgba(20, 26, 29, 0.88);
+
+  /* Тени */
+  --shadow-md:       0 6px 18px rgba(0,0,0,.55), 0 0 0 1px rgba(34,211,238,.07);
+  --shadow-overlay:  0 24px 60px rgba(0,0,0,.72), 0 0 0 1px rgba(34,211,238,.10);
+  --glow-brand:      0 10px 34px rgba(34, 211, 238, 0.28);
+
+  /* Текст — холодный нейтральный вместо зелёного */
+  --text-strong:     #ecfeff;
+  --text-body:       #bccbcf;
+  --text-muted:      #879699;
+  --text-faint:      #5b696c;
+}
+
 #root { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
 
 /* ── Кнопки ── */

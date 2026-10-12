@@ -7,6 +7,7 @@ import {DictionarySection} from "../components/languages/DictionarySection.jsx";
 import {NotesSection} from "../components/languages/NotesSection.jsx";
 import {ReviewSection} from "../components/languages/ReviewSection.jsx";
 import {useSpeech} from "../hooks/useSpeech.js";
+import {useBodyClass} from "../hooks/useBodyClass.js";
 
 const TABS = [
     { id: 'dictionary', label: 'Словарь',   icon: <BookOpen size={16} /> },
@@ -21,6 +22,7 @@ export default function LanguageDetailPage() {
     const [error, setError] = useState(null);
     const [tab, setTab] = useState('dictionary');
     const speech = useSpeech(language?.code);
+    useBodyClass('ln-body');   // голубая тема модуля вместо зелёной по умолчанию
     const navigate = useNavigate();
 
     useEffect(() => {
