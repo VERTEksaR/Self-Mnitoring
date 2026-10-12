@@ -9,7 +9,7 @@ import {createTag, getTags} from "../../api/languages/tags.ts";
 
 const PAGE_SIZE = 20;
 
-export function DictionarySection({ languageId }) {
+export function DictionarySection({ languageId, speech }) {
     const [data, setData] = useState({ items: [], total: 0, pages: 1 });
     const [page, setPage] = useState(1);
     const [query, setQuery] = useState('');
@@ -117,7 +117,7 @@ export function DictionarySection({ languageId }) {
                         <EmptyHint title={query || tagId ? 'Ничего не найдено' : 'Словарь пуст'}
                                    hint={query || tagId ? 'Попробуй другой запрос или тег' : 'Добавь первое слово'} />
                         ) : data.items.map(w => (
-                        <WordRow key={w.id} word={w} onEdit={() => setWordForm(wordToForm(w))} onDelete={() => removeWord(w)} />
+                        <WordRow key={w.id} word={w} onEdit={() => setWordForm(wordToForm(w))} onDelete={() => removeWord(w)} speech={speech} />
                     ))}
                 </div>
 

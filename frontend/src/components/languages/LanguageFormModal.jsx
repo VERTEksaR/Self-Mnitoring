@@ -37,7 +37,11 @@ export function LanguageFormModal({ form, setForm, onSave }) {
                 </div>
                 <div className="form-group">
                     <label className="form-label">Код языка (для озвучки)</label>
-                    <input className="input" value={form.code} onChange={set('code')}/>
+                    <input className="input" list="language-codes" value={form.code} onChange={set('code')} placeholder="es-ES" />
+                    <datalist id="language-codes">
+                        {['en-US', 'en-GB', 'es-ES', 'de-DE', 'fr-FR', 'it-IT', 'pt-BR', 'pl-PL', 'tr-TR', 'ja-JP', 'ko-KR', 'zh-CN']
+                            .map(c => <option key={c} value={c} />)}
+                    </datalist>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div className="form-group">

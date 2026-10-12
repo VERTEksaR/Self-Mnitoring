@@ -1,7 +1,8 @@
 import {useState} from "react";
 import {Pencil, Trash2} from "lucide-react";
+import {SpeakButton} from "./SpeakButton.jsx";
 
-export function WordRow({ word, onEdit, onDelete }) {
+export function WordRow({ word, onEdit, onDelete, speech }) {
     const [hov, setHov] = useState(false);
     return (
         <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{
@@ -13,6 +14,7 @@ export function WordRow({ word, onEdit, onDelete }) {
             <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 600, color: 'var(--text-strong)' }}>{word.word}</span>
+                    <SpeakButton text={word.word} speech={speech}/>
                     {word.transcription && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>[{word.transcription}]</span>}
                     {word.part_of_speech && <span className="badge badge-neutral">{word.part_of_speech}</span>}
                     {word.tags.map(t => (

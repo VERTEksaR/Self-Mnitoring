@@ -2,6 +2,7 @@ import {useCallback, useEffect, useState} from "react";
 import {answerReview, getReview} from "../../api/languages/review.ts";
 import {EmptyHint} from "../EmptyHint.jsx";
 import {wordStatus} from "../../utils/languages.ts";
+import {SpeakButton} from "./SpeakButton.jsx";
 
 const BATCH_SIZE = 20;
 
@@ -16,7 +17,7 @@ const wordsLabel = (n) => {
     return 'слов';
 };
 
-export function ReviewSection({ languageId }) {
+export function ReviewSection({ languageId, speech }) {
     const [batch, setBatch] = useState(null);
     const [index, setIndex] = useState(0);
     const [revealed, setRevealed] = useState(false);
@@ -66,11 +67,12 @@ export function ReviewSection({ languageId }) {
             if (e.key === ' ' || e.key === "Enter") { e.preventDefault(); setRevealed(true); }
             if (e.key === '1' || e.key === "ArrowLeft") answer(false);
             if (e.key === '2' || e.key === "ArrowRight") answer(true);
+            if ((e.key === 's' || e.key === 'ы') && word) speech?.speak(word.word);
         };
 
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [answer]);
+    }, [answer, word, speech]);   // speech меняется, когда браузер догрузил голоса
 
     if (!batch) return <div style={{ color: 'var(--text-muted)' }}>Загрузка…</div>;
 
@@ -97,13 +99,22 @@ export function ReviewSection({ languageId }) {
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 {index + 1} / {batch.items.length} · {wordStatus(word.box)}
             </div>
-            <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--text-strong)', margin: '16px 0 4px' }}>{word.word}</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, margin: '16px 0 4px' }}>
+                <span style={{ fontSize: 32, fontWeight: 700, color: 'var(--text-strong)' }}>{word.word}</span>
+                <SpeakButton text={word.word} speech={speech} size={18} />
+            </div>
             {word.transcription && <div style={{ color: 'var(--text-muted)' }}>[{word.transcription}]</div>}
 
             {revealed ? (
                 <>
+                    {/* Перевод без 🔊: голос выбран под изучаемый язык и прочитал бы русский текст с акцентом */}
                     <div style={{ fontSize: 20, margin: '20px 0 8px' }}>{word.translation}</div>
-                    {word.example && <div style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>{word.example}</div>}
+                    {word.example && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            <span style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>{word.example}</span>
+                            <SpeakButton text={word.example} speech={speech} />
+                        </div>
+                    )}
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 24 }}>
                         <button className="btn btn-danger" disabled={sending} onClick={() => answer(false)}>Не помню (1)</button>
                         <button className="btn btn-primary" disabled={sending} onClick={() => answer(true)}>Помню (2)</button>

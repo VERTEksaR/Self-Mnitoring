@@ -6,6 +6,7 @@ import {ArrowLeft, BookOpen, Languages, NotebookPen, Repeat} from "lucide-react"
 import {DictionarySection} from "../components/languages/DictionarySection.jsx";
 import {NotesSection} from "../components/languages/NotesSection.jsx";
 import {ReviewSection} from "../components/languages/ReviewSection.jsx";
+import {useSpeech} from "../hooks/useSpeech.js";
 
 const TABS = [
     { id: 'dictionary', label: 'Словарь',   icon: <BookOpen size={16} /> },
@@ -19,6 +20,7 @@ export default function LanguageDetailPage() {
     const [language, setLanguage] = useState(null);
     const [error, setError] = useState(null);
     const [tab, setTab] = useState('dictionary');
+    const speech = useSpeech(language?.code);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -78,9 +80,9 @@ export default function LanguageDetailPage() {
                     ))}
                 </aside>
                 <main className="finance-main">
-                    {tab === 'dictionary' && <DictionarySection languageId={id} />}
+                    {tab === 'dictionary' && <DictionarySection languageId={id} speech={speech} />}
                     {tab === 'notes' && <NotesSection languageId={id} />}
-                    {tab === 'review' && <ReviewSection languageId={id} />}
+                    {tab === 'review' && <ReviewSection languageId={id} speech={speech} />}
                 </main>
             </div>
         </div>
