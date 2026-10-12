@@ -41,3 +41,5 @@ export const noteToForm = (n: Note): NoteForm => ({ id: n.id, title: n.title, co
 // «8 окт. 2026 г., 13:08»; если конспект правили — дата правки
 export const formatNoteDate = (n: Note) => new Date(n.updated_at ?? n.created_at)
     .toLocaleString("ru-RU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+export const wordStatus = (box: number) => (box === 0 ? "Новое" : box >= 5 ? "Выучено" : "Изучаю");

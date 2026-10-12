@@ -2,13 +2,15 @@ import {useNavigate, useParams} from 'react-router-dom';
 import { EmptyHint } from '../components/EmptyHint';
 import {useEffect, useState} from "react";
 import {getLanguage} from "../api/languages/languages.ts";
-import {ArrowLeft, BookOpen, Languages, NotebookPen} from "lucide-react";
+import {ArrowLeft, BookOpen, Languages, NotebookPen, Repeat} from "lucide-react";
 import {DictionarySection} from "../components/languages/DictionarySection.jsx";
 import {NotesSection} from "../components/languages/NotesSection.jsx";
+import {ReviewSection} from "../components/languages/ReviewSection.jsx";
 
 const TABS = [
     { id: 'dictionary', label: 'Словарь',   icon: <BookOpen size={16} /> },
     { id: 'notes',      label: 'Конспекты', icon: <NotebookPen size={16} /> },
+    { id: 'review',     label: 'Повторение', icon: <Repeat size={16} /> },
 ];
 
 export default function LanguageDetailPage() {
@@ -78,6 +80,7 @@ export default function LanguageDetailPage() {
                 <main className="finance-main">
                     {tab === 'dictionary' && <DictionarySection languageId={id} />}
                     {tab === 'notes' && <NotesSection languageId={id} />}
+                    {tab === 'review' && <ReviewSection languageId={id} />}
                 </main>
             </div>
         </div>
