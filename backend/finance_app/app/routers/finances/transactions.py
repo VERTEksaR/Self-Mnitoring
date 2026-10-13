@@ -9,10 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.finance_app.app.db.redis import get_redis
 from backend.finance_app.app.dependencies.auth import get_finances
 from backend.finance_app.app.db.session import get_session
-from backend.finance_app.app.db.models import Transaction, ModulesUsers
+from backend.finance_app.app.db.models import Transaction, ModulesUsers, Category, Account
 from backend.finance_app.app.schemas.finances.transaction import TransactionRead, TransactionCreate, TransactionFilter, \
     TransactionChange
 from backend.finance_app.app.schemas.common.common import Page, PageNumber, PageSize
+from backend.finance_app.app.utils.check_availability import check_availability
 from backend.finance_app.app.utils.redis_cache_key import make_cache_key, invalidate_cache, safe_get, safe_set
 
 router = APIRouter()
@@ -65,6 +66,8 @@ async def delete_transaction(transaction_id: int, session: AsyncSession = Depend
 
 @router.post('/', response_model=TransactionRead, status_code=201)
 async def create_transaction(transaction_data: TransactionCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+    await check_availability(transaction_data.category_id, current_user.user_id, Category, session)
+    await check_availability(transaction_data.account_id, current_user.user_id, Account, session)
     transaction = Transaction(**transaction_data.model_dump(), user_id=current_user.user_id)
     session.add(transaction)
     await session.commit()
@@ -90,6 +93,11 @@ async def change_transaction(transaction_id: int, transaction_data: TransactionC
         raise HTTPException(status_code=404, detail=f"Транзакция с id {transaction_id} не была найдена")
 
     updated_data = transaction_data.model_dump(exclude_unset=True)
+
+    if "category_id" in updated_data:
+        await check_availability(updated_data["category_id"], current_user.user_id, Category, session)
+    if "account_id" in updated_data:
+        await check_availability(updated_data["account_id"], current_user.user_id, Account, session)
 
     for field, value in updated_data.items():
         setattr(transaction, field, value)

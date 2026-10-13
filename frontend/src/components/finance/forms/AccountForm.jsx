@@ -1,6 +1,8 @@
+import {FormError} from "../../FormError.jsx";
+
 const ACCOUNT_TYPES = ['Обычный', 'Накопительный'];
 
-export function AccountForm({ form, setForm, onClose, onSubmit }) {
+export function AccountForm({ form, setForm, onClose, onSubmit, error }) {
     const isSavings = form.account_type === 'Накопительный';
 
     return (
@@ -52,6 +54,8 @@ export function AccountForm({ form, setForm, onClose, onSubmit }) {
                             />
                         </div>
                     )}
+
+                    <FormError>{error}</FormError>
 
                     <div className="modal-actions">
                         <button type="button" className="btn btn-secondary" onClick={onClose}>Отмена</button>

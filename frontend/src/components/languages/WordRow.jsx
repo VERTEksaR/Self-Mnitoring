@@ -1,6 +1,7 @@
 import {useState} from "react";
 import {Pencil, Trash2} from "lucide-react";
 import {SpeakButton} from "./SpeakButton.jsx";
+import {wordStatus, wordStatusStyle} from "../../utils/languages.ts";
 
 export function WordRow({ word, onEdit, onDelete, speech }) {
     const [hov, setHov] = useState(false);
@@ -17,6 +18,10 @@ export function WordRow({ word, onEdit, onDelete, speech }) {
                     <SpeakButton text={word.word} speech={speech}/>
                     {word.transcription && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>[{word.transcription}]</span>}
                     {word.part_of_speech && <span className="badge badge-neutral">{word.part_of_speech}</span>}
+                    <span title={word.next_review_date ? `Следующее повторение: ${word.next_review_date}` : 'Ещё не повторялось'}
+                          style={{ fontSize: 11, padding: '1px 8px', borderRadius: 'var(--radius-pill)', ...wordStatusStyle(word.box) }}>
+                        {wordStatus(word.box)}
+                    </span>
                     {word.tags.map(t => (
                         <span key={t.id} style={{
                             fontSize: 11, padding: '1px 8px', borderRadius: 'var(--radius-pill)',

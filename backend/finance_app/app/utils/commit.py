@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def commit_or_conflict(session: AsyncSession, detail: str):
-    """Коммит, который при нарушении UniqueConstraint отдаёт 409 вместо 500."""
+    """Коммит, который ловит любое нарушение ограничений БД - отдаёт 409 вместо 500."""
     try:
         await session.commit()
     except IntegrityError:

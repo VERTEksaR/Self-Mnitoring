@@ -1,8 +1,10 @@
 import {useNavigate, useParams} from 'react-router-dom';
 import { EmptyHint } from '../components/EmptyHint';
 import {useEffect, useState} from "react";
-import {getLanguage} from "../api/languages/languages.ts";
-import {ArrowLeft, BookOpen, Languages, NotebookPen, Repeat} from "lucide-react";
+import {getLanguage, updateLanguage, deleteLanguage} from "../api/languages/languages.ts";
+import {ArrowLeft, BookOpen, Languages, NotebookPen, Pencil, Repeat} from "lucide-react";
+import {LanguageFormModal} from "../components/languages/LanguageFormModal.jsx";
+import {emptyToNull} from "../utils/languages.ts";
 import {DictionarySection} from "../components/languages/DictionarySection.jsx";
 import {NotesSection} from "../components/languages/NotesSection.jsx";
 import {ReviewSection} from "../components/languages/ReviewSection.jsx";
@@ -21,6 +23,7 @@ export default function LanguageDetailPage() {
     const [language, setLanguage] = useState(null);
     const [error, setError] = useState(null);
     const [tab, setTab] = useState('dictionary');
+    const [langForm, setLangForm] = useState(null);
     const speech = useSpeech(language?.code);
     useBodyClass('ln-body');   // голубая тема модуля вместо зелёной по умолчанию
     const navigate = useNavigate();
@@ -30,6 +33,25 @@ export default function LanguageDetailPage() {
             .then(setLanguage)
             .catch(err => setError(err.response?.status === 404 ? 'Язык не найден' : 'Не удалось загрузить язык'));
     }, [id]);
+
+    const openEdit = () => setLangForm({
+        id: language.id, name: language.name, code: language.code ?? '',
+        current_level: language.current_level, target_level: language.target_level,
+    });
+
+    const saveLanguage = async (form) => {
+        const { id, ...fields } = form;
+        const updated = await updateLanguage(id, { ...fields, code: emptyToNull(fields.code) });
+        setLanguage(updated);
+        setLangForm(null);
+    };
+
+    const removeLanguage = async () => {
+        if (!window.confirm(`Удалить «${language.name}»? Удалятся все слова, конспекты, теги и история повторений.`)) return;
+
+        await deleteLanguage(language.id);
+        navigate('/learn');
+    };
 
     if (error) return (
         <div className="finance-page">
@@ -60,6 +82,9 @@ export default function LanguageDetailPage() {
                         <Languages size={18} />
                         <span>{language.name}</span>
                     </span>
+                    <button className="btn btn-ghost btn-icon btn-sm" onClick={openEdit} aria-label="Изменить язык" title="Изменить язык">
+                        <Pencil size={14} />
+                    </button>
                 </div>
             </nav>
             <div className="finance-body">
@@ -87,6 +112,10 @@ export default function LanguageDetailPage() {
                     {tab === 'review' && <ReviewSection languageId={id} speech={speech} />}
                 </main>
             </div>
+            {langForm && (
+                <LanguageFormModal form={langForm} setForm={setLangForm}
+                                 onSave={saveLanguage} onDelete={removeLanguage} />
+            )}
         </div>
     );
 }

@@ -1,3 +1,6 @@
+import {useState} from "react";
+import {FormError} from "../../FormError.jsx";
+import {extractErrorMessage} from "../../../utils/errors.ts";
 import {X} from "lucide-react";
 import {WkModal} from "./WorkoutModal.jsx";
 import {WK_RED, WK_RED_BD, WK_RED_SUBTLE} from "../../../utils/workouts.ts";
@@ -17,14 +20,30 @@ export function TrainingFormModal({ setTrainForm, trainForm, saveTraining,
         ...f,
         exercises: f.exercises.map(e => e.exercise_id === exId ? { ...e, [field]: val } : e),
     }));
+
+    const [error, setError] = useState(null);
+    const [saving, setSaving] = useState(false);
+
+    const submit = async () => {
+        setSaving(true);
+        setError(null);
+        try {
+            await saveTraining(trainForm);        // при успехе модалку закрывает страница
+        } catch (err) {
+            setError(extractErrorMessage(err, 'Не удалось сохранить тренировку'));
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
         <WkModal open title={trainForm.id ? 'Изменить тренировку' : 'Новая тренировка'} onClose={() => setTrainForm(null)} width={500}
             footer={<>
                 <button className="btn btn-secondary btn-sm" onClick={() => setTrainForm(null)}>Отмена</button>
                 <button className="btn btn-sm" style={{ background: WK_RED, borderColor: WK_RED, color: '#fff' }}
-                    disabled={!trainForm.name?.trim()}
-                    onClick={() => saveTraining(trainForm)}>
-                    Сохранить
+                    disabled={saving || !trainForm.name?.trim()}
+                    onClick={submit}>
+                    {saving ? 'Сохраняю…' : 'Сохранить'}
                 </button>
             </>}>
             <div className="form">
@@ -81,6 +100,7 @@ export function TrainingFormModal({ setTrainForm, trainForm, saveTraining,
                         </div>
                     </div>
                 )}
+                <FormError>{error}</FormError>
             </div>
         </WkModal>
     )

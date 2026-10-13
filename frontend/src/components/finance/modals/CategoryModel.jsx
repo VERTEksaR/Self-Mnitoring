@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { createCategory, updateCategory } from "../../../api/finance/categories.ts";
 import { CategoryForm } from '../forms/CategoryForm.jsx';
+import {FormError} from "../../FormError.jsx";
+import {extractErrorMessage} from "../../../utils/errors.ts";
 
 
 export function AddCategoryModel({ onClose, onSaved }) {
     const [form, setForm] = useState({ name: '', show_analytics: true });
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const onEsc = (e) => { if (e.key === 'Escape') onClose(); };
@@ -14,21 +17,23 @@ export function AddCategoryModel({ onClose, onSaved }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError(null);
         try {
             const res = await createCategory(form);
             onSaved(res);
             onClose();
         } catch (err) {
-            console.log(err.response || err);
+            setError(extractErrorMessage(err, 'Не удалось сохранить категорию'));
         }
     };
 
-    return <CategoryForm form={form} setForm={setForm} onClose={onClose} onSubmit={handleSubmit} />;
+    return <CategoryForm form={form} setForm={setForm} onClose={onClose} onSubmit={handleSubmit} error={error} />;
 }
 
 
 export function CategoryModel({ category, onClose, onDelete, onUpdate }) {
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const onEsc = (e) => { if (e.key === 'Escape') onClose(); };
@@ -38,13 +43,23 @@ export function CategoryModel({ category, onClose, onDelete, onUpdate }) {
 
     const handleToggleAnalytics = async () => {
         setLoading(true);
+        setError(null);
         try {
             const res = await updateCategory(category.id, { show_analytics: !category.show_analytics });
             onUpdate?.(res);
         } catch (err) {
-            console.log(err.response || err);
+            setError(extractErrorMessage(err, 'Не удалось изменить категорию'));
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        setError(null);
+        try {
+            await onDelete(category.id);
+        } catch (err) {
+            setError(extractErrorMessage(err, 'Не удалось удалить категорию'));   // 409: по категории есть транзакции
         }
     };
 
@@ -95,10 +110,12 @@ export function CategoryModel({ category, onClose, onDelete, onUpdate }) {
                             {loading ? '...' : isOn ? 'Включено' : 'Выключено'}
                         </button>
                     </div>
+
+                    <FormError>{error}</FormError>
                 </div>
 
                 <div className="modal-actions">
-                    <button className="btn btn-danger" onClick={() => onDelete(category.id)}>
+                    <button className="btn btn-danger" onClick={handleDelete}>
                         Удалить
                     </button>
                     <button className="btn btn-secondary" onClick={onClose}>

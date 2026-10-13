@@ -2,8 +2,8 @@ import api from "../api";
 import type { ReviewBatch } from "../../types/languages/review";
 import type { Word } from "../../types/languages/words";
 
-export async function getReview(language_id: number, limit = 20): Promise<ReviewBatch> {
-    const response = await api.get(`languages/${language_id}/review/`, { params: { limit } });
+export async function getReview(language_id: number, limit = 20, tagId?: number): Promise<ReviewBatch> {
+    const response = await api.get(`languages/${language_id}/review/`, { params: { limit, tag_id: tagId } });
     return response.data;
 }
 

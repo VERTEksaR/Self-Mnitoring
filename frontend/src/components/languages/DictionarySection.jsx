@@ -1,11 +1,12 @@
 import {useCallback, useEffect, useState} from "react";
-import {Plus} from "lucide-react";
+import {Plus, Settings2} from "lucide-react";
 import {createWord, deleteWord, getWords, updateWord} from "../../api/languages/words.ts";
 import {EmptyHint} from "../EmptyHint.jsx";
 import {WordRow} from "./WordRow.jsx";
 import {WordFormModal} from "./WordFormModal.jsx";
 import {WORD_FORM_DEFAULT, formToWord, wordToForm} from "../../utils/languages.ts";
-import {createTag, getTags} from "../../api/languages/tags.ts";
+import {createTag, deleteTag, getTags, updateTag} from "../../api/languages/tags.ts";
+import {TagsModal} from "./TagsModal.jsx";
 
 const PAGE_SIZE = 20;
 
@@ -18,6 +19,7 @@ export function DictionarySection({ languageId, speech }) {
     const [wordForm, setWordForm] = useState(null);
 
     const [tags, setTags] = useState([]);
+    const [tagsOpen, setTagsOpen] = useState(false);
     const [tagId, setTagId] = useState(null);
 
     const loadTags = useCallback(() => {
@@ -36,6 +38,24 @@ export function DictionarySection({ languageId, speech }) {
         const tag = await createTag(languageId, { name });
         setTags(prev => [...prev, tag].sort((a, b) => a.name.localeCompare(b.name)));
         return tag;
+    };
+
+    const renameTag = async (id, name) => {
+        const updated = await updateTag(languageId, id, { name });
+        setTags(prev => prev.map(t => t.id === id ? updated : t).sort((a, b) => a.name.localeCompare(b.name)));
+        load();
+    };
+
+    const removeTag = async tag => {
+        if (!window.confirm(`Удалить тег «${tag.name}»? Со слов он снимется, сами слова останутся.`)) return;
+        await deleteTag(languageId, tag.id);
+        setTags(prev => prev.filter(t => t.id !== tag.id));
+
+        if (tagId === tag.id) {
+            pickTag(null);
+        } else {
+            load();
+        }
     };
 
     const load = useCallback(async () => {
@@ -108,6 +128,9 @@ export function DictionarySection({ languageId, speech }) {
                             <button key={t.id} className={'btn btn-sm ' + (tagId === t.id ? 'btn-primary' : 'btn-ghost')}
                                     onClick={() => pickTag(t.id)}>#{t.name}</button>
                         ))}
+                        <button className="btn btn-ghost btn-icon btn-sm" title="Управление тегами" onClick={() => setTagsOpen(true)}>
+                            <Settings2 size={14} />
+                        </button>
                     </div>
                 )}
 
@@ -134,6 +157,9 @@ export function DictionarySection({ languageId, speech }) {
             {wordForm && (
                 <WordFormModal form={wordForm} setForm={setWordForm} onSave={saveWord}
                                tags={tags} onCreateTag={createTagInline} />
+            )}
+            {tagsOpen && (
+                <TagsModal tags={tags} onRename={renameTag} onDelete={removeTag} onClose={() => setTagsOpen(false)} />
             )}
         </>
     );

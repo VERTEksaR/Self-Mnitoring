@@ -1,9 +1,11 @@
+import {FormError} from "../../FormError.jsx";
+
 export function TransactionForm({
     form, setForm,
     accounts, categories,
     accountId, categoryId,
     setAccountId, setCategoryId,
-    onSubmit, onClose,
+    onSubmit, onClose, error,
 }) {
     return (
         <div className="overlay" onClick={onClose}>
@@ -101,6 +103,8 @@ export function TransactionForm({
                         />
                         Доход (поступление)
                     </label>
+
+                    <FormError>{error}</FormError>
 
                     <div className="modal-actions">
                         <button type="button" className="btn btn-secondary" onClick={onClose}>Отмена</button>

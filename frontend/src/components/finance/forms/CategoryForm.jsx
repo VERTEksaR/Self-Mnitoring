@@ -1,4 +1,6 @@
-export function CategoryForm({ form, setForm, onClose, onSubmit }) {
+import {FormError} from "../../FormError.jsx";
+
+export function CategoryForm({ form, setForm, onClose, onSubmit, error }) {
     return (
         <div className="overlay" onClick={onClose}>
             <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -43,6 +45,8 @@ export function CategoryForm({ form, setForm, onClose, onSubmit }) {
                             </div>
                         </div>
                     </label>
+
+                    <FormError>{error}</FormError>
 
                     <div className="modal-actions">
                         <button type="button" className="btn btn-secondary" onClick={onClose}>Отмена</button>
