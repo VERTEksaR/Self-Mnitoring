@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { createAccount, updateAccount } from "../../../api/finance/accounts.ts";
 import { AccountForm } from '../forms/AccountForm.jsx';
+import {FormError} from "../../FormError.jsx";
+import {extractErrorMessage} from "../../../utils/errors.ts";
 
 
 export function AddAccountModel({ onClose, onSaved }) {
     const [form, setForm] = useState({ name: '', account_type: 'Обычный', goal_amount: '' });
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const onEsc = (e) => { if (e.key === 'Escape') onClose(); };
@@ -14,6 +17,7 @@ export function AddAccountModel({ onClose, onSaved }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError(null);
         try {
             const res = await createAccount({
                 name: form.name,
@@ -23,16 +27,17 @@ export function AddAccountModel({ onClose, onSaved }) {
             onSaved(res);
             onClose();
         } catch (err) {
-            console.log(err.response || err);
+            setError(extractErrorMessage(err, 'Не удалось сохранить счёт'));
         }
     };
 
-    return <AccountForm form={form} setForm={setForm} onClose={onClose} onSubmit={handleSubmit} />;
+    return <AccountForm form={form} setForm={setForm} onClose={onClose} onSubmit={handleSubmit} error={error} />;
 }
 
 
 export function AccountModel({ account, onClose, onDelete, onUpdate }) {
     const [editing, setEditing] = useState(false);
+    const [error, setError] = useState(null);
     const [form, setForm] = useState({
         name: account.name,
         account_type: account.account_type,
@@ -47,6 +52,7 @@ export function AccountModel({ account, onClose, onDelete, onUpdate }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError(null);
         try {
             const res = await updateAccount(account.id, {
                 name: form.name,
@@ -56,12 +62,23 @@ export function AccountModel({ account, onClose, onDelete, onUpdate }) {
             onUpdate?.(res);
             setEditing(false);
         } catch (err) {
-            console.log(err.response || err);
+            setError(extractErrorMessage(err, 'Не удалось сохранить счёт'));
+        }
+    };
+
+    const handleDelete = async () => {
+        setError(null);
+        try {
+            await onDelete(account.id);
+        } catch (err) {
+            setError(extractErrorMessage(err, 'Не удалось удалить счёт'));   // 409: по счёту есть транзакции
         }
     };
 
     if (editing) {
-        return <AccountForm form={form} setForm={setForm} onClose={() => setEditing(false)} onSubmit={handleSubmit} />;
+        // ошибка правки не должна остаться в режиме просмотра
+        return <AccountForm form={form} setForm={setForm} onClose={() => { setEditing(false); setError(null); }}
+                            onSubmit={handleSubmit} error={error} />;
     }
 
     const isSavings = account.account_type === 'Накопительный';
@@ -82,11 +99,13 @@ export function AccountModel({ account, onClose, onDelete, onUpdate }) {
                             <strong>Цель:</strong> {account.goal_amount != null ? `${account.goal_amount} ₽` : 'без лимита'}
                         </p>
                     )}
+
+                    <FormError>{error}</FormError>
                 </div>
 
                 <div className="modal-actions">
-                    <button className="btn btn-secondary" onClick={() => setEditing(true)}>Изменить</button>
-                    <button className="btn btn-danger" onClick={() => onDelete(account.id)}>Удалить</button>
+                    <button className="btn btn-secondary" onClick={() => { setError(null); setEditing(true); }}>Изменить</button>
+                    <button className="btn btn-danger" onClick={handleDelete}>Удалить</button>
                     <button className="btn btn-secondary" onClick={onClose}>Закрыть</button>
                 </div>
             </div>

@@ -9,7 +9,7 @@ from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Trainings, ModulesUsers
 from backend.finance_app.app.schemas.trainings.trainings import TrainingRead, TrainingChange, TrainingCreate
 from backend.finance_app.app.schemas.common.common import Page, PageNumber, PageSize
-
+from backend.finance_app.app.utils.commit import commit_or_conflict
 
 router = APIRouter()
 
@@ -49,7 +49,7 @@ async def delete_training(training_id: int, session: AsyncSession = Depends(get_
 async def create_training(training_data: TrainingCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     training = Trainings(**training_data.model_dump(), user_id=current_user.user_id)
     session.add(training)
-    await session.commit()
+    await commit_or_conflict(session, f"Тренировка «{training.name}» на {training.date} уже есть")
     await session.refresh(training)
     logger.info(f"Тренировка {training.id} создана")
     return training
@@ -67,7 +67,7 @@ async def change_training(training_id: int, training_data: TrainingChange, sessi
     for field, value in training_data.model_dump(exclude_unset=True).items():
         setattr(training, field, value)
 
-    await session.commit()
+    await commit_or_conflict(session, f"Тренировка «{training.name}» на {training.date} уже есть")
     await session.refresh(training)
     return training
 

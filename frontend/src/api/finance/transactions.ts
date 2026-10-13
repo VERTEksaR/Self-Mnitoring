@@ -22,6 +22,6 @@ export async function createTransaction(payload: TransactionCreate): Promise<Tra
 }
 
 export async function updateTransaction(transaction_id: number, payload: TransactionChange): Promise<Transaction> {
-    const result = await api.patch(`transactions/${transaction_id}`, payload);
+    const result = await api.patch(`transactions/${transaction_id}/`, payload);
     return result.data;
 }

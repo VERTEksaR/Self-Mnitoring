@@ -12,6 +12,7 @@ from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Category, ModulesUsers
 from backend.finance_app.app.schemas.finances.category import CategoryRead, CategoryCreate, CategoryChange
 from backend.finance_app.app.schemas.common.common import Page, PageNumber, PageSize
+from backend.finance_app.app.utils.commit import commit_or_conflict
 from backend.finance_app.app.utils.redis_cache_key import invalidate_cache, make_cache_key, safe_get, safe_set
 
 router = APIRouter()
@@ -54,7 +55,7 @@ async def delete_category(category_id: int, session: AsyncSession = Depends(get_
         raise HTTPException(status_code=404, detail=f"Категория с id {category_id} не была найдена")
 
     await session.delete(category)
-    await session.commit()
+    await commit_or_conflict(session, "Нельзя удалить категорию: по ней есть транзакции")
     logger.info(f"Категория с id {category_id} была удалена")
     await invalidate_cache(redis_object=await get_redis(),
                            prefix="categories",
@@ -81,7 +82,7 @@ async def change_category(category_id: int, data: CategoryChange, session: Async
     for field, value in update_data.items():
         setattr(category, field, value)
 
-    await session.commit()
+    await commit_or_conflict(session, f"Категория «{category.name}» уже есть")
     await session.refresh(category)
     await invalidate_cache(redis_object=await get_redis(),
                            prefix="categories",
@@ -93,7 +94,7 @@ async def change_category(category_id: int, data: CategoryChange, session: Async
 async def create_category(category_data: CategoryCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     category = Category(**category_data.model_dump(), user_id=current_user.user_id)
     session.add(category)
-    await session.commit()
+    await commit_or_conflict(session, f"Категория «{category.name}» уже есть")
     logger.info(f"Категория с id {category.id} была создана")
     await invalidate_cache(redis_object=await get_redis(),
                            prefix="categories",

@@ -18,6 +18,7 @@ import {AnalyticsSection} from "../components/workouts/AnalyticSection.jsx";
 import {OverviewSection} from "../components/workouts/OverviewSection.jsx";
 import {ExerciseProfileSection} from "../components/workouts/ExerciseSection.jsx";
 import {WorkoutModals} from "../components/workouts/modals/WorkoutModals.jsx";
+import {extractErrorMessage} from "../utils/errors.ts";
 
 const WK_RED        = '#ff3b4e';
 
@@ -81,8 +82,13 @@ export default function WorkoutsPage() {
         setExForm(null);
     }
     async function removeExercise(id) {
-        await deleteExercise(id);
-        setExercises(p => p.filter(e => e.id !== id));
+        try {
+            await deleteExercise(id);
+            setExercises(p => p.filter(e => e.id !== id));
+        } catch (err) {
+            // удаление — кнопка в строке списка, модалки для ошибки нет
+            window.alert(extractErrorMessage(err, 'Не удалось удалить упражнение'));   // 409: упражнение есть в тренировках
+        }
     }
 
     // ── Training CRUD ──

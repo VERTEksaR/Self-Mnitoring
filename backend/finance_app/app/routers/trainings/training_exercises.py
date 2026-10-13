@@ -4,12 +4,16 @@ from math import ceil
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.finance_app.app.db.models.trainings.exercises import Exercises
+from backend.finance_app.app.db.models.trainings.trainings import Trainings
 from backend.finance_app.app.dependencies.auth import get_trainings
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import TrainingExercises, ModulesUsers
 from backend.finance_app.app.schemas.trainings.exercises import ExerciseTrainingRead, ExerciseTrainingChange, ExerciseTrainingCreate
 from backend.finance_app.app.schemas.common.common import Page, PageNumber, PageSize
-
+from backend.finance_app.app.utils.check_availability import check_availability
+from backend.finance_app.app.utils.commit import commit_or_conflict
 
 router = APIRouter()
 
@@ -51,17 +55,18 @@ async def delete_ex_training(exercise_id: int = Query(...), training_id: int = Q
 
     await session.delete(ex_training)
     await session.commit()
-    logger.error(f"Комбинация упражнения {exercise_id} и тренировки {training_id} была удалена")
+    logger.info(f"Комбинация упражнения {exercise_id} и тренировки {training_id} была удалена")
     return None
 
 
 @router.post("/", response_model=ExerciseTrainingRead, status_code=201)
 async def create_ex_training(ex_training_data: ExerciseTrainingCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
+    await check_availability(ex_training_data.training_id, current_user.user_id, Trainings, session)
+    await check_availability(ex_training_data.exercise_id, current_user.user_id, Exercises, session)
     ex_training = TrainingExercises(**ex_training_data.model_dump(), user_id=current_user.user_id)
     session.add(ex_training)
-    await session.commit()
-    await session.refresh(ex_training)
-    logger.error(f"Комбинация упражнения {ex_training.exercise_id} и тренировки {ex_training.training_id} была создана")
+    await commit_or_conflict(session, "Это упражнение уже есть в тренировке")
+    logger.info(f"Комбинация упражнения {ex_training.exercise_id} и тренировки {ex_training.training_id} была создана")
     return ex_training
 
 

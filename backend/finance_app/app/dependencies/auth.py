@@ -38,6 +38,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: AsyncSe
     return user
 
 
+async def get_admin(current_user: User = Depends(get_current_user)):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admins only")
+
+    return current_user
+
+
 def require_module(name: str):
     async def dependency(current_user: User = Depends(get_current_user),
                          session: AsyncSession = Depends(get_session)):

@@ -33,6 +33,6 @@ export async function createAccount(payload: AccountCreate): Promise<Account> {
 }
 
 export async function updateAccount(account_id: number, payload: AccountChange): Promise<Account> {
-    const result = await api.patch(`accounts/${account_id}`, payload);
+    const result = await api.patch(`accounts/${account_id}/`, payload);
     return result.data;
 }

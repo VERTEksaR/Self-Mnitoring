@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict
 from decimal import Decimal
 
 from backend.finance_app.app.db.models import AccountType
+from backend.finance_app.app.schemas.common.common import forbid_null
 
 
 class AccountCreate(BaseModel):
@@ -26,6 +27,8 @@ class AccountChange(BaseModel):
     name: Optional[str] = None
     account_type: Optional[AccountType] = None
     goal_amount: Optional[Decimal] = None
+
+    check_not_null = forbid_null("name", "account_type")
 
 
 class AccountBalancesRead(BaseModel):

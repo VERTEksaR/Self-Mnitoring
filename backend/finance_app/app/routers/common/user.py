@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from backend.finance_app.app.dependencies.auth import get_current_user
+from backend.finance_app.app.dependencies.auth import get_current_user, get_admin
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import User, ModulesUsers
 from backend.finance_app.app.schemas.common.user import UserRead, UserFilter, ModulesUserRead
@@ -32,7 +32,7 @@ async def get_modules(session: AsyncSession = Depends(get_session), current_user
 
 
 @router.get('/{user_id}', response_model=UserRead, status_code=200)
-async def get_user(user_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_user(user_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_admin)):
     user = await session.get(User, user_id)
 
     if not user:
@@ -44,7 +44,7 @@ async def get_user(user_id: int, session: AsyncSession = Depends(get_session), c
 
 
 @router.get('/', response_model=Page[UserRead], status_code=200)
-async def get_users(page: PageNumber = 1, size: PageSize = 10, filters: UserFilter = Depends(), session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def get_users(page: PageNumber = 1, size: PageSize = 10, filters: UserFilter = Depends(), session: AsyncSession = Depends(get_session), current_user: User = Depends(get_admin)):
     conditions = []
 
     if filters.email:
@@ -54,7 +54,7 @@ async def get_users(page: PageNumber = 1, size: PageSize = 10, filters: UserFilt
         conditions.append(User.is_active == filters.is_active)
 
     total_result = await session.execute(
-        select(func.count()).where(*conditions)
+        select(func.count()).select_from(User).where(*conditions)
     )
     total = total_result.scalar_one()
 

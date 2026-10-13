@@ -17,6 +17,6 @@ export async function createCategory(payload: CategoryCreate): Promise<Category>
 }
 
 export async function updateCategory(category_id: number, payload: CategoryChange): Promise<Category> {
-    const result = await api.patch(`categories/${category_id}`, payload);
+    const result = await api.patch(`categories/${category_id}/`, payload);
     return result.data;
 }

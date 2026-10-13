@@ -1,16 +1,34 @@
+import {useState} from "react";
+import {FormError} from "../../FormError.jsx";
+import {extractErrorMessage} from "../../../utils/errors.ts";
 import {WkModal} from "./WorkoutModal.jsx";
 import {EXERCISE_TYPES, MUSCLE_GROUPS, WK_RED} from "../../../utils/workouts.ts";
 
 export function ExerciseFromModal({exForm, saveExercise, setExForm}) {
+    const [error, setError] = useState(null);
+    const [saving, setSaving] = useState(false);
+
+    const submit = async () => {
+        setSaving(true);
+        setError(null);
+        try {
+            await saveExercise(exForm);        // при успехе модалку закрывает страница
+        } catch (err) {
+            setError(extractErrorMessage(err, 'Не удалось сохранить упражнение'));
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
         <>
             <WkModal open title={exForm.id ? 'Изменить упражнение' : 'Новое упражнение'} onClose={() => setExForm(null)}
                     footer={<>
                         <button className="btn btn-secondary btn-sm" onClick={() => setExForm(null)}>Отмена</button>
                         <button className="btn btn-sm" style={{ background: WK_RED, borderColor: WK_RED, color: '#fff' }}
-                            disabled={!exForm.name?.trim() || !exForm.muscle_group || !exForm.exercise_type}
-                            onClick={() => saveExercise(exForm)}>
-                            Сохранить
+                            disabled={saving || !exForm.name?.trim() || !exForm.muscle_group || !exForm.exercise_type}
+                            onClick={submit}>
+                            {saving ? 'Сохраняю…' : 'Сохранить'}
                         </button>
                     </>}>
                     <div className="form">
@@ -35,6 +53,7 @@ export function ExerciseFromModal({exForm, saveExercise, setExForm}) {
                                 </select>
                             </div>
                         </div>
+                        <FormError>{error}</FormError>
                     </div>
                 </WkModal>
         </>

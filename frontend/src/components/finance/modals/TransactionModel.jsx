@@ -3,6 +3,7 @@ import { createTransaction, updateTransaction } from "../../../api/finance/trans
 import { getCategories } from "../../../api/finance/categories.ts";
 import { getAccounts } from "../../../api/finance/accounts.ts";
 import { TransactionForm } from '../forms/TransactionForm.jsx';
+import {extractErrorMessage} from "../../../utils/errors.ts";
 
 const fmt = (amount) =>
     Number(amount).toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -13,6 +14,7 @@ export function AddTransactionModel({ onClose, onSaved }) {
     const [categoryId, setCategoryId] = useState('');
     const [accounts, setAccounts] = useState([]);
     const [accountId, setAccountId] = useState('');
+    const [error, setError] = useState(null);
     const [form, setForm] = useState({
         amount: '', destination: '', replenishment: false,
         transaction_date: '', cashback: '',
@@ -31,6 +33,7 @@ export function AddTransactionModel({ onClose, onSaved }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError(null);
         try {
             const res = await createTransaction({
                 ...form,
@@ -42,7 +45,7 @@ export function AddTransactionModel({ onClose, onSaved }) {
             onSaved(res);
             onClose();
         } catch (err) {
-            console.error(err.response || err);
+            setError(extractErrorMessage(err, 'Не удалось сохранить транзакцию'));
         }
     };
 
@@ -52,7 +55,7 @@ export function AddTransactionModel({ onClose, onSaved }) {
             accounts={accounts} categories={categories}
             accountId={accountId} categoryId={categoryId}
             setAccountId={setAccountId} setCategoryId={setCategoryId}
-            onSubmit={handleSubmit} onClose={onClose}
+            onSubmit={handleSubmit} onClose={onClose} error={error}
         />
     );
 }
@@ -63,6 +66,7 @@ export function EditTransactionModel({ transaction, onClose, onSaved }) {
     const [categoryId, setCategoryId] = useState(transaction.category_id);
     const [accounts, setAccounts] = useState([]);
     const [accountId, setAccountId] = useState(transaction.account_id);
+    const [error, setError] = useState(null);
     const [form, setForm] = useState({
         amount: transaction.amount,
         destination: transaction.destination,
@@ -78,6 +82,7 @@ export function EditTransactionModel({ transaction, onClose, onSaved }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError(null);
         try {
             const res = await updateTransaction(transaction.id, {
                 ...form,
@@ -89,7 +94,7 @@ export function EditTransactionModel({ transaction, onClose, onSaved }) {
             onSaved(res);
             onClose();
         } catch (err) {
-            console.error(err.response || err);
+            setError(extractErrorMessage(err, 'Не удалось сохранить транзакцию'));
         }
     };
 
@@ -99,7 +104,7 @@ export function EditTransactionModel({ transaction, onClose, onSaved }) {
             accounts={accounts} categories={categories}
             accountId={accountId} categoryId={categoryId}
             setAccountId={setAccountId} setCategoryId={setCategoryId}
-            onSubmit={handleSubmit} onClose={onClose}
+            onSubmit={handleSubmit} onClose={onClose} error={error}
         />
     );
 }

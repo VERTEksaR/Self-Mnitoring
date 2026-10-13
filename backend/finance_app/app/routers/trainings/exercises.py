@@ -9,7 +9,7 @@ from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Exercises, ModulesUsers
 from backend.finance_app.app.schemas.trainings.exercises import ExerciseRead, ExerciseChange, ExerciseCreate
 from backend.finance_app.app.schemas.common.common import Page, PageNumber, PageSize
-
+from backend.finance_app.app.utils.commit import commit_or_conflict
 
 router = APIRouter()
 
@@ -48,7 +48,7 @@ async def delete_exercise(exercise_id: int, session: AsyncSession = Depends(get_
         raise HTTPException(status_code=404, detail=f"Упражнение с id {exercise_id} не было найдено")
 
     await session.delete(exercise)
-    await session.commit()
+    await commit_or_conflict(session, "Нельзя удалить упражнение: оно есть в тренировках")
     logger.info(f"Упражнение с id {exercise_id} было удалено")
     return None
 
@@ -57,7 +57,7 @@ async def delete_exercise(exercise_id: int, session: AsyncSession = Depends(get_
 async def create_exercise(exercise_data: ExerciseCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     exercise = Exercises(**exercise_data.model_dump(), user_id=current_user.user_id)
     session.add(exercise)
-    await session.commit()
+    await commit_or_conflict(session, f"Упражнение «{exercise.name}» уже есть")
     await session.refresh(exercise)
     logger.info(f"Упражнение с id {exercise.id} было создано")
     return exercise
@@ -79,7 +79,7 @@ async def change_exercise(exercise_id: int, exercise_data: ExerciseChange, sessi
     for field, value in updated_data.items():
         setattr(exercise, field, value)
 
-    await session.commit()
+    await commit_or_conflict(session, f"Упражнение «{exercise.name}» уже есть")
     await session.refresh(exercise)
     return exercise
 

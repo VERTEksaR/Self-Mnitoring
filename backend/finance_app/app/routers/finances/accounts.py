@@ -16,6 +16,7 @@ from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Account, Transaction, ModulesUsers, AccountType
 from backend.finance_app.app.schemas.finances.account import AccountRead, AccountCreate, AccountBalancesRead, AccountChange
 from backend.finance_app.app.schemas.common.common import Page, PageNumber, PageSize
+from backend.finance_app.app.utils.commit import commit_or_conflict
 from backend.finance_app.app.utils.redis_cache_key import make_cache_key, invalidate_cache, safe_get, safe_set
 
 router = APIRouter()
@@ -148,7 +149,7 @@ async def change_account(account_id: int, data: AccountChange, session: AsyncSes
     for field, value in updated_data.items():
         setattr(account, field, value)
 
-    await session.commit()
+    await commit_or_conflict(session, f"Счёт «{account.name}» уже есть")
     await session.refresh(account)
     await invalidate_cache(redis_object=await get_redis(),
                            prefix="accounts",
@@ -168,7 +169,7 @@ async def delete_account(account_id: int, session: AsyncSession = Depends(get_se
         raise HTTPException(status_code=404, detail=f"Счет с id {account_id} не был найден")
 
     await session.delete(account)
-    await session.commit()
+    await commit_or_conflict(session, "Нельзя удалить счёт: по нему есть транзакции")
     logger.info(f"С чет с id {account_id} был удален")
     await invalidate_cache(redis_object=await get_redis(),
                            prefix="accounts",
@@ -180,7 +181,7 @@ async def delete_account(account_id: int, session: AsyncSession = Depends(get_se
 async def create_account(account_data: AccountCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     account = Account(**account_data.model_dump(), user_id=current_user.user_id)
     session.add(account)
-    await session.commit()
+    await commit_or_conflict(session, f"Счёт «{account.name}» уже есть")
     logger.info(f"Счет с id {account.id} был создан")
     await invalidate_cache(redis_object=await get_redis(),
                            prefix="accounts",

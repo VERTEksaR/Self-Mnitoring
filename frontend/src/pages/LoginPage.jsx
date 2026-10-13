@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginUser, registerUser, getUsers } from '../api/auth';
+import { loginUser, registerUser } from '../api/auth';
 import {extractErrorMessage} from "../utils/errors.ts";
 
 export default function LoginPage() {
@@ -12,21 +12,12 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const saveUser = async (email) => {
-        try {
-            const res = await getUsers({ email, nickname: '' });
-            const user = res.data.items?.[0];
-            if (user) localStorage.setItem('user_id', user.id);
-        } catch { /* не критично */ }
-    };
-
     const handleLogin = async (e) => {
         e.preventDefault();
         setError(''); setLoading(true);
         try {
             const res = await loginUser({ email, password });
             localStorage.setItem('access_token', res.data.access_token);
-            await saveUser(email);
             navigate('/');
         } catch (err) {
             setError(extractErrorMessage(err, 'Ошибка входа'));
@@ -40,7 +31,6 @@ export default function LoginPage() {
             await registerUser({ email, password, nickname, is_admin: false });
             const res = await loginUser({ email, password });
             localStorage.setItem('access_token', res.data.access_token);
-            await saveUser(email);
             navigate('/');
         } catch (err) {
             setError(extractErrorMessage(err, 'Ошибка регистрации'));

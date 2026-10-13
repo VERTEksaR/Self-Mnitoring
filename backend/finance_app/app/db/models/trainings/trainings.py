@@ -23,7 +23,7 @@ class Trainings(Base):
         "TrainingExercises", lazy="selectin", cascade="all, delete-orphan"
     )
 
-    __table_args__ = (UniqueConstraint("name", "user_id"),)
+    __table_args__ = (UniqueConstraint("name", "date", "user_id"),)
 
     def __str__(self):
         return self.name
