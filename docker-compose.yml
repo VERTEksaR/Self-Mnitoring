@@ -2,14 +2,15 @@ services:
   db:
     image: postgres:16
     restart: unless-stopped
+    # логин, пароль и имя БД берутся из .env — те же, с которыми подключается бэкенд
     environment:
-      POSTGRES_USER: verteksar
+      POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${PASSWORD}
-      POSTGRES_DB: monitoring
+      POSTGRES_DB: ${DATABASE}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U verteksar -d monitoring"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DATABASE}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,9 +30,12 @@ services:
       dockerfile: backend/Dockerfile
     restart: unless-stopped
     env_file: .env
+    # внутри сети compose: сервисы db и redis на стандартных портах, что бы ни стояло в .env для локального запуска
     environment:
       HOST: db
+      PORT: "5432"
       REDIS_HOST: redis
+      REDIS_PORT: "6379"
     depends_on:
       db:
         condition: service_healthy
