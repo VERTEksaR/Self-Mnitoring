@@ -10,7 +10,12 @@ const TYPE_CHIP = {
 export function StudyRow({ study, onEdit, onDelete }) {
     const [hov, setHov] = useState(false);
     return (
-        <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ /* как сейчас */ }}>
+        <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+            border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-sunken)',
+            transition: 'border-color .15s',
+            borderColor: hov ? 'rgba(34,211,238,.36)' : 'var(--border)'
+        }}>
             <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                     <span style={{ fontWeight: 600, color: 'var(--text-strong)' }}>{formatStudyDate(study.study_date)}</span>

@@ -2,7 +2,7 @@ import {useCallback, useEffect, useState} from "react";
 import {Plus} from "lucide-react";
 import {createStudySession, deleteStudySession, getStudySessions, updateStudySession} from "../../api/languages/studySession.ts";
 import {
-    STUDY_TYPES, daysAgoISO, formToStudy, formatMinutes, formatStudyDate, studyFormDefault, studyToForm, wordsLabel,
+    STUDY_TYPES, daysAgoISO, formToStudy, formatMinutes, formatStudyDate, studyFormDefault, studyToForm, pluralLabel,
 } from "../../utils/languages.ts";
 import {EmptyHint} from "../EmptyHint.jsx";
 import {StudyRow} from "./StudyRow.jsx";
@@ -44,8 +44,8 @@ export function JournalSection({ languageId }) {
         load();
     }, [load]);
 
-    const pickPeriod = (id) => { setPeriod(id); setPage(1); }
-    const pickType = (t) => { setStudyType(t); setPage(1); }
+    const pickPeriod = (id) => { setPeriod(id); setPage(1); };
+    const pickType = (t) => { setStudyType(t); setPage(1); };
 
     const saveStudy = async (form) => {
         const payload = formToStudy(form);
@@ -65,14 +65,14 @@ export function JournalSection({ languageId }) {
         if (!window.confirm(`Удалить занятие «${study.study_type}» от ${formatStudyDate(study.study_date)}?`)) return;
 
         try {
-            await deleteStudySession(languageId. study.id);
+            await deleteStudySession(languageId, study.id);
         } catch (err) {
             console.error('[Journal] delete failed:', err?.response?.status);
         }
 
         if (data.items.length === 1 && page > 1) setPage(p => p - 1);
         else load();
-    }
+    };
 
     const openCreate = () => setStudyForm(studyFormDefault());
     const isFiltered = period !== 'all' || studyType !== null;
@@ -95,7 +95,7 @@ export function JournalSection({ languageId }) {
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
                     <button className={'btn btn-sm ' + (studyType === null ? 'btn-primary' : 'btn-ghost')}
-                          onClick={() => pickType(null)}>Все</button>
+                            onClick={() => pickType(null)}>Все</button>
                     {STUDY_TYPES.map(t => (
                         <button key={t} className={'btn btn-sm ' + (studyType === t ? 'btn-primary' : 'btn-ghost')}
                                 onClick={() => pickType(t)}>{t}</button>
@@ -106,7 +106,7 @@ export function JournalSection({ languageId }) {
                     <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
                         {period === 'all' ? 'За всё время' : 'За период'}:{' '}
                         <b style={{ color: 'var(--text-strong)' }}>{formatMinutes(data.total_minutes)}</b>
-                        {' · '}{data.total} {wordsLabel(data.total, ['занятие', 'занятия', 'занятий'])}
+                        {' · '}{data.total} {pluralLabel(data.total, ['занятие', 'занятия', 'занятий'])}
                     </div>
                 )}
 
@@ -132,5 +132,5 @@ export function JournalSection({ languageId }) {
             </div>
             {studyForm && <StudyFormModal form={studyForm} setForm={setStudyForm} onSave={saveStudy} />}
         </>
-    )
+    );
 }
