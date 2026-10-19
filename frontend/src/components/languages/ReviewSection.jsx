@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useState} from "react";
 import {answerReview, getReview} from "../../api/languages/review.ts";
 import {EmptyHint} from "../EmptyHint.jsx";
-import {wordStatus} from "../../utils/languages.ts";
+import {pluralLabel, wordStatus} from "../../utils/languages.ts";
 import {SpeakButton} from "./SpeakButton.jsx";
 import {getTags} from "../../api/languages/tags.ts";
 
@@ -9,14 +9,6 @@ const BATCH_SIZE = 20;
 
 // width: 100% — иначе во flex-колонке .finance-main карточка с margin: auto сжимается до ширины слова
 const CARD_STYLE = { width: '100%', maxWidth: 560, margin: '0 auto', padding: 32, textAlign: 'center' };
-
-// 1 слово, 2 слова, 5 слов, 21 слово, 11 слов
-const wordsLabel = (n) => {
-    const mod10 = n % 10, mod100 = n % 100;
-    if (mod10 === 1 && mod100 !== 11) return 'слово';
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'слова';
-    return 'слов';
-};
 
 export function ReviewSection({ languageId, speech }) {
     const [batch, setBatch] = useState(null);
@@ -126,7 +118,7 @@ export function ReviewSection({ languageId, speech }) {
                 <div style={{ margin: '12px 0' }}>✓ помню: {score.remembered} · ✗ не помню: {score.forgot}</div>
                 {practiced > 0 && <div style={{ color: 'var(--text-muted)', marginBottom: 12 }}>повторено забытых: {practiced}</div>}
                 {left > 0
-                    ? <button className="btn btn-primary" onClick={loadBatch}>Ещё {next} {wordsLabel(next)}</button>
+                    ? <button className="btn btn-primary" onClick={loadBatch}>Ещё {next} {pluralLabel(next, ['слово', 'слова', 'слов'])}</button>
                     : <div style={{ color: 'var(--text-muted)' }}>На сегодня всё повторено</div>}
             </div>
         );

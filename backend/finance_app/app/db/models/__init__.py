@@ -12,6 +12,7 @@ from backend.finance_app.app.db.models.languages.language import Language, Langu
 from backend.finance_app.app.db.models.languages.note import LanguageNote
 from backend.finance_app.app.db.models.languages.word import Word, PartOfSpeech, WordTag
 from backend.finance_app.app.db.models.languages.review import WordReview
+from backend.finance_app.app.db.models.languages.study_session import StudySession, StudyType
 
 __all__ = [
     "User", "TelegramUser", "Modules", "ModulesUsers",
@@ -19,5 +20,5 @@ __all__ = [
     "MuscleGroup", "ExerciseType", "Exercises", "TrainingExercises", "Trainings",
     "SteamUser", "SteamTrackedGamse",
     "Language", "LanguageLevels", "Word", "PartOfSpeech", "LanguageNote", "WordTag",
-    "WordReview",
+    "WordReview", "StudySession", "StudyType",
 ]
