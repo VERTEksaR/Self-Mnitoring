@@ -1,11 +1,12 @@
 import {useMemo, useState} from "react";
 import {bucketLblOf, bucketOf, fmtDate, MUSCLE_COLORS, TODAY, WK_RED, YEAR_START} from "../../utils/workouts.ts";
 import {
-    ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
+    BarChart, Bar, XAxis, YAxis,
     CartesianGrid, Tooltip, Cell,
 } from 'recharts';
 import {Trophy} from "lucide-react";
 import {ChartEmpty} from "../EmptyHint.jsx";
+import {ChartCard} from "../ChartCard.jsx";
 
 const fmtK = v => v >= 1000 ? `${(v/1000).toFixed(1)}т` : String(v);
 
@@ -18,16 +19,6 @@ function WkTooltip({ active, payload, label }) {
         <div style={{ background: 'var(--surface-raised)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 13 }}>
             <div style={{ fontWeight: 700, color: 'var(--text-strong)', marginBottom: 3 }}>{label}</div>
             <div style={{ fontFamily: 'JetBrains Mono,monospace', fontWeight: 700, color: WK_RED }}>{fmtK(val)}{unit}</div>
-        </div>
-    );
-}
-
-function ChartCard({ title, sub, children, height }) {
-    return (
-        <div className="card" style={{ padding: '18px 20px' }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)', marginBottom: sub ? 2 : 14 }}>{title}</div>
-            {sub && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>{sub}</div>}
-            <ResponsiveContainer width="100%" height={height ?? 210}>{children}</ResponsiveContainer>
         </div>
     );
 }

@@ -1,6 +1,6 @@
 import {Plus, Flame, Timer} from "lucide-react";
 import {EX_FORM_DEFAULT, fmtNum, HISTORY_LIMIT, TODAY, WK_RED} from "../../utils/workouts.ts";
-import {StatTile} from "./StatTile.jsx";
+import {StatTile} from "../StatTile.jsx";
 import {TrainingRow} from "./TrainingRow.jsx";
 import {ExerciseRow} from "./ExerciseRow.jsx";
 import {VolumeChart} from "./VolumeChart.jsx";

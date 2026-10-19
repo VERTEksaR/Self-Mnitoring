@@ -83,3 +83,6 @@ export const pluralLabel = (n: number, words: Array<string>) => {
 
 export const formatStudyDate = (iso: string) =>
     new Date(iso + "T00:00").toLocaleDateString("ru-RU", { day: "numeric", month: "short", weekday: "short" });
+
+export const formatWeek = (iso: string) =>
+    new Date(iso + "T00:00").toLocaleDateString("ru-RU", { day: "numeric", month: "short" });

@@ -2,7 +2,7 @@ from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.finance_app.app.dependencies.auth import get_languages
@@ -12,6 +12,7 @@ from backend.finance_app.app.schemas.languages.review import ReviewBatch, Review
 from backend.finance_app.app.schemas.languages.word import WordRead
 from backend.finance_app.app.utils.check_availability import check_availability
 from backend.finance_app.app.utils.next_review import next_review
+from backend.finance_app.app.utils.stats import due_conditions
 
 router = APIRouter()
 
@@ -21,8 +22,7 @@ async def get_review(language_id: int, limit: int = Query(20, ge=1, le=100),
                      tag_id: Optional[int] = None,
                      user: ModulesUsers = Depends(get_languages), session: AsyncSession = Depends(get_session)):
     await check_availability(language_id, user.user_id, Language, session)
-    due = [Word.language_id == language_id, Word.user_id == user.user_id,
-           or_(Word.next_review_date.is_(None), Word.next_review_date <= date.today())]
+    due = due_conditions(language_id, user.user_id, date.today())
 
     if tag_id is not None:
         due.append(Word.tags.any(WordTag.id == tag_id))

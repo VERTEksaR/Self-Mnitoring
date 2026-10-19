@@ -1,6 +1,6 @@
 import {Plus, Pencil, Trash2, Trophy, Timer, Flame} from "lucide-react";
 import {EX_FORM_DEFAULT, fmtDate, HISTORY_LIMIT, WK_RED, WK_RED_SUBTLE} from "../../utils/workouts.ts";
-import {StatTile} from "./StatTile.jsx";
+import {StatTile} from "../StatTile.jsx";
 import {VolumeChart} from "./VolumeChart.jsx";
 import {ChartEmpty, EmptyHint} from "../EmptyHint.jsx";
 import {useState} from "react";
