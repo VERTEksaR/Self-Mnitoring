@@ -10,3 +10,9 @@ class ReviewAnswer(BaseModel):
 class ReviewBatch(BaseModel):
     items: list[WordRead]
     total: int
+
+
+class ChoiceItem(BaseModel):
+    id: int
+    word: str
+    translation: str

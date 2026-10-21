@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.finance_app.app.dependencies.auth import get_languages
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import ModulesUsers, Language, Word, WordReview, WordTag
-from backend.finance_app.app.schemas.languages.review import ReviewBatch, ReviewAnswer
+from backend.finance_app.app.schemas.languages.review import ReviewBatch, ReviewAnswer, ChoiceItem
 from backend.finance_app.app.schemas.languages.word import WordRead
 from backend.finance_app.app.utils.check_availability import check_availability
 from backend.finance_app.app.utils.next_review import next_review
@@ -66,3 +66,18 @@ async def answer_review(language_id: int, word_id: int, data: ReviewAnswer,
     await session.commit()
     await session.refresh(word)
     return word
+
+
+@router.get("/{language_id}/review/choices/", response_model=ChoiceItem, status_code=200)
+async def get_choices(language_id: int, limit: int = Query(40, ge=4, le=100),
+                      user: ModulesUsers = Depends(get_languages),
+                      session: AsyncSession = Depends(get_session)):
+    await check_availability(language_id, user.user_id, Language, session)
+
+    result = await session.execute(
+        select(Word.id, Word.word, Word.translation)
+        .where(Word.language_id == language_id, Word.user_id == user.user_id)
+        .order_by(func.random())
+        .limit(limit)
+    )
+    return result.mappings().all()
