@@ -68,7 +68,7 @@ async def answer_review(language_id: int, word_id: int, data: ReviewAnswer,
     return word
 
 
-@router.get("/{language_id}/review/choices/", response_model=ChoiceItem, status_code=200)
+@router.get("/{language_id}/review/choices/", response_model=list[ChoiceItem], status_code=200)
 async def get_choices(language_id: int, limit: int = Query(40, ge=4, le=100),
                       user: ModulesUsers = Depends(get_languages),
                       session: AsyncSession = Depends(get_session)):
