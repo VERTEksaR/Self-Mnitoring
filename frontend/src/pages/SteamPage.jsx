@@ -614,6 +614,8 @@ if (steamId) {
         navigate('/login');
     };
 
+    const activeLabel = SECTIONS.find(s => s.id === active)?.label ?? '';
+
     return (
         <div className="steam-theme finance-page">
             {/* top nav */}
