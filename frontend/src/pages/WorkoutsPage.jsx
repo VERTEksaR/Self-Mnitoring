@@ -12,7 +12,7 @@ import {
     getTrainings, getTraining, createTraining, updateTraining, deleteTraining,
     createTrainingExercise, updateTrainingExercise, deleteTrainingExercise,
 } from '../api/trainings/trainings';
-import {fmtDate, TODAY, WK_RED_SUBTLE} from "../utils/workouts.ts";
+import {TODAY, WK_RED_SUBTLE} from "../utils/workouts.ts";
 import {WkModal} from "../components/workouts/modals/WorkoutModal.jsx";
 import {AnalyticsSection} from "../components/workouts/AnalyticSection.jsx";
 import {OverviewSection} from "../components/workouts/OverviewSection.jsx";
