@@ -138,12 +138,12 @@
 ## Этап 9. Markdown и фото → Markdown
 
 **9.1 Markdown**
-- [ ] Рендер через `react-markdown` + `remark-gfm` (хранение не меняется, миграция не нужна)
-- [ ] Переключатель «Редактировать / Просмотр»
+- [x] Рендер через `react-markdown` + `remark-gfm` (хранение не меняется, миграция не нужна)
+- [x] Переключатель «Редактировать / Просмотр»
 
-**9.2 Фото → Markdown через Claude API**
+**9.2 Фото → Markdown через OpenAI API**
 - [ ] `POST /languages/{id}/notes/from-image`: `UploadFile`, проверка типа и размера, base64 → блок `image` + инструкция
-- [ ] SDK `anthropic`, клиент `AsyncAnthropic`; ключ в `.env` / `settings`
-- [ ] Модель `claude-opus-5-5`, `effort: "low"`
+- [ ] SDK `openai`, клиент `AsyncOpenAI`; ключ `OPENAI_API_KEY` в `.env` / `settings`
+- [ ] Модель с поддержкой картинок, имя в `settings` (`OPENAI_MODEL`); картинка как data-URL в части `image_url`
 - [ ] Возвращать черновик, не сохранять сразу — пользователь правит и сохраняет сам
-- [ ] Обработка `stop_reason == "refusal"` и ошибок API
+- [ ] Обработка отказа (`message.refusal`) и ошибок API (`openai.APIError` → 502/503)
