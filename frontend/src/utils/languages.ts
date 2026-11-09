@@ -115,3 +115,12 @@ export const buildOptions = (word: ChoiceItem, pool: ChoiceItem[]): ChoiceItem[]
     }
     return shuffle([word, ...wrong]);
 };
+
+export const stripMarkdown = (md: string) => md
+    .replace(/```[\s\S]*?```/g, "")                        // блоки кода
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")              // [текст](ссылка) → текст
+    .replace(/^[ \t]{0,3}(#{1,6}|>|[-*+]|\d+\.)\s+/gm, "")  // заголовки, цитаты, маркеры списков
+    .replace(/(\*\*|__|\*|_|~~|`)/g, "")                    // жирный, курсив, зачёркнутый, код
+    .replace(/^[ \t]*\|?[-:| ]+\|?[ \t]*$/gm, "")           // разделитель таблицы
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();

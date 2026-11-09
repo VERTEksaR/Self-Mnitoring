@@ -1,6 +1,7 @@
 import {Pencil, Trash2} from "lucide-react";
 import {WkModal} from "../workouts/modals/WorkoutModal.jsx";
 import {formatNoteDate} from "../../utils/languages.ts";
+import {Markdown} from "./Markdown.jsx";
 
 export function NoteViewModal({ note, onClose, onEdit, onDelete }) {
     return (
@@ -12,9 +13,7 @@ export function NoteViewModal({ note, onClose, onEdit, onDelete }) {
             <button className="btn btn-primary btn-sm" onClick={onClose}>Закрыть</button>
         </>}>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>{formatNoteDate(note)}</div>
-            <div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', lineHeight: 1.6, color: 'var(--text-body)' }}>
-                {note.content}
-            </div>
+            <Markdown>{note.content}</Markdown>
         </WkModal>
     );
 }

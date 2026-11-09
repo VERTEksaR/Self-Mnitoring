@@ -2,11 +2,14 @@ import {useState} from "react";
 import {WkModal} from "../workouts/modals/WorkoutModal.jsx";
 import {FormError} from "../FormError.jsx";
 import {extractErrorMessage} from "../../utils/errors.ts";
+import {Markdown} from "./Markdown.jsx";
 
 export function NoteFormModal({ form, setForm, onSave }) {
     const [initial] = useState(form);   // с чем открыли: useState берёт значение только при первой отрисовке
     const [error, setError] = useState(null);
     const [saving, setSaving] = useState(false);
+
+    const [preview, setPreview] = useState(false);
 
     const dirty = form.title !== initial.title || form.content !== initial.content;
     const canSave = !saving && form.title.trim() !== '' && form.content.trim() !== '';
@@ -46,11 +49,27 @@ export function NoteFormModal({ form, setForm, onSave }) {
                     <input className="input" value={form.title} onChange={set('title')} placeholder="Ser и estar" autoFocus />
                 </div>
                 <div className="form-group">
-                    <label className="form-label">Текст</label>
-                    <textarea className="input" rows={14} value={form.content} onChange={set('content')}
-                              style={{ resize: 'vertical', lineHeight: 1.6 }}
-                              placeholder="ser — постоянные признаки, estar — состояние…"
-                              onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submit(); }} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <label className="form-label">Текст</label>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                            <button type="button" className={'btn btn-sm ' + (preview ? 'btn-ghost' : 'btn-primary')}
+                                    onClick={() => setPreview(false)}>Редактировать</button>
+                            <button type="button" className={'btn btn-sm ' + (preview ? 'btn-primary' : 'btn-ghost')}
+                                    onClick={() => setPreview(true)}>Просмотр</button>
+                        </div>
+                    </div>
+                    {preview ? (
+                        // minHeight ≈ 14 строк textarea, чтобы модалка не прыгала при переключении
+                        <div className="input" style={{ minHeight: 340, overflow: 'auto' }}>
+                            {form.content.trim() ? <Markdown>{form.content}</Markdown>
+                                                : <span style={{ color: 'var(--text-faint)' }}>Пока пусто</span>}
+                        </div>
+                    ) : (
+                        <textarea className="input" rows={14} value={form.content} onChange={set('content')}
+                                style={{ resize: 'vertical', lineHeight: 1.6 }}
+                                placeholder={"## Ser и estar\n\n- **ser** — постоянные признаки\n- **estar** — состояние…"}
+                                onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submit(); }} />
+                    )}
                 </div>
                 <FormError>{error}</FormError>
             </div>
