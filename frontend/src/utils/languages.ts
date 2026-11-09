@@ -1,6 +1,7 @@
 import type { LanguageLevel } from "../types/languages/language";
 import type { Note } from "../types/languages/notes";
 import type { PartOfSpeech, Word, WordCreate } from "../types/languages/words";
+import type { ChoiceItem } from "../types/languages/review";
 import type {StudySession, StudySessionCreate, StudyType} from "../types/languages/studySession";
 
 export const LANGUAGE_LEVELS: LanguageLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -86,3 +87,31 @@ export const formatStudyDate = (iso: string) =>
 
 export const formatWeek = (iso: string) =>
     new Date(iso + "T00:00").toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+
+export const normalizeAnswer = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ").replace(/ё/g, "е");
+
+export const shuffle = <T>(items: T[]): T[] => {
+    const a = [...items];
+
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    
+    return a;
+}
+
+// Правильный перевод + до 3 неверных; одинаковых переводов среди вариантов быть не должно
+export const buildOptions = (word: ChoiceItem, pool: ChoiceItem[]): ChoiceItem[] => {
+    const seen = new Set([normalizeAnswer(word.translation)]);
+    const wrong: ChoiceItem[] = [];
+
+    for (const item of shuffle(pool)) {
+        const key = normalizeAnswer(item.translation);
+        if (item.id === word.id || seen.has(key)) continue;
+        seen.add(key);
+        wrong.push(item);
+        if (wrong.length === 3) break;
+    }
+    return shuffle([word, ...wrong]);
+};
