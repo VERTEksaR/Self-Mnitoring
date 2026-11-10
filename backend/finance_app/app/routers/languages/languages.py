@@ -1,7 +1,7 @@
 import logging
 from math import ceil
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Request
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,10 +12,14 @@ from backend.finance_app.app.db.models import ModulesUsers, LanguageNote, Langua
 from backend.finance_app.app.schemas.common.common import PageNumber, PageSize, Page
 from backend.finance_app.app.schemas.languages.language import LanguageRead, LanguageChange, LanguageCreate
 from backend.finance_app.app.schemas.languages.word import WordRead, WordChange, WordCreate
-from backend.finance_app.app.schemas.languages.note import LanguageNoteRead, LanguageNoteChange, LanguageNoteCreate
+from backend.finance_app.app.schemas.languages.note import LanguageNoteRead, LanguageNoteChange, LanguageNoteCreate, \
+    LanguageNoteDraft
 from backend.finance_app.app.utils.check_availability import check_availability
 from backend.finance_app.app.utils.commit import commit_or_conflict
 from backend.finance_app.app.utils.language_tags import get_language_tags
+
+
+MAX_FILE_SIZE = 10 * 1024 * 1024
 
 router = APIRouter()
 
@@ -237,6 +241,31 @@ async def create_language_note(language_id: int, data: LanguageNoteCreate, user:
     session.add(note)
     await session.commit()
     return note
+
+
+@router.post("/{language_id}/notes/from-image/", response_model=LanguageNoteDraft, status_code=200)
+async def get_note_from_image(language_id: int, request: Request,
+                              file: UploadFile = File(...), user: ModulesUsers = Depends(get_languages),
+                              session: AsyncSession = Depends(get_session)):
+    openai_service = request.app.state.openai_service
+
+    if openai_service is None:
+        raise HTTPException(status_code=503, detail="Сервис разбора конспектов временно недоступен")
+    await check_availability(language_id, user.user_id, Language, session)
+
+    if file.content_type not in ('image/jpeg', 'image/png', 'image/webp'):
+        raise HTTPException(status_code=415, detail="Поддерживаются только изображения в форматах JPEG, PNG, WEBP")
+
+    content = await file.read(MAX_FILE_SIZE + 1)
+
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail=f'Слишком большой файл. Ограничение: {MAX_FILE_SIZE // (1024 * 1024)} Mb')
+
+    result_from_ai = await openai_service.generate_response(content, mime=file.content_type)
+    return LanguageNoteDraft(
+        title=result_from_ai.title or "",
+        content=result_from_ai.markdown,
+    )
 
 
 @router.delete("/{language_id}/notes/{note_id}/", status_code=204)
