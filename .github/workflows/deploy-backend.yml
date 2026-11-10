@@ -18,4 +18,4 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: cd /opt/self-monitoring/Self-Mnitoring && git pull origin production && docker compose up -d --build
+          script: cd /root/self_monitoring/Self-Mnitoring && git pull origin production && docker compose up -d --build
