@@ -1,14 +1,25 @@
-import {useCallback, useEffect, useState} from "react";
-import {answerReview, getReview} from "../../api/languages/review.ts";
+import {useCallback, useEffect, useState, useMemo} from "react";
+import {answerReview, getChoices, getReview} from "../../api/languages/review";
 import {EmptyHint} from "../EmptyHint.jsx";
-import {pluralLabel, wordStatus} from "../../utils/languages.ts";
-import {SpeakButton} from "./SpeakButton.jsx";
-import {getTags} from "../../api/languages/tags.ts";
+import {buildOptions, pluralLabel, wordStatus} from "../../utils/languages";
+import {getTags} from "../../api/languages/tags";
+import {FlashCard} from "./FlashCard.jsx";
+import {TypingCard} from "./TypingCard.jsx";
+import {ChoiceCard} from "./ChoiceCard.jsx";
 
 const BATCH_SIZE = 20;
 
 // width: 100% — иначе во flex-колонке .finance-main карточка с margin: auto сжимается до ширины слова
 const CARD_STYLE = { width: '100%', maxWidth: 560, margin: '0 auto', padding: 32, textAlign: 'center' };
+
+const MODES = [                                                                                                                                                                                                                                                                                                   
+    { id: 'cards', label: 'Карточки' },                                                                                                                                                                                                                                                                           
+    { id: 'reverse', label: 'Обратный перевод' },                                                                                                                                                                                                                                                                 
+    { id: 'typing', label: 'Ввод' },                                                                                                                                                                                                                                                                              
+    { id: 'choice', label: '4 варианта' },                                                                                                                                                                                                                                                                        
+];
+
+const AUTO_MODES = ["typing", "choice"];
 
 export function ReviewSection({ languageId, speech }) {
     const [batch, setBatch] = useState(null);
@@ -22,6 +33,18 @@ export function ReviewSection({ languageId, speech }) {
     const [tags, setTags] = useState([]);
     const [tagId, setTagId] = useState(null);
 
+    const [mode, setMode] = useState('cards');
+    const [checked, setChecked] = useState(null);
+    const [choicePool, setChoicePool] = useState([]);
+
+    const auto = AUTO_MODES.includes(mode);
+
+    useEffect(() => {
+        getChoices(languageId)
+            .then(setChoicePool)
+            .catch(err => console.error('[Choices] load failed:', err?.response?.status));
+    }, [languageId]);
+
     useEffect(() => {
         getTags(languageId)
             .then(setTags)
@@ -33,6 +56,7 @@ export function ReviewSection({ languageId, speech }) {
         setQueue([]);
         setPos(0);
         setRevealed(false);
+        setChecked(null);
         setScore({ remembered: 0, forgot: 0 });
         setPracticed(0);
 
@@ -52,6 +76,10 @@ export function ReviewSection({ languageId, speech }) {
 
     const entry = queue[pos];
     const word = entry?.word;
+
+    const options = useMemo(
+        () => (mode === 'choice' && entry ? buildOptions(entry.word, choicePool) : []),
+    [mode, entry, choicePool]);
 
     const answer = useCallback(async (remembered) => {
         if (!entry || !revealed || sending) return;
@@ -76,20 +104,52 @@ export function ReviewSection({ languageId, speech }) {
 
         setPos(p => p + 1);
         setRevealed(false);
+        setChecked(null);
     }, [languageId, entry, revealed, sending]);
+
+    const check = useCallback((correct, given) => {
+        if (revealed) return;
+
+        setChecked({ correct, given });
+        setRevealed(true);
+    }, [revealed]);
+
+    const changeMode = (id) => {
+        setMode(id);
+        setRevealed(false);
+        setChecked(null);
+    }
 
     useEffect(() => {
         const onKey = (e) => {
             if (e.target.closest?.('input, textarea')) return;
-            if (e.key === ' ' || e.key === "Enter") { e.preventDefault(); setRevealed(true); }
-            if (e.key === '1' || e.key === "ArrowLeft") answer(false);
-            if (e.key === '2' || e.key === "ArrowRight") answer(true);
-            if ((e.key === 's' || e.key === 'ы') && word) speech?.speak(word.word);
+
+            if (e.key === 's' || e.key === 'ы') {
+                if (word && (mode !== 'reverse' || revealed)) speech?.speak(word.word);
+                return;
+            }
+
+            if (auto) {
+                if (e.key === 'Enter' && checked) {
+                    e.preventDefault();
+                    answer(checked.correct);
+                }
+
+                const i = ['1', '2', '3', '4'].indexOf(e.key);
+                if (mode === 'choice' && i !== -1 && options[i]) {
+                    check(options[i].id === word.id, options[i].id);
+                }
+                return;
+            }
+
+            if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setRevealed(true); }
+            if (e.key === '1' || e.key === 'ArrowLeft') answer(false);
+            if (e.key === '2' || e.key === 'ArrowRight') answer(true);
         };
 
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [answer, word, speech]);   // speech меняется, когда браузер догрузил голоса
+    }, [answer, check, word, speech, mode, auto, revealed, checked, options]);
 
     const tagFilter = tags.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginBottom: 16 }}>
@@ -100,6 +160,21 @@ export function ReviewSection({ languageId, speech }) {
             ))}
         </div>
     );
+
+    const modeSwitch = (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginBottom: 12 }}>
+            {MODES.map(m => {
+                const off = m.id === 'choice' && choicePool.length < 4;
+                return (
+                    <button key={m.id} className={'btn btn-sm ' + (mode === m.id ? 'btn-primary' : 'btn-ghost')}
+                            disabled={off} title={off ? 'Нужно минимум 4 слова в словаре' : undefined}
+                            onClick={() => changeMode(m.id)}>
+                        {m.label}
+                    </button>
+                );
+            })}
+        </div>
+    )
 
     let body;
 
@@ -123,40 +198,31 @@ export function ReviewSection({ languageId, speech }) {
             </div>
         );
     } else {
+        const card = mode === 'typing'
+            ? <TypingCard key={pos} word={word} speech={speech} checked={checked} onCheck={check} />
+            : mode === 'choice'
+                ? <ChoiceCard key={pos} word={word} speech={speech} options={options} checked={checked} onCheck={check} />
+                : <FlashCard key={pos} word={word} speech={speech} reverse={mode === 'reverse'} revealed={revealed}
+                            sending={sending} onReveal={() => setRevealed(true)} onAnswer={answer} />;
+
         body = (
             <div className="card" style={CARD_STYLE}>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                     {pos + 1} / {queue.length} · {entry.practice ? 'повтор забытого' : wordStatus(word.box)}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, margin: '16px 0 4px' }}>
-                    <span style={{ fontSize: 32, fontWeight: 700, color: 'var(--text-strong)' }}>{word.word}</span>
-                    <SpeakButton text={word.word} speech={speech} size={18} />
-                </div>
-                {word.transcription && <div style={{ color: 'var(--text-muted)' }}>[{word.transcription}]</div>}
-
-                {revealed ? (
-                    <>
-                        {/* Перевод без 🔊: голос выбран под изучаемый язык и прочитал бы русский текст с акцентом */}
-                        <div style={{ fontSize: 20, margin: '20px 0 8px' }}>{word.translation}</div>
-                        {word.example && (
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                <span style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>{word.example}</span>
-                                <SpeakButton text={word.example} speech={speech} />
-                            </div>
-                        )}
-                        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 24 }}>
-                            <button className="btn btn-danger" disabled={sending} onClick={() => answer(false)}>Не помню (1)</button>
-                            <button className="btn btn-primary" disabled={sending} onClick={() => answer(true)}>Помню (2)</button>
+                {card}
+                {auto && checked && (
+                    <div style={{ marginTop: 20 }}>
+                        <div style={{ fontWeight: 600, color: checked.correct ? 'var(--income)' : 'var(--expense)' }}>
+                            {checked.correct ? '✓ Верно' : '✗ Неверно'}
                         </div>
-                    </>
-                ) : (
-                    <button className="btn btn-secondary" style={{ marginTop: 24 }} onClick={() => setRevealed(true)}>
-                        Показать перевод (пробел)
-                    </button>
+                        <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={sending}
+                                onClick={() => answer(checked.correct)}>Далее (Enter)</button>
+                    </div>
                 )}
             </div>
         );
     }
 
-    return <>{tagFilter}{body}</>;
+    return <>{modeSwitch}{tagFilter}{body}</>;
 }

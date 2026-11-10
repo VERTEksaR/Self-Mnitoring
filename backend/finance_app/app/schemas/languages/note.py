@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -28,3 +28,14 @@ class LanguageNoteRead(BaseModel):
     user_id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class LanguageNoteDraft(BaseModel):
+    title: str
+    content: str
+
+
+class NoteRecognition(BaseModel):
+    error: Literal["no_text", "unreadable"] | None
+    title: str | None
+    markdown: str

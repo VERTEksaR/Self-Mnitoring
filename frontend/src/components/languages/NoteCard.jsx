@@ -1,4 +1,4 @@
-import {formatNoteDate} from "../../utils/languages.ts";
+import {formatNoteDate, stripMarkdown} from "../../utils/languages.ts";
 
 export function NoteCard({ note, onClick }) {
     return (
@@ -10,7 +10,7 @@ export function NoteCard({ note, onClick }) {
                 display: '-webkit-box', WebkitLineClamp: 3, // показываем только первые 3 строки…
                 WebkitBoxOrient: 'vertical', overflow: 'hidden',   // …остальное обрезается с «…»
             }}>
-                {note.content}
+                {stripMarkdown(note.content)}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 10 }}>{formatNoteDate(note)}</div>
         </div>

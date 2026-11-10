@@ -8,3 +8,9 @@ export interface ReviewBatch {
 export interface ReviewAnswer {
     remembered: boolean;
 }
+
+export interface ChoiceItem {
+    id: number;
+    word: string;
+    translation: string;
+}

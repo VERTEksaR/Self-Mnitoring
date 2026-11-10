@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     steam_profile_games_news: str
     redis_host: str = "localhost"
     redis_port: int = 6379
+    openai_api_key: str | None = None
+    openai_model: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,

@@ -2,7 +2,7 @@ import {useNavigate, useParams} from 'react-router-dom';
 import { EmptyHint } from '../components/EmptyHint';
 import {useEffect, useState} from "react";
 import {getLanguage, updateLanguage, deleteLanguage} from "../api/languages/languages.ts";
-import {ArrowLeft, BookOpen, Languages, NotebookPen, Pencil, Repeat, CalendarDays} from "lucide-react";
+import {ArrowLeft, BookOpen, Languages, NotebookPen, Pencil, Repeat, CalendarDays, ChartColumn} from "lucide-react";
 import {LanguageFormModal} from "../components/languages/LanguageFormModal.jsx";
 import {emptyToNull} from "../utils/languages.ts";
 import {DictionarySection} from "../components/languages/DictionarySection.jsx";
@@ -11,12 +11,14 @@ import {ReviewSection} from "../components/languages/ReviewSection.jsx";
 import {useSpeech} from "../hooks/useSpeech.js";
 import {useBodyClass} from "../hooks/useBodyClass.js";
 import {JournalSection} from "../components/languages/JournalSection.jsx";
+import {StatsSection} from "../components/languages/StatsSection.jsx";
 
 const TABS = [
     { id: 'dictionary', label: 'Словарь',   icon: <BookOpen size={16} /> },
     { id: 'notes',      label: 'Конспекты', icon: <NotebookPen size={16} /> },
     { id: 'review',     label: 'Повторение', icon: <Repeat size={16} /> },
     { id: 'journal',    label: 'Журнал',    icon: <CalendarDays size={16} /> },
+    { id: 'stats',      label: 'Статистика', icon: <ChartColumn size={16} /> },
 ];
 
 export default function LanguageDetailPage() {
@@ -113,6 +115,7 @@ export default function LanguageDetailPage() {
                     {tab === 'notes' && <NotesSection languageId={id} />}
                     {tab === 'review' && <ReviewSection languageId={id} speech={speech} />}
                     {tab === 'journal' && <JournalSection languageId={id} />}
+                    {tab === 'stats' && <StatsSection languageId={id} />}
                 </main>
             </div>
             {langForm && (

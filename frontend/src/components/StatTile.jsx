@@ -2,15 +2,15 @@ export function StatTile({ label, value, unit, hint, icon, accent }) {
     return (
         <div style={{
             display: 'flex', flexDirection: 'column', gap: 10, padding: 18,
-            background: accent ? '#ff3b4e' : 'var(--surface-card)',
-            border: `1px solid ${accent ? '#ff3b4e' : 'var(--border)'}`,
+            background: accent ? 'var(--brand)' : 'var(--surface-card)',
+            border: `1px solid ${accent ? 'var(--brand)' : 'var(--border)'}`,
             borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.5)',
         }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase', color: accent ? 'rgba(255,255,255,.7)' : 'var(--text-muted)' }}>
                     {label}
                 </span>
-                <span style={{ display: 'inline-flex', width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: accent ? 'rgba(255,255,255,.18)' : 'rgba(255,59,78,.14)', color: accent ? '#fff' : '#ff3b4e' }}>
+                <span style={{ display: 'inline-flex', width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: accent ? 'rgba(255,255,255,.18)' : 'var(--brand-subtle)', color: accent ? '#fff' : 'var(--brand)' }}>
                     {icon}
                 </span>
             </div>

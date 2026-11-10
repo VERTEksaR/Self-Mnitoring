@@ -1,5 +1,5 @@
 import api from "../api";
-import type { ReviewBatch } from "../../types/languages/review";
+import type { ReviewBatch, ChoiceItem } from "../../types/languages/review";
 import type { Word } from "../../types/languages/words";
 
 export async function getReview(language_id: number, limit = 20, tagId?: number): Promise<ReviewBatch> {
@@ -9,5 +9,10 @@ export async function getReview(language_id: number, limit = 20, tagId?: number)
 
 export async function answerReview(language_id: number, word_id: number, remembered: boolean): Promise<Word> {
     const response = await api.post(`languages/${language_id}/words/${word_id}/review/`, { remembered });
+    return response.data;
+}
+
+export async function getChoices(language_id: number, limit = 40): Promise<ChoiceItem[]> {
+    const response = await api.get(`languages/${language_id}/review/choices/`, { params: { limit } });
     return response.data;
 }
