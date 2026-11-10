@@ -9,7 +9,7 @@ from backend.finance_app.app.core.security import verify_password
 from backend.finance_app.app.db.session import engine, get_session
 from backend.finance_app.app.db.models import User, Category, Account, Transaction, Modules, ModulesUsers
 
-
+ 
 class AdminAuth(AuthenticationBackend):
     async def login(self, request: Request) -> bool:
         form = await request.form()
