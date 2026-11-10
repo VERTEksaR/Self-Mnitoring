@@ -142,8 +142,15 @@
 - [x] Переключатель «Редактировать / Просмотр»
 
 **9.2 Фото → Markdown через OpenAI API**
-- [ ] `POST /languages/{id}/notes/from-image`: `UploadFile`, проверка типа и размера, base64 → блок `image` + инструкция
-- [ ] SDK `openai`, клиент `AsyncOpenAI`; ключ `OPENAI_API_KEY` в `.env` / `settings`
-- [ ] Модель с поддержкой картинок, имя в `settings` (`OPENAI_MODEL`); картинка как data-URL в части `image_url`
-- [ ] Возвращать черновик, не сохранять сразу — пользователь правит и сохраняет сам
-- [ ] Обработка отказа (`message.refusal`) и ошибок API (`openai.APIError` → 502/503)
+- [x] `POST /languages/{id}/notes/from-image/`: `UploadFile`, проверка типа (JPEG/PNG/WebP → 415) и размера (10 МБ → 413), 503, если ключ или модель не заданы
+- [x] SDK `openai`, клиент `AsyncOpenAI` создаётся в lifespan (`app.state.openai_service`); `OPENAI_API_KEY` и `OPENAI_MODEL` в `.env` / `settings`
+- [x] Responses API + structured output (`responses.parse`, схема `NoteRecognition`: `error`, `title`, `markdown`); картинка как data-URL
+- [x] Возвращать черновик, не сохранять сразу — пользователь правит и сохраняет сам; форма не закрывается молча с черновиком
+- [x] Свои исключения (`exceptions/openai_exceptions.py`) со статусом и текстом для пользователя; общий обработчик `ApplicationError` → `{"detail"}`; отказ, `no_text`/`unreadable` → 422, таймаут → 504, лимит/ключ → 503, сеть/прочее → 502
+- [x] Фронт: кнопка «Из фото», `noteFromImage` (FormData, таймаут 90 с); nginx `client_max_body_size 10m`
+- [ ] Ручная проверка сценариев (фото, без текста, размытое, не тот тип, > 10 МБ, пустой/неверный ключ)
+
+**9.3 (отложено) Кэш распознавания**
+- [ ] `sha256` от байтов файла; ключ в Redis «пользователь + хэш», TTL ~сутки; хранить JSON черновика
+- [ ] Кэшировать только успешный результат (не таймауты и не ошибки сети); решить про `no_text`/`unreadable`
+- [ ] Возможность перераспознать (`?force=true` или короткий TTL); недоступный Redis не ломает распознавание
