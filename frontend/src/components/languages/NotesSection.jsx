@@ -1,11 +1,13 @@
-import {useCallback, useEffect, useState} from "react";
-import {Plus} from "lucide-react";
-import {createNote, deleteNote, getNotes, updateNote} from "../../api/languages/notes.ts";
+import {useCallback, useEffect, useState, useRef} from "react";
+import {Plus, Camera} from "lucide-react";
+import {createNote, deleteNote, getNotes, noteFromImage, updateNote} from "../../api/languages/notes.ts";
 import {NOTE_FORM_DEFAULT, noteToForm} from "../../utils/languages.ts";
 import {EmptyHint} from "../EmptyHint.jsx";
 import {NoteCard} from "./NoteCard.jsx";
 import {NoteViewModal} from "./NoteViewModal.jsx";
 import {NoteFormModal} from "./NoteFormModal.jsx";
+import {FormError} from "../FormError.jsx";
+import {extractErrorMessage} from "../../utils/errors.ts";
 
 const PAGE_SIZE = 12;
 
@@ -15,6 +17,10 @@ export function NotesSection({ languageId }) {
     const [loading, setLoading] = useState(true);
     const [viewNote, setViewNote] = useState(null);
     const [noteForm, setNoteForm] = useState(null);
+
+    const [recognizing, setRecognizing] = useState(false);
+    const [photoError, setPhotoError] = useState(null);
+    const fileRef = useRef(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -33,9 +39,25 @@ export function NotesSection({ languageId }) {
 
     const openCreate = () => setNoteForm({ ...NOTE_FORM_DEFAULT });
 
-    // Ошибку не ловим: её покажет модалка. Сюда дойдём, только если запрос прошёл
+    const recognizePhoto = async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+
+        setRecognizing(true);
+        setPhotoError(null);
+
+        try {
+            const draft = await noteFromImage(languageId, file);
+            setNoteForm({ ...NOTE_FORM_DEFAULT, ...draft, fromImage: true });
+        } catch (err) {
+            setPhotoError(extractErrorMessage(err, 'Не удалось распознать фото'));
+        } finally {
+            setRecognizing(false);
+        }
+    };
+
     const saveNote = async (form) => {
-        // content не обрезаем: в начале строк могут быть нужные отступы
         const payload = { title: form.title.trim(), content: form.content };
         if (form.id) {
             const updated = await updateNote(languageId, form.id, payload);
@@ -66,10 +88,17 @@ export function NotesSection({ languageId }) {
             <div>
                 <div className="section-header">
                     <span className="section-title">Конспекты <span className="section-count">{data.total}</span></span>
-                    <button className="btn btn-primary btn-sm" onClick={openCreate}>
-                        <Plus size={14} /> Конспект
-                    </button>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={recognizePhoto} />
+                        <button className="btn btn-secondary btn-sm" disabled={recognizing} onClick={() => fileRef.current?.click()}>
+                            <Camera size={14} /> {recognizing ? 'Распознаю…' : 'Из фото'}
+                        </button>
+                        <button className="btn btn-primary btn-sm" onClick={openCreate}>
+                            <Plus size={14} /> Конспект
+                        </button>
+                    </div>
                 </div>
+                {photoError && <div style={{ marginBottom: 12 }}><FormError>{photoError}</FormError></div>}
 
                 {data.items.length === 0 && !loading ? (
                     <div className="card">

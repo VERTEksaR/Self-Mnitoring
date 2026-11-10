@@ -11,7 +11,7 @@ export function NoteFormModal({ form, setForm, onSave }) {
 
     const [preview, setPreview] = useState(false);
 
-    const dirty = form.title !== initial.title || form.content !== initial.content;
+    const dirty = form.fromImage || form.title !== initial.title || form.content !== initial.content;
     const canSave = !saving && form.title.trim() !== '' && form.content.trim() !== '';
 
     // Сюда ведут Esc, клик мимо модалки, крестик и «Отмена» — длинный текст не потеряется случайно

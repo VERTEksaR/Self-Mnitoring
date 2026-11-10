@@ -22,3 +22,8 @@ export interface NoteFilter {
     page?: number;
     size?: number;
 }
+
+export interface NoteDraft {
+    title: string;
+    content: string;
+}

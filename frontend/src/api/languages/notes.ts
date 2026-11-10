@@ -1,5 +1,5 @@
 import api from "../api";
-import type { Note, NoteCreate, NoteFilter, NoteChange } from "../../types/languages/notes";
+import type { Note, NoteDraft, NoteCreate, NoteFilter, NoteChange } from "../../types/languages/notes";
 import type { Page } from "../../types/common/page";
 
 export async function getNotes(language_id: number, params: NoteFilter = {}): Promise<Page<Note>> {
@@ -24,4 +24,11 @@ export async function getNote(language_id: number, note_id: number): Promise<Not
 
 export async function deleteNote(language_id: number, note_id: number): Promise<void> {
     await api.delete(`languages/${language_id}/notes/${note_id}/`);
+}
+
+export async function noteFromImage(language_id: number, file: File): Promise<NoteDraft> {
+    const body = new FormData();
+    body.append("file", file);
+    const response = await api.post(`languages/${language_id}/notes/from-image/`, body, { timeout: 90_000 });
+    return response.data;
 }
