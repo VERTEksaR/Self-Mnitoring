@@ -539,6 +539,9 @@ body.ln-body {
 .module-card:hover { box-shadow: var(--shadow-md); border-color: var(--border-strong); transform: translateY(-1px); }
 .module-card__title { font-size: 17px; font-weight: 700; margin-bottom: 6px; color: var(--text-strong); }
 .module-card__desc  { font-size: 13px; color: var(--text-muted); }
+.module-card--locked { opacity: .45; filter: grayscale(1); cursor: not-allowed; }
+.module-card--locked:hover { transform: none; box-shadow: none; border-color: var(--border); }
+.module-card__lock { margin-top: 10px; font-size: 12px; color: var(--text-muted); }
 
 /* ── Mobile filter trigger (скрыт на десктопе) ── */
 .filter-fab { display: none; }
