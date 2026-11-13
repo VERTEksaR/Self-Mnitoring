@@ -649,3 +649,56 @@ body.ln-body {
 .markdown th, .markdown td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
 .markdown th { color: var(--text-strong); background: var(--surface-sunken); }
 .markdown hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.markdown li.task-list-item {
+    list-style: none;
+}
+
+.markdown .task-list-item > input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.note-editor .note-editor-content {
+    min-height: 340px;
+    color: var(--text-strong);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.6;
+    cursor: text;
+}
+.note-editor.note-editor.dark-theme {
+    --baseTextContrast: var(--text-strong);
+    --baseText: var(--text-body);
+    --baseBg: var(--surface-raised);
+    --baseBgSubtle: var(--surface-sunken);
+    --baseBgHover: var(--surface-hover);
+    --baseLine: var(--border);
+    --baseBorder: var(--border-strong);
+
+    --accentSolid: var(--brand);
+    --accentSolidHover: var(--brand-hover);
+    --accentText: var(--text-link);
+    --accentTextContrast: var(--text-strong);
+    --accentBg: var(--brand-subtle);
+    --accentBgHover: var(--brand-subtle);
+    --accentBorder: var(--brand-subtle-bd);
+
+    color: var(--text-body);
+    font-family: inherit;
+    --basePageBg: #161d20;
+    --baseBase: #161d20;
+    --baseBgActive: var(--brand-subtle);
+    --baseBorderHover: var(--text-muted);
+}
+
+.note-editor .mdxeditor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.note-editor .note-editor-content:focus {
+    outline: none;
+}

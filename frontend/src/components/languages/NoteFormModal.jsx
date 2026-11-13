@@ -3,6 +3,7 @@ import {WkModal} from "../workouts/modals/WorkoutModal.jsx";
 import {FormError} from "../FormError.jsx";
 import {extractErrorMessage} from "../../utils/errors.ts";
 import {Markdown} from "./Markdown.jsx";
+import {NoteEditor} from "./NoteEditor.jsx";
 
 export function NoteFormModal({ form, setForm, onSave }) {
     const [initial] = useState(form);   // с чем открыли: useState берёт значение только при первой отрисовке
@@ -59,16 +60,31 @@ export function NoteFormModal({ form, setForm, onSave }) {
                         </div>
                     </div>
                     {preview ? (
-                        // minHeight ≈ 14 строк textarea, чтобы модалка не прыгала при переключении
                         <div className="input" style={{ minHeight: 340, overflow: 'auto' }}>
                             {form.content.trim() ? <Markdown>{form.content}</Markdown>
                                                 : <span style={{ color: 'var(--text-faint)' }}>Пока пусто</span>}
                         </div>
                     ) : (
-                        <textarea className="input" rows={14} value={form.content} onChange={set('content')}
-                                style={{ resize: 'vertical', lineHeight: 1.6 }}
-                                placeholder={"## Ser и estar\n\n- **ser** — постоянные признаки\n- **estar** — состояние…"}
-                                onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submit(); }} />
+                        <div
+                            className="input"
+                            style={{minHeight: 340}}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                    e.preventDefault();
+                                    submit();
+                                }
+                            }}
+                        >
+                            <NoteEditor
+                                initialMarkdown={form.content}
+                                onChange={markdown => {
+                                    setForm(current => ({
+                                        ...current,
+                                        content: markdown,
+                                    }));
+                                }}
+                            />
+                        </div>
                     )}
                 </div>
                 <FormError>{error}</FormError>
