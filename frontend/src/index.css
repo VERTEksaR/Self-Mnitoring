@@ -531,18 +531,30 @@ body.ln-body {
 .filter-scroll { max-height: 184px; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
 
 /* ── Start page ── */
-.start-page  { padding: 32px 24px; max-width: 1100px; margin: 0 auto; flex: 1; }
 .start-nav   { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; }
 .start-brand { font-size: 22px; font-weight: 700; color: var(--brand); }
 .module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
-.module-card { padding: 24px; cursor: pointer; transition: box-shadow var(--t), border-color var(--t), transform var(--t); }
-.module-card:hover { box-shadow: var(--shadow-md); border-color: var(--border-strong); transform: translateY(-1px); }
-.module-card__title { font-size: 17px; font-weight: 700; margin-bottom: 6px; color: var(--text-strong); }
-.module-card__desc  { font-size: 13px; color: var(--text-muted); }
-.module-card--locked { opacity: .45; filter: grayscale(1); cursor: not-allowed; }
+.start-page  { padding: 32px 24px; width: 100%; box-sizing: border-box; max-width: 1400px; margin: 0 auto; flex: 1; }
+.module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+.module-card {
+  --accent: var(--brand);
+  min-height: 220px; padding: 32px; cursor: pointer;
+  display: flex; flex-direction: column;
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--accent) 15%, transparent);
+  transition: box-shadow var(--t), border-color var(--t), transform var(--t);
+}
+.module-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  box-shadow: 0 10px 32px color-mix(in srgb, var(--accent) 30%, transparent);
+  transform: translateY(-3px);
+}
+.module-card__title { font-size: 24px; font-weight: 700; margin-bottom: 10px; color: var(--accent); }
+.module-card__desc  { font-size: 15px; color: var(--text-muted); }
+.module-card--locked { opacity: .45; filter: grayscale(1); cursor: not-allowed; border-color: var(--border); box-shadow: none; }
 .module-card--locked:hover { transform: none; box-shadow: none; border-color: var(--border); }
-.module-card__lock { margin-top: 10px; font-size: 12px; color: var(--text-muted); }
-
+.module-card--locked .module-card__title { color: var(--text-strong); }
+.module-card__lock { margin-top: auto; padding-top: 16px; font-size: 13px; color: var(--text-muted); }
 /* ── Mobile filter trigger (скрыт на десктопе) ── */
 .filter-fab { display: none; }
 .sidebar-backdrop { display: none; }

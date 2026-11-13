@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useModules } from '../hooks/useModules';
 
@@ -11,7 +10,6 @@ const sections = [
 
 export default function StartPage() {
     const navigate = useNavigate();
-    const [hov, setHov] = useState(null);
     const { modules, loading } = useModules();
 
     const handleLogout = () => {
@@ -39,12 +37,7 @@ export default function StartPage() {
                                 key={section.path}
                                 className={`card module-card${locked ? ' module-card--locked' : ''}`}
                                 aria-disabled={locked}
-                                onMouseEnter={() => !locked && setHov(i)}
-                                onMouseLeave={() => setHov(null)}
-                                style={!locked && hov === i ? {
-                                    borderColor: section.accent + '55',
-                                    boxShadow: `0 6px 20px ${section.accent}22`,
-                                } : {}}
+                                style={{ '--accent': section.accent }}
                                 onClick={locked ? undefined : () => navigate(section.path)}
                             >
                                 <div className="module-card__title">{section.title}</div>
