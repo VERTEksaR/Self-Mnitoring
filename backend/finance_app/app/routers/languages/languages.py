@@ -5,13 +5,15 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Request
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.finance_app.app.core.config import settings
 from backend.finance_app.app.db.models.languages.word import WordTag
 from backend.finance_app.app.dependencies.auth import get_languages
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import ModulesUsers, LanguageNote, Language, Word
 from backend.finance_app.app.schemas.common.common import PageNumber, PageSize, Page
 from backend.finance_app.app.schemas.languages.language import LanguageRead, LanguageChange, LanguageCreate
-from backend.finance_app.app.schemas.languages.word import WordRead, WordChange, WordCreate
+from backend.finance_app.app.schemas.languages.word import WordRead, WordChange, WordCreate, TranslationWordOutput, \
+    TranslateWordInput
 from backend.finance_app.app.schemas.languages.note import LanguageNoteRead, LanguageNoteChange, LanguageNoteCreate, \
     LanguageNoteDraft
 from backend.finance_app.app.utils.check_availability import check_availability
@@ -249,7 +251,7 @@ async def get_note_from_image(language_id: int, request: Request,
                               session: AsyncSession = Depends(get_session)):
     openai_service = request.app.state.openai_service
 
-    if openai_service is None:
+    if openai_service is None or settings.openai_model is None:
         raise HTTPException(status_code=503, detail="Сервис разбора конспектов временно недоступен")
     await check_availability(language_id, user.user_id, Language, session)
 
@@ -333,3 +335,30 @@ async def get_language_note(language_id: int, note_id: int,
         raise HTTPException(status_code=404, detail=f"Конспект с id {note_id} не был найден")
 
     return note
+
+
+@router.post('/{language_id}/notes/{note_id}/translate/', response_model=TranslationWordOutput, status_code=200)
+async def get_word_translate(language_id: int, note_id: int, data: TranslateWordInput,
+                             request: Request,
+                             user: ModulesUsers = Depends(get_languages),
+                             session: AsyncSession = Depends(get_session)):
+    openai_service = request.app.state.openai_service
+
+    if openai_service is None or settings.openai_model_translate is None:
+        raise HTTPException(status_code=503, detail="Сервис перевода временно недоступен")
+
+    language_object = await check_availability(language_id, user.user_id, Language, session)
+    result = await session.execute(
+        select(LanguageNote)
+        .where(LanguageNote.language_id == language_id, LanguageNote.user_id == user.user_id,
+               LanguageNote.id == note_id)
+    )
+    note = result.scalar_one_or_none()
+
+    if note is None:
+        logger.error(f"Конспект с id {note_id} не был найден")
+        raise HTTPException(status_code=404, detail=f"Конспект с id {note_id} не был найден")
+
+    result_from_ai = await openai_service.text_response(language_object.name, data)
+
+    return result_from_ai
