@@ -714,3 +714,31 @@ body.ln-body {
 .note-editor .note-editor-content:focus {
     outline: none;
 }
+.note-word-area {
+    position: relative;
+}
+
+.note-word-card {
+    --word-card-width: min(280px, 100%);
+
+    position: absolute;
+    z-index: 1;
+    left: clamp(0px, var(--word-card-x), calc(100% - var(--word-card-width)));
+    width: var(--word-card-width);
+    padding: 12px 36px 12px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    background: #161d20;
+    box-shadow: var(--shadow-md);
+    overflow-wrap: anywhere;
+}
+
+.note-word-card p {
+    margin-top: 8px;
+}
+
+.note-word-card-close {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+}

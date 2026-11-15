@@ -184,6 +184,19 @@ async def change_language_word(language_id: int, word_id: int,
     return word
 
 
+@router.get("/{language_id}/words/lookup/", response_model=WordRead | None, status_code=200)
+async def get_language_word_by_name(language_id: int, word: str,
+                                    user: ModulesUsers = Depends(get_languages),
+                                    session: AsyncSession = Depends(get_session)):
+    await check_availability(language_id, user.user_id, Language, session)
+    result = await session.execute(
+        select(Word)
+        .where(Word.language_id == language_id, Word.user_id == user.user_id,
+               Word.word == word)
+    )
+    return result.scalar_one_or_none()
+
+
 @router.get("/{language_id}/words/{word_id}/", response_model=WordRead, status_code=200)
 async def get_language_word(language_id: int, word_id: int,
                             user: ModulesUsers = Depends(get_languages),
