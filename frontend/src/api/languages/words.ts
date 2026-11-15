@@ -25,3 +25,9 @@ export async function getWord(language_id: number, word_id: number): Promise<Wor
 export async function deleteWord(language_id: number, word_id: number): Promise<void> {
     await api.delete(`languages/${language_id}/words/${word_id}/`);
 }
+
+export async function lookupWord(language_id: number, word: string): Promise<Word | null> {
+    const response = await api.get<Word | null>(`languages/${language_id}/words/lookup/`, {params: {word}});
+
+    return response.data;
+}

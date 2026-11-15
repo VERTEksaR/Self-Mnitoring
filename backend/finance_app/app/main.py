@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if settings.openai_api_key and settings.openai_model:
+    if settings.openai_api_key and (settings.openai_model or settings.openai_model_translate):
         openai_service = OpenAIService()
         app.state.openai_service = openai_service
     else:
@@ -58,4 +58,4 @@ app.include_router(stats.router, prefix='/languages', tags=["languages"])
 
 @app.get("/ping")
 async def ping():
-    return {"status": "ok"}
+    return {"status": "ok"}

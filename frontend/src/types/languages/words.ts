@@ -46,3 +46,17 @@ export interface WordFilter {
     size?: number;
     tag_id?: number;
 }
+
+export interface TranslateWordInput {
+    word: string;
+    sentence: string;
+    selection_start: number;
+    selection_end: number;
+}
+
+export interface TranslateWordOutput {
+    word: string;
+    translation: string;
+    part_of_speech?: PartOfSpeech | null;
+    example: string;
+}

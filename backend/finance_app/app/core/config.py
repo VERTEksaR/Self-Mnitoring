@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     openai_api_key: str | None = None
     openai_model: str | None = None
+    openai_model_translate: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,

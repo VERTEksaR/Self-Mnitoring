@@ -36,13 +36,13 @@ async def register_user(user_data: UserCreate, session: AsyncSession = Depends(g
     session.add(new_user)
     await session.flush()
 
-    module = await session.execute(
+    result = await session.execute(
         select(Modules)
-        .where(Modules.name == 'finances')
+        .where(Modules.name.in_(('finances', 'languages', 'trainings')))
     )
-    module = module.scalar_one_or_none()
+    modules = result.scalars().all()
 
-    if module:
+    for module in modules:
         session.add(ModulesUsers(
             user_id=new_user.id,
             module_id=module.id)

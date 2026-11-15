@@ -106,7 +106,7 @@ export function NotesSection({ languageId }) {
                                    action="Написать конспект" onAction={openCreate} />
                     </div>
                 ) : (
-                    <div className="module-grid" style={{ opacity: loading ? 0.5 : 1 }}>
+                    <div className="ln-note-list" style={{ opacity: loading ? 0.5 : 1 }}>
                         {data.items.map(n => <NoteCard key={n.id} note={n} onClick={() => setViewNote(n)} />)}
                     </div>
                 )}

@@ -16,32 +16,32 @@ class ApplicationError(Exception):
 
 class OpenAIAPIError(ApplicationError):
     status_code = 502
-    user_message = "Сервис распознавания вернул ошибку. Попробуйте позже."
+    user_message = "Сервис ИИ вернул ошибку. Попробуйте позже."
 
 
 class OpenAITimeoutError(OpenAIAPIError):
     status_code = 504
-    user_message = "Сервис распознавания не ответил вовремя. Попробуйте ещё раз."
+    user_message = "Сервис ИИ не ответил вовремя. Попробуйте ещё раз."
 
 
 class OpenAIRateLimitError(OpenAIAPIError):
     status_code = 503
-    user_message = "Распознавание временно недоступно. Попробуйте позже."
+    user_message = "Сервис ИИ временно недоступно. Попробуйте позже."
 
 
 class OpenAIConnectionError(OpenAIAPIError):
     status_code = 502
-    user_message = "Не удалось связаться с сервисом распознавания. Попробуйте позже."
+    user_message = "Не удалось связаться с сервисом ИИ. Попробуйте позже."
 
 
 class OpenAIAuthenticationError(OpenAIAPIError):
     status_code = 503
-    user_message = "Распознавание временно недоступно. Попробуйте позже."
+    user_message = "Сервис ИИ временно недоступно. Попробуйте позже."
 
 
 class OpenAIServiceError(ApplicationError):
     status_code = 500
-    user_message = "Не удалось обработать ответ сервиса распознавания."
+    user_message = "Не удалось обработать ответ сервиса ИИ."
 
 
 class OpenAIRefusalError(OpenAIServiceError):
@@ -63,4 +63,26 @@ class InsufficientDataError(OpenAIServiceError):
 
 class OpenAIResponseError(OpenAIServiceError):
     status_code = 502
-    user_message = "Сервис распознавания вернул неожиданный ответ. Попробуйте ещё раз."
+    user_message = "Сервис ИИ вернул неожиданный ответ. Попробуйте ещё раз."
+
+
+class TranslationUnavailableError(OpenAIServiceError):
+    status_code = 503
+    user_message = "Перевод временно недоступен. Попробуйте позже."
+
+
+class TranslationRefusalError(OpenAIRefusalError):
+    user_message = "Не удалось перевести выбранное слово."
+
+
+class TranslationDataError(OpenAIServiceError):
+    status_code = 422
+    user_messages = {
+        "insufficient_context": "Недостаточно контекста для перевода. Выберите более полное предложение.",
+        "unrecognized_word": "Не удалось распознать слово. Проверьте его написание.",
+        "wrong_language": "Выбранное слово не относится к изучаемому языку.",
+    }
+
+    def __init__(self, code: str):
+        self.code = code
+        super().__init__(code, self.user_messages[code])
