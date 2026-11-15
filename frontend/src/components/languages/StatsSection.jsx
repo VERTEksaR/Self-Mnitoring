@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {BookOpen, Clock, Flame, GraduationCap, Repeat, Target} from "lucide-react";
+import {BookOpen, CalendarDays, ChartColumn, Clock, Flame, GraduationCap, Repeat, Target} from "lucide-react";
 import {Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis} from "recharts";
 import {getStats} from "../../api/languages/stats.ts";
 import {formatMinutes, formatWeek, pluralLabel} from "../../utils/languages.ts";
@@ -47,6 +47,10 @@ export function StatsSection({ languageId }) {
 
     return (
         <>
+            <div className="ln-stats-heading">
+                <div><span className="ln-eyebrow">Самоконтроль</span><h1><ChartColumn size={30} /> Статистика</h1></div>
+                <span className="ln-date"><CalendarDays size={18} />{new Intl.DateTimeFormat('ru-RU', {day: 'numeric', month: 'long', year: 'numeric'}).format(new Date())}</span>
+            </div>
             {/* 1. Период */}
             <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
                 {PERIODS.map(n => (
@@ -59,7 +63,7 @@ export function StatsSection({ languageId }) {
 
             <div style={{ opacity: loading ? 0.5 : 1 }}>
                 {/* 2. Плитки */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 16 }}>
+                <div className="ln-stats-tiles">
                     <StatTile label="Слов" value={stats.total_words} icon={<BookOpen size={15} />} />
                     <StatTile label="Выучено" value={stats.learned_words} icon={<GraduationCap size={15} />}
                               hint={stats.total_words ? `${Math.round(stats.learned_words * 100 / stats.total_words)}% словаря` : null} />
@@ -74,7 +78,7 @@ export function StatsSection({ languageId }) {
                 </div>
 
                 {/* 3. Графики */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: 16 }}>
+                <div className="ln-stats-charts">
                     <ChartCard title="Слова по неделям">
                         {hasWords ? (
                             <BarChart data={chartWeeks} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>

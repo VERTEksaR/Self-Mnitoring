@@ -241,7 +241,7 @@ export function NoteViewModal({ note, onClose, onEdit, onDelete }) {
     }
 
     return (
-        <WkModal open title={note.title} onClose={onClose} width={680} footer={<>
+        <WkModal open title={note.title} onClose={onClose} width={800} footer={<>
             <button className="btn btn-danger btn-sm" style={{ marginRight: 'auto' }} onClick={onDelete}>
                 <Trash2 size={14} /> Удалить
             </button>

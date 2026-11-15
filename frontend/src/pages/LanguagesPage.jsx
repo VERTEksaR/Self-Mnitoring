@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Languages, Plus } from 'lucide-react';
-import { EmptyHint } from '../components/EmptyHint';
+import { ArrowLeft, ArrowRight, Plus } from 'lucide-react';
+import {LanguageBrand, LanguageBadge} from '../components/languages/LanguageBrand.jsx';
+import './languages.css';
 import {useEffect, useState} from "react";
 import {createLanguage, getLanguages} from "../api/languages/languages.ts";
 import {emptyToNull, LANGUAGE_FORM_DEFAULT} from "../utils/languages.ts";
@@ -30,41 +31,32 @@ export default function LanguagesPage() {
     if (loading) return <div className="loading">Загрузка...</div>
 
     return (
-        <div className="finance-page">
-            <nav className="finance-nav">
-                <div className="finance-nav-group">
-                    <button className="btn btn-ghost btn-icon" onClick={() => navigate('/')} aria-label="Назад">
-                        <ArrowLeft size={15} />
-                    </button>
-                    <span className="finance-nav-brand">
-                        <Languages size={18} />
-                        <span>Языки</span>
-                    </span>
+        <div className="ln-page ln-overview">
+            <header className="ln-overview-header">
+                <button className="ln-brand-link" onClick={() => navigate('/')} aria-label="На главную"><LanguageBrand /></button>
+                <button className="btn btn-ghost" onClick={() => navigate('/')}><ArrowLeft size={18} /> На главную</button>
+            </header>
+            <main className="ln-library">
+                <div className="ln-library-heading">
+                    <span className="ln-eyebrow">Self-Monitoring</span>
+                    <h1>Языки</h1>
+                    <p>Обзор библиотеки языков</p>
                 </div>
-            </nav>
-
-            <div style={{ maxWidth: 860, margin: '0 auto', padding: '24px 20px' }}>
-                <div className="section-header">
-                    <span className="section-title">Мои языки</span>
-                    <button className="btn btn-primary btn-sm" onClick={() => setLangForm({...LANGUAGE_FORM_DEFAULT })}>
-                        <Plus size={14} /> Добавить
+                <div className="ln-language-grid">
+                    {languages.map(lang => (
+                        <button key={lang.id} className="ln-language-card" onClick={() => navigate(`/learn/${lang.id}`)}>
+                            <LanguageBadge language={lang} />
+                            <h2>{lang.name}</h2>
+                            <p>{lang.current_level} → {lang.target_level}</p>
+                            <span className="ln-open-language">Открыть <ArrowRight size={22} /></span>
+                        </button>
+                    ))}
+                    <button className="ln-language-card ln-add-language" onClick={() => setLangForm({...LANGUAGE_FORM_DEFAULT})}>
+                        <span className="ln-add-icon"><Plus size={40} /></span>
+                        <span>Добавить<br />язык</span>
                     </button>
                 </div>
-
-                {languages.length === 0 ? (
-                    <EmptyHint title="Пока нет языков" hint="Добавь язык, который изучаешь"
-                             action="Добавить язык" onAction={() => setLangForm({...LANGUAGE_FORM_DEFAULT })} />
-                ) : (
-                    <div className="module-grid">
-                        {languages.map(lang => (
-                            <div key={lang.id} className="card module-card" onClick={() => navigate(`/learn/${lang.id}`)}>
-                                <div className="module-card__title">{lang.name}</div>
-                                <div className="module-card__desc">{lang.current_level} → {lang.target_level}</div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+            </main>
 
             {langForm && <LanguageFormModal form={langForm} setForm={setLangForm} onSave={saveLanguage}/>}
         </div>
