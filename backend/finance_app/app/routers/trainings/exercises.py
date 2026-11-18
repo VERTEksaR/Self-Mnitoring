@@ -8,8 +8,8 @@ from backend.finance_app.app.dependencies.auth import get_trainings
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Exercises, ModulesUsers
 from backend.finance_app.app.schemas.trainings.exercises import ExerciseRead, ExerciseChange, ExerciseCreate
-from backend.finance_app.app.schemas.common.common import Page
-
+from backend.finance_app.app.schemas.common.common import Page, PageNumber, PageSize
+from backend.finance_app.app.utils.commit import commit_or_conflict
 
 router = APIRouter()
 
@@ -21,7 +21,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@router.get("/{exercise_id}", response_model=ExerciseRead, status_code=200)
+@router.get("/{exercise_id}/", response_model=ExerciseRead, status_code=200)
 async def get_exercise(exercise_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
         select(Exercises).where(Exercises.id == exercise_id, Exercises.user_id == current_user.user_id)
@@ -36,7 +36,7 @@ async def get_exercise(exercise_id: int, session: AsyncSession = Depends(get_ses
     return exercise
 
 
-@router.delete("/{exercise_id}", status_code=204)
+@router.delete("/{exercise_id}/", status_code=204)
 async def delete_exercise(exercise_id: int, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
         select(Exercises).where(Exercises.id == exercise_id, Exercises.user_id == current_user.user_id)
@@ -48,7 +48,7 @@ async def delete_exercise(exercise_id: int, session: AsyncSession = Depends(get_
         raise HTTPException(status_code=404, detail=f"Упражнение с id {exercise_id} не было найдено")
 
     await session.delete(exercise)
-    await session.commit()
+    await commit_or_conflict(session, "Нельзя удалить упражнение: оно есть в тренировках")
     logger.info(f"Упражнение с id {exercise_id} было удалено")
     return None
 
@@ -57,13 +57,13 @@ async def delete_exercise(exercise_id: int, session: AsyncSession = Depends(get_
 async def create_exercise(exercise_data: ExerciseCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     exercise = Exercises(**exercise_data.model_dump(), user_id=current_user.user_id)
     session.add(exercise)
-    await session.commit()
+    await commit_or_conflict(session, f"Упражнение «{exercise.name}» уже есть")
     await session.refresh(exercise)
     logger.info(f"Упражнение с id {exercise.id} было создано")
     return exercise
 
 
-@router.patch("/{exercise_id}", response_model=ExerciseRead, status_code=200)
+@router.patch("/{exercise_id}/", response_model=ExerciseRead, status_code=200)
 async def change_exercise(exercise_id: int, exercise_data: ExerciseChange, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     result = await session.execute(
         select(Exercises).where(Exercises.id == exercise_id, Exercises.user_id == current_user.user_id)
@@ -79,13 +79,13 @@ async def change_exercise(exercise_id: int, exercise_data: ExerciseChange, sessi
     for field, value in updated_data.items():
         setattr(exercise, field, value)
 
-    await session.commit()
+    await commit_or_conflict(session, f"Упражнение «{exercise.name}» уже есть")
     await session.refresh(exercise)
     return exercise
 
 
 @router.get("/", response_model=Page[ExerciseRead], status_code=200)
-async def get_exercises(page: int = 1, size: int = 10, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
+async def get_exercises(page: PageNumber = 1, size: PageSize = 10, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_trainings)):
     total_result = await session.execute(
         select(func.count()).where(Exercises.user_id == current_user.user_id)
     )

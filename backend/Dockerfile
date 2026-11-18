@@ -8,4 +8,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 EXPOSE 8000
 
-CMD ["uvicorn", "backend.finance_app.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Миграции при каждом старте: alembic применит только новые
+CMD ["sh", "-c", "alembic upgrade head && uvicorn backend.finance_app.app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips '*'"]

@@ -12,7 +12,8 @@ from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Transaction, ModulesUsers, Category, Account
 from backend.finance_app.app.schemas.finances.transaction import TransactionRead, TransactionCreate, TransactionFilter, \
     TransactionChange
-from backend.finance_app.app.schemas.common.common import Page
+from backend.finance_app.app.schemas.common.common import Page, PageNumber, PageSize
+from backend.finance_app.app.utils.check_availability import check_availability
 from backend.finance_app.app.utils.redis_cache_key import make_cache_key, invalidate_cache, safe_get, safe_set
 
 router = APIRouter()
@@ -65,13 +66,8 @@ async def delete_transaction(transaction_id: int, session: AsyncSession = Depend
 
 @router.post('/', response_model=TransactionRead, status_code=201)
 async def create_transaction(transaction_data: TransactionCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
-    category = await session.get(Category, transaction_data.category_id)
-    account = await session.get(Account, transaction_data.account_id)
-
-    if (not category or category.user_id != current_user.user_id
-            or not account or account.user_id != current_user.user_id):
-        raise HTTPException(status_code=404, detail="Категория или счет не найдены")
-
+    await check_availability(transaction_data.category_id, current_user.user_id, Category, session)
+    await check_availability(transaction_data.account_id, current_user.user_id, Account, session)
     transaction = Transaction(**transaction_data.model_dump(), user_id=current_user.user_id)
     session.add(transaction)
     await session.commit()
@@ -80,7 +76,6 @@ async def create_transaction(transaction_data: TransactionCreate, session: Async
                            prefix="transactions",
                            user_id=current_user.user_id)
     return transaction
-
 
 
 @router.patch("/{transaction_id}/", response_model=TransactionRead, status_code=200)
@@ -99,6 +94,11 @@ async def change_transaction(transaction_id: int, transaction_data: TransactionC
 
     updated_data = transaction_data.model_dump(exclude_unset=True)
 
+    if "category_id" in updated_data:
+        await check_availability(updated_data["category_id"], current_user.user_id, Category, session)
+    if "account_id" in updated_data:
+        await check_availability(updated_data["account_id"], current_user.user_id, Account, session)
+
     for field, value in updated_data.items():
         setattr(transaction, field, value)
 
@@ -111,7 +111,7 @@ async def change_transaction(transaction_id: int, transaction_data: TransactionC
 
 
 @router.get('/', response_model=Page[TransactionRead], status_code=200)
-async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFilter = Depends(), session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+async def get_transactions(page: PageNumber = 1, size: PageSize = 10, filters: TransactionFilter = Depends(), session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
     conditions = [Transaction.user_id == current_user.user_id]
 
     redis_object = await get_redis()
@@ -119,22 +119,22 @@ async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFi
     if filters.destination:
         conditions.append(Transaction.destination.like(f'%{filters.destination}%'))
 
-    if filters.min_amount is not None:
+    if filters.min_amount:
         conditions.append(Transaction.amount >= filters.min_amount)
 
-    if filters.max_amount is not None:
+    if filters.max_amount:
         conditions.append(Transaction.amount <= filters.max_amount)
 
-    if filters.amount is not None:
+    if filters.amount:
         conditions.append(Transaction.amount == filters.amount)
 
-    if filters.min_cashback is not None:
+    if filters.min_cashback:
         conditions.append(Transaction.cashback >= filters.min_cashback)
 
-    if filters.max_cashback is not None:
+    if filters.max_cashback:
         conditions.append(Transaction.cashback <= filters.max_cashback)
 
-    if filters.cashback is not None:
+    if filters.cashback:
         conditions.append(Transaction.cashback == filters.cashback)
 
     if filters.category_id:
@@ -172,7 +172,6 @@ async def get_transactions(page: int = 1, size: int = 10, filters: TransactionFi
 
     result = await session.execute(
         select(Transaction).where(*conditions)
-        .order_by(Transaction.transaction_date.desc())
         .offset((page - 1) * size)
         .limit(size)
     )

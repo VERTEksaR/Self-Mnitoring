@@ -5,6 +5,8 @@ from typing import Optional, List, Annotated
 
 from pydantic import BaseModel, ConfigDict
 
+from backend.finance_app.app.schemas.common.common import forbid_null
+
 
 class TransactionCreate(BaseModel):
     destination: str
@@ -24,6 +26,8 @@ class TransactionChange(BaseModel):
     transaction_date: Optional[date] = None
     category_id: Optional[int] = None
     account_id: Optional[int] = None
+
+    check_not_null = forbid_null("destination", "amount", "cashback", "replenishment", "transaction_date", "category_id", "account_id")
 
 
 class TransactionRead(BaseModel):

@@ -1,0 +1,21 @@
+name: Deploy
+on:
+  push:
+    branches: [production]
+    paths:
+      - 'backend/**'
+      - 'alembic/**'
+      - 'frontend/**'
+      - 'telegram_bot/**'
+      - 'docker-compose.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: cd /opt/self-monitoring/Self-Mnitoring && git pull origin production && docker compose up -d --build

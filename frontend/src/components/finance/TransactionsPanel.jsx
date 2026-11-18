@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { TransactionItem } from '../TransactionItem';
+import { TransactionItem } from './items/TransactionItem.jsx';
 import { EmptyHint } from '../EmptyHint.jsx';
 import { dateLabel, daysAgoStr, groupByDate, PERIODS, todayStr, TX_LIMITS } from '../../utils/finance.ts';
 

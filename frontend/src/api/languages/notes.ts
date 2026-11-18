@@ -1,0 +1,40 @@
+import api from "../api";
+import type { Note, NoteDraft, NoteCreate, NoteFilter, NoteChange } from "../../types/languages/notes";
+import type { TranslateWordInput, TranslateWordOutput } from "../../types/languages/words";
+import type { Page } from "../../types/common/page";
+
+export async function getNotes(language_id: number, params: NoteFilter = {}): Promise<Page<Note>> {
+    const response = await api.get(`languages/${language_id}/notes/`, { params });
+    return response.data;
+}
+
+export async function createNote(language_id: number, payload: NoteCreate): Promise<Note> {
+    const response = await api.post(`languages/${language_id}/notes/`, payload);
+    return response.data;
+}
+
+export async function updateNote(language_id: number, note_id: number, payload: NoteChange): Promise<Note> {
+    const response = await api.patch(`languages/${language_id}/notes/${note_id}/`, payload);
+    return response.data;
+}
+
+export async function getNote(language_id: number, note_id: number): Promise<Note> {
+    const response = await api.get(`languages/${language_id}/notes/${note_id}/`);
+    return response.data;
+}
+
+export async function deleteNote(language_id: number, note_id: number): Promise<void> {
+    await api.delete(`languages/${language_id}/notes/${note_id}/`);
+}
+
+export async function noteFromImage(language_id: number, file: File): Promise<NoteDraft> {
+    const body = new FormData();
+    body.append("file", file);
+    const response = await api.post(`languages/${language_id}/notes/from-image/`, body, { timeout: 90_000 });
+    return response.data;
+}
+
+export async function translateNoteWord(language_id: number, note_id: number, payload: TranslateWordInput): Promise<TranslateWordOutput> {
+    const response = await api.post(`languages/${language_id}/notes/${note_id}/translate/`, payload);
+    return response.data;
+}

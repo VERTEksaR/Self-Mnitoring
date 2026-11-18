@@ -1,0 +1,198 @@
+import { useEffect, useState } from 'react';
+import { createCategory, updateCategory } from "../../../api/finance/categories.ts";
+import { CategoryForm } from '../forms/CategoryForm.jsx';
+import {FormError} from "../../FormError.jsx";
+import {extractErrorMessage} from "../../../utils/errors.ts";
+
+
+export function AddCategoryModel({ onClose, onSaved }) {
+    const [form, setForm] = useState({ name: '', show_analytics: true });
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const onEsc = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onEsc);
+        return () => window.removeEventListener('keydown', onEsc);
+    }, [onClose]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError(null);
+        try {
+            const res = await createCategory(form);
+            onSaved(res);
+            onClose();
+        } catch (err) {
+            setError(extractErrorMessage(err, 'Не удалось сохранить категорию'));
+        }
+    };
+
+    return <CategoryForm form={form} setForm={setForm} onClose={onClose} onSubmit={handleSubmit} error={error} />;
+}
+
+
+export function CategoryModel({ category, onClose, onDelete, onUpdate }) {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [name, setName] = useState(category.name);
+
+    useEffect(() => {
+        const onEsc = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onEsc);
+        return () => window.removeEventListener('keydown', onEsc);
+    }, [onClose]);
+
+    const handleSaveName = async (e) => {
+        e.preventDefault();
+
+        const trimmedName = name.trim();
+        setError(null);
+
+        if (!trimmedName) {
+            setError('Введите название категории');
+            return;
+        }
+
+        if (trimmedName === category.name) {
+            setName(trimmedName);
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const updated = await updateCategory(category.id, {
+                name: trimmedName,
+            });
+
+            setName(updated.name);
+            onUpdate(updated);
+        } catch (err) {
+            setError(
+                extractErrorMessage(err, 'Не удалось изменить название категории')
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleToggleAnalytics = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await updateCategory(category.id, { show_analytics: !category.show_analytics });
+            onUpdate?.(res);
+        } catch (err) {
+            setError(extractErrorMessage(err, 'Не удалось изменить категорию'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        setError(null);
+        try {
+            await onDelete(category.id);
+        } catch (err) {
+            setError(extractErrorMessage(err, 'Не удалось удалить категорию'));   // 409: по категории есть транзакции
+        }
+    };
+
+    const isOn = category.show_analytics;
+
+    return (
+        <div className="overlay" onClick={onClose}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                    <span className="modal-title">Категория</span>
+                    <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
+                </div>
+
+                <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <form
+                        onSubmit={handleSaveName}
+                        style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                    >
+                        <label htmlFor={`category-name-${category.id}`}>
+                            <strong>Название</strong>
+                        </label>
+
+                        <input
+                            id={`category-name-${category.id}`}
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            disabled={loading}
+                            required
+                            style={{
+                                width: '100%',
+                                boxSizing: 'border-box',
+                                padding: '10px 12px',
+                                borderRadius: 8,
+                                border: '1px solid var(--border)',
+                                background: 'var(--surface-sunken)',
+                                color: 'var(--text-strong)',
+                                font: 'inherit',
+                            }}
+                        />
+
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={loading || name.trim() === category.name}
+                            style={{ alignSelf: 'flex-start' }}
+                        >
+                            Сохранить название
+                        </button>
+                    </form>
+
+                    {/* show_analytics toggle */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '12px 14px', borderRadius: 8,
+                        border: `1px solid ${isOn ? 'var(--brand-subtle-bd)' : 'var(--border)'}`,
+                        background: isOn ? 'var(--brand-subtle)' : 'var(--surface-sunken)',
+                    }}>
+                        <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-strong)' }}>
+                                Показывать в аналитике
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                                {isOn
+                                    ? 'Категория включена во все графики аналитики'
+                                    : 'Скрыта из графика «Расходы по категориям»'}
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleToggleAnalytics}
+                            disabled={loading}
+                            style={{
+                                flexShrink: 0, marginLeft: 12,
+                                padding: '6px 14px', borderRadius: 6, border: 'none',
+                                fontSize: 12, fontWeight: 700, cursor: loading ? 'wait' : 'pointer',
+                                fontFamily: 'inherit',
+                                background: isOn ? 'var(--brand)' : 'var(--surface-card)',
+                                color: isOn ? '#fff' : 'var(--text-muted)',
+                                boxShadow: isOn ? '0 2px 8px rgba(62,224,122,.3)' : 'none',
+                                transition: 'all .15s',
+                            }}
+                        >
+                            {loading ? '...' : isOn ? 'Включено' : 'Выключено'}
+                        </button>
+                    </div>
+
+                    <FormError>{error}</FormError>
+                </div>
+
+                <div className="modal-actions">
+                    <button className="btn btn-danger" onClick={handleDelete} disabled={loading}>
+                        Удалить
+                    </button>
+                    <button className="btn btn-secondary" onClick={onClose}>
+                        Закрыть
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CategoryItem } from "../CategoryItem.jsx";
+import { CategoryItem } from "./items/CategoryItem.jsx";
 import { EmptyHint } from "../EmptyHint.jsx";
 import { SECTION_LIMIT } from "../../utils/finance.ts";
 

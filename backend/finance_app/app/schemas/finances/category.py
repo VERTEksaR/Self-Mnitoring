@@ -1,6 +1,7 @@
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
+from backend.finance_app.app.schemas.common.common import forbid_null
 
 
 class CategoryCreate(BaseModel):
@@ -22,4 +23,5 @@ class CategoryChange(BaseModel):
     show_analytics: Optional[bool] = None
 
     model_config = ConfigDict(from_attributes=True)
+    check_not_null = forbid_null("name", "show_analytics")
 

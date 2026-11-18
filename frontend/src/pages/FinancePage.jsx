@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getTransactions } from '../api/finance/transactions.ts';
 import { getCategories } from "../api/finance/categories.ts";
 import { getAccounts } from "../api/finance/accounts.ts";
-import { FinanceAnalytics } from '../components/FinanceAnalytics';
+import { FinanceAnalytics } from '../components/finance/FinanceAnalytics.jsx';
 import { Savings } from '../components/finance/Savings.jsx';
 import {FinanceModals} from "../components/finance/FinanceModals.jsx";
 import {FinanceSummaryCard} from "../components/finance/FinanceSummaryCard.jsx";

@@ -1,6 +1,6 @@
-import { TransactionModel, AddTransactionModel, EditTransactionModel } from '../TransactionModel.jsx';
-import { CategoryModel, AddCategoryModel } from '../CategoryModel.jsx';
-import { AccountModel, AddAccountModel } from '../AccountModel.jsx';
+import { TransactionModel, AddTransactionModel, EditTransactionModel } from './modals/TransactionModel.jsx';
+import { CategoryModel, AddCategoryModel } from './modals/CategoryModel.jsx';
+import { AccountModel, AddAccountModel } from './modals/AccountModel.jsx';
 import { deleteTransaction } from '../../api/finance/transactions.ts';
 import { deleteCategory } from '../../api/finance/categories.ts';
 import { deleteAccount } from '../../api/finance/accounts.ts';
