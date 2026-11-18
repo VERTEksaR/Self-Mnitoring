@@ -17,6 +17,7 @@ export function FinanceModals({
       addAccount, setAddAccount,
       categoriesMap, accountsMap,
       setAllTransactions, setCategories, setAccounts,
+      banks
                               }) {
     return <>
         {selectedTransaction && (
@@ -51,7 +52,7 @@ export function FinanceModals({
                     onSaved={(c) => setCategories(p => [c, ...p])} />
             )}
             {selectedAccount && (
-                <AccountModel account={selectedAccount}
+                <AccountModel account={selectedAccount} banks={banks}
                     onClose={() => setSelectedAccount(null)}
                     onDelete={async (id) => { try { await deleteAccount(id); setAccounts(p => p.filter(a => a.id !== id)); setSelectedAccount(null); } catch (e) { window.alert(errText(e)); } }}
                     onUpdate={(updated) => {
@@ -61,7 +62,7 @@ export function FinanceModals({
                 />
             )}
             {addAccount && (
-                <AddAccountModel onClose={() => setAddAccount(null)}
+                <AddAccountModel banks={banks} onClose={() => setAddAccount(null)}
                     onSaved={(a) => setAccounts(p => [a, ...p])} />
             )}
     </>

@@ -2,7 +2,7 @@ import {FormError} from "../../FormError.jsx";
 
 const ACCOUNT_TYPES = ['Обычный', 'Накопительный'];
 
-export function AccountForm({ form, setForm, onClose, onSubmit, error }) {
+export function AccountForm({ form, setForm, banks = [], onClose, onSubmit, error }) {
     const isSavings = form.account_type === 'Накопительный';
 
     return (
@@ -25,6 +25,32 @@ export function AccountForm({ form, setForm, onClose, onSubmit, error }) {
                             required
                             autoFocus
                         />
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label" htmlFor="account-bank">
+                            Банк
+                        </label>
+
+                        <select
+                            id="account-bank"
+                            className="select"
+                            value={form.bank_id}
+                            onChange={e =>
+                                setForm(previous => ({
+                                    ...previous,
+                                    bank_id: e.target.value,
+                                }))
+                            }
+                        >
+                            <option value="">Без банка</option>
+
+                            {banks.map(bank => (
+                                <option key={bank.id} value={bank.id}>
+                                    {bank.name}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className="form-group">

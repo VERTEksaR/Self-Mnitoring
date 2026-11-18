@@ -10,12 +10,14 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.finance_app.app.db.models.finances.bank import Bank
 from backend.finance_app.app.db.redis import get_redis
 from backend.finance_app.app.dependencies.auth import get_finances
 from backend.finance_app.app.db.session import get_session
 from backend.finance_app.app.db.models import Account, Transaction, ModulesUsers, AccountType
 from backend.finance_app.app.schemas.finances.account import AccountRead, AccountCreate, AccountBalancesRead, AccountChange
 from backend.finance_app.app.schemas.common.common import Page, PageNumber, PageSize
+from backend.finance_app.app.utils.check_availability import check_availability
 from backend.finance_app.app.utils.commit import commit_or_conflict
 from backend.finance_app.app.utils.redis_cache_key import make_cache_key, invalidate_cache, safe_get, safe_set
 
@@ -148,6 +150,10 @@ async def change_account(account_id: int, data: AccountChange, session: AsyncSes
 
     updated_data = data.model_dump(exclude_unset=True)
 
+    if updated_data.get("bank_id") is not None:
+        await check_availability(updated_data.get("bank_id"), current_user.user_id, Bank, session)
+
+
     for field, value in updated_data.items():
         setattr(account, field, value)
 
@@ -178,7 +184,7 @@ async def delete_account(account_id: int, session: AsyncSession = Depends(get_se
 
     await session.delete(account)
     await commit_or_conflict(session, "Нельзя удалить счёт: по нему есть транзакции")
-    logger.info(f"С чет с id {account_id} был удален")
+    logger.info(f"Счет с id {account_id} был удален")
     await invalidate_cache(redis_object=await get_redis(),
                            prefix="accounts",
                            user_id=current_user.user_id)
@@ -187,6 +193,9 @@ async def delete_account(account_id: int, session: AsyncSession = Depends(get_se
 
 @router.post("/", response_model=AccountRead, status_code=201)
 async def create_account(account_data: AccountCreate, session: AsyncSession = Depends(get_session), current_user: ModulesUsers = Depends(get_finances)):
+    if account_data.bank_id is not None:
+        await check_availability(account_data.bank_id, current_user.user_id, Bank, session)
+
     account = Account(**account_data.model_dump(), user_id=current_user.user_id)
     session.add(account)
     await commit_or_conflict(session, f"Счёт «{account.name}» уже есть")

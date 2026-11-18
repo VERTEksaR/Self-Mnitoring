@@ -10,6 +10,8 @@ import {FinanceSummaryCard} from "../components/finance/FinanceSummaryCard.jsx";
 import {TransactionsPanel} from "../components/finance/TransactionsPanel.jsx";
 import {AccountsPanel} from "../components/finance/AccountsPanel.jsx";
 import {CategoriesPanel} from "../components/finance/CategoriesPanel.jsx";
+import { getAllBanks } from '../api/finance/banks.ts';
+import { BanksPanel } from '../components/finance/BanksPanel.jsx';
 
 // ── FinancePage ───────────────────────────────────────────────
 export default function FinancePage() {
@@ -31,6 +33,8 @@ export default function FinancePage() {
     const [selectedAccount, setSelectedAccount] = useState(null);
     const [addAccount, setAddAccount] = useState(null);
 
+    const [banks, setBanks] = useState([]);
+
     const handleLogout = () => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('user_id');
@@ -38,11 +42,17 @@ export default function FinancePage() {
     };
 
     useEffect(() => {
-        Promise.all([getCategories(), getTransactions({ size: 500 }), getAccounts()])
-            .then(([catRes, txRes, accRes]) => {
+        Promise.all([
+            getCategories(),
+            getTransactions({ size: 500 }),
+            getAccounts(),
+            getAllBanks(),
+        ])
+            .then(([catRes, txRes, accRes, bankItems]) => {
                 setCategories(catRes.items ?? []);
                 setAllTransactions(txRes.items ?? []);
                 setAccounts(accRes.items ?? []);
+                setBanks(bankItems);
             })
             .catch(err => setLoadError(
                 err?.response?.status === 403
@@ -158,6 +168,7 @@ export default function FinancePage() {
                                         onSelect={setSelectedCategory}
                                         onAdd={() => setAddCategory({})}
                                     />
+                                    <BanksPanel banks={banks} setBanks={setBanks} />
                                 </div>
                             </div>
                         </>
@@ -188,6 +199,7 @@ export default function FinancePage() {
                 addAccount={addAccount} setAddAccount={setAddAccount}
                 categoriesMap={categoriesMap} accountsMap={accountsMap}
                 setAllTransactions={setAllTransactions} setCategories={setCategories} setAccounts={setAccounts}
+                banks={banks}
             />
         </div>
     );

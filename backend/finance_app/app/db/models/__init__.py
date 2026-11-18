@@ -5,6 +5,7 @@ from backend.finance_app.app.db.models.common.modules import Modules, ModulesUse
 from backend.finance_app.app.db.models.finances.category import Category
 from backend.finance_app.app.db.models.finances.account import AccountType, Account
 from backend.finance_app.app.db.models.finances.transaction import Transaction
+from backend.finance_app.app.db.models.finances.bank import Bank
 from backend.finance_app.app.db.models.trainings.exercises import MuscleGroup, ExerciseType, Exercises, TrainingExercises
 from backend.finance_app.app.db.models.trainings.trainings import Trainings
 from backend.finance_app.app.db.models.steam.steam import SteamUser, SteamTrackedGamse
@@ -20,5 +21,5 @@ __all__ = [
     "MuscleGroup", "ExerciseType", "Exercises", "TrainingExercises", "Trainings",
     "SteamUser", "SteamTrackedGamse",
     "Language", "LanguageLevels", "Word", "PartOfSpeech", "LanguageNote", "WordTag",
-    "WordReview", "StudySession", "StudyType",
+    "WordReview", "StudySession", "StudyType", "Bank"
 ]

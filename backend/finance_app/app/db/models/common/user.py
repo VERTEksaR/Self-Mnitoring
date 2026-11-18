@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from backend.finance_app.app.db.models.finances.account import Account
     from backend.finance_app.app.db.models.finances.category import Category
     from backend.finance_app.app.db.models.finances.transaction import Transaction
+    from backend.finance_app.app.db.models.finances.bank import Bank
     from backend.finance_app.app.db.models.steam.steam import SteamUser
     from backend.finance_app.app.db.models.trainings.exercises import Exercises, TrainingExercises
     from backend.finance_app.app.db.models.trainings.trainings import Trainings
@@ -43,6 +44,7 @@ class User(Base):
     word_tags: Mapped[List["WordTag"]] = relationship("WordTag", back_populates="user")
     study_sessions: Mapped[List["StudySession"]] = relationship("StudySession",
                                                                 back_populates="user")
+    banks: Mapped[List["Bank"]] = relationship("Bank", back_populates="user")
 
     def __str__(self):
         return self.email
@@ -55,5 +57,5 @@ class TelegramUser(Base):
     telegram_id: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     access_token: Mapped[str] = mapped_column(String, nullable=False)
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int ] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="telegram_users")

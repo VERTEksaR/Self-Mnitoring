@@ -9,6 +9,7 @@ from backend.finance_app.app.db.base import Base
 if TYPE_CHECKING:
     from backend.finance_app.app.db.models.common.user import User
     from backend.finance_app.app.db.models.finances.transaction import Transaction
+    from backend.finance_app.app.db.models.finances.bank import Bank
 
 
 class AccountType(str, enum.Enum):
@@ -38,6 +39,9 @@ class Account(Base):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="accounts")
+
+    bank_id: Mapped[int | None] = mapped_column(ForeignKey("banks.id", ondelete="RESTRICT"), nullable=True)
+    bank: Mapped["Bank | None"] = relationship("Bank", back_populates="accounts")
 
     __table_args__ = (UniqueConstraint("name", "user_id"),)
 

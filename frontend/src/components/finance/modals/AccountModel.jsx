@@ -5,8 +5,8 @@ import {FormError} from "../../FormError.jsx";
 import {extractErrorMessage} from "../../../utils/errors.ts";
 
 
-export function AddAccountModel({ onClose, onSaved }) {
-    const [form, setForm] = useState({ name: '', account_type: 'Обычный', goal_amount: '' });
+export function AddAccountModel({ banks = [], onClose, onSaved }) {
+    const [form, setForm] = useState({ name: '', account_type: 'Обычный', goal_amount: '', bank_id: '' });
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -23,6 +23,7 @@ export function AddAccountModel({ onClose, onSaved }) {
                 name: form.name,
                 account_type: form.account_type,
                 goal_amount: form.goal_amount === '' ? null : Number(form.goal_amount),
+                bank_id: form.bank_id === '' ? null : Number(form.bank_id),
             });
             onSaved(res);
             onClose();
@@ -31,17 +32,18 @@ export function AddAccountModel({ onClose, onSaved }) {
         }
     };
 
-    return <AccountForm form={form} setForm={setForm} onClose={onClose} onSubmit={handleSubmit} error={error} />;
+    return <AccountForm form={form} banks={banks} setForm={setForm} onClose={onClose} onSubmit={handleSubmit} error={error} />;
 }
 
 
-export function AccountModel({ account, onClose, onDelete, onUpdate }) {
+export function AccountModel({ account, banks = [], onClose, onDelete, onUpdate }) {
     const [editing, setEditing] = useState(false);
     const [error, setError] = useState(null);
     const [form, setForm] = useState({
         name: account.name,
         account_type: account.account_type,
         goal_amount: account.goal_amount ?? '',
+        bank_id: account.bank_id ?? '',
     });
 
     useEffect(() => {
@@ -58,6 +60,7 @@ export function AccountModel({ account, onClose, onDelete, onUpdate }) {
                 name: form.name,
                 account_type: form.account_type,
                 goal_amount: form.goal_amount === '' ? null : Number(form.goal_amount),
+                bank_id: form.bank_id === '' ? null : Number(form.bank_id),
             });
             onUpdate?.(res);
             setEditing(false);
@@ -77,9 +80,14 @@ export function AccountModel({ account, onClose, onDelete, onUpdate }) {
 
     if (editing) {
         // ошибка правки не должна остаться в режиме просмотра
-        return <AccountForm form={form} setForm={setForm} onClose={() => { setEditing(false); setError(null); }}
+        return <AccountForm form={form} banks={banks} setForm={setForm} onClose={() => { setEditing(false); setError(null); }}
                             onSubmit={handleSubmit} error={error} />;
     }
+
+    const bankName = account.bank_id == null
+        ? 'Без банка'
+        : banks.find(bank => bank.id === account.bank_id)?.name
+            ?? 'Банк не найден'
 
     const isSavings = account.account_type === 'Накопительный';
 
@@ -93,6 +101,9 @@ export function AccountModel({ account, onClose, onDelete, onUpdate }) {
 
                 <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <p style={{ margin: 0 }}><strong>Название:</strong> {account.name}</p>
+                    <p style={{ margin: 0 }}>
+                        <strong>Банк:</strong> {bankName}
+                    </p>
                     <p style={{ margin: 0 }}><strong>Тип:</strong> {account.account_type}</p>
                     {isSavings && (
                         <p style={{ margin: 0 }}>
