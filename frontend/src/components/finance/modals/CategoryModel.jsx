@@ -34,12 +34,47 @@ export function AddCategoryModel({ onClose, onSaved }) {
 export function CategoryModel({ category, onClose, onDelete, onUpdate }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [name, setName] = useState(category.name);
 
     useEffect(() => {
         const onEsc = (e) => { if (e.key === 'Escape') onClose(); };
         window.addEventListener('keydown', onEsc);
         return () => window.removeEventListener('keydown', onEsc);
     }, [onClose]);
+
+    const handleSaveName = async (e) => {
+        e.preventDefault();
+
+        const trimmedName = name.trim();
+        setError(null);
+
+        if (!trimmedName) {
+            setError('Введите название категории');
+            return;
+        }
+
+        if (trimmedName === category.name) {
+            setName(trimmedName);
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const updated = await updateCategory(category.id, {
+                name: trimmedName,
+            });
+
+            setName(updated.name);
+            onUpdate(updated);
+        } catch (err) {
+            setError(
+                extractErrorMessage(err, 'Не удалось изменить название категории')
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleToggleAnalytics = async () => {
         setLoading(true);
@@ -74,7 +109,42 @@ export function CategoryModel({ category, onClose, onDelete, onUpdate }) {
                 </div>
 
                 <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <p style={{ margin: 0 }}><strong>Название:</strong> {category.name}</p>
+                    <form
+                        onSubmit={handleSaveName}
+                        style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                    >
+                        <label htmlFor={`category-name-${category.id}`}>
+                            <strong>Название</strong>
+                        </label>
+
+                        <input
+                            id={`category-name-${category.id}`}
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            disabled={loading}
+                            required
+                            style={{
+                                width: '100%',
+                                boxSizing: 'border-box',
+                                padding: '10px 12px',
+                                borderRadius: 8,
+                                border: '1px solid var(--border)',
+                                background: 'var(--surface-sunken)',
+                                color: 'var(--text-strong)',
+                                font: 'inherit',
+                            }}
+                        />
+
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={loading || name.trim() === category.name}
+                            style={{ alignSelf: 'flex-start' }}
+                        >
+                            Сохранить название
+                        </button>
+                    </form>
 
                     {/* show_analytics toggle */}
                     <div style={{
@@ -115,7 +185,7 @@ export function CategoryModel({ category, onClose, onDelete, onUpdate }) {
                 </div>
 
                 <div className="modal-actions">
-                    <button className="btn btn-danger" onClick={handleDelete}>
+                    <button className="btn btn-danger" onClick={handleDelete} disabled={loading}>
                         Удалить
                     </button>
                     <button className="btn btn-secondary" onClick={onClose}>

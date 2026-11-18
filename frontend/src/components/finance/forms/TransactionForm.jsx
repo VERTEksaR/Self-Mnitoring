@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {FormError} from "../../FormError.jsx";
 
 export function TransactionForm({
@@ -7,6 +8,43 @@ export function TransactionForm({
     setAccountId, setCategoryId,
     onSubmit, onClose, error,
 }) {
+    const [categorySearch, setCategorySearch] = useState(null);
+    const [categorySearchOpen, setCategorySearchOpen] = useState(false);
+
+    const selectedCategory = categories.find(
+        category => String(category.id) === String(categoryId)
+    );
+
+    const categoryText = categorySearch ?? selectedCategory?.name ?? '';
+
+    const filteredCategories = categories.filter(category =>
+        category.name.toLocaleLowerCase('ru-RU').includes(
+            categoryText.trim().toLocaleLowerCase('ru-RU')
+        )
+    );
+
+    const handleCategoryInput = (e) => {
+        setCategorySearch(e.target.value);
+        setCategoryId('');
+        setCategorySearchOpen(true);
+    };
+
+    const handleCategorySelect = (category) => {
+        setCategoryId(category.id);
+        setCategorySearch(category.name);
+        setCategorySearchOpen(false);
+    };
+
+    const handleFormSubmit = (e) => {
+        if (!categoryId) {
+            e.preventDefault();
+            setCategorySearchOpen(true);
+            return;
+        }
+
+        onSubmit(e);
+    };
+
     return (
         <div className="overlay" onClick={onClose}>
             <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -15,7 +53,7 @@ export function TransactionForm({
                     <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
                 </div>
 
-                <form className="form" onSubmit={onSubmit}>
+                <form className="form" onSubmit={handleFormSubmit}>
                     <div className="form-group">
                         <label className="form-label">Счёт</label>
                         <select
@@ -32,18 +70,82 @@ export function TransactionForm({
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">Категория</label>
-                        <select
-                            className="select"
-                            value={categoryId}
-                            onChange={e => setCategoryId(e.target.value)}
-                            required
+                        <label className="form-label" htmlFor="transaction-category-search">
+                            Категория
+                        </label>
+
+                        <div
+                            onBlur={(e) => {
+                                if (!e.currentTarget.contains(e.relatedTarget)) {
+                                    setCategorySearchOpen(false);
+                                }
+                            }}
                         >
-                            <option value="">Выберите категорию</option>
-                            {categories.map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
-                        </select>
+                            <input
+                                id="transaction-category-search"
+                                className="input"
+                                type="text"
+                                value={categoryText}
+                                onChange={handleCategoryInput}
+                                onFocus={() => setCategorySearchOpen(true)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !categoryId) {
+                                        e.preventDefault();
+                                        setCategorySearchOpen(true);
+                                    }
+                                }}
+                                placeholder="Начните вводить название"
+                                autoComplete="off"
+                                aria-describedby="transaction-category-hint"
+                                required
+                            />
+
+                            {categorySearchOpen && (
+                                <div
+                                    style={{
+                                        maxHeight: 200,
+                                        overflowY: 'auto',
+                                        marginTop: 4,
+                                        padding: 4,
+                                        border: '1px solid var(--border)',
+                                        borderRadius: 8,
+                                        background: 'var(--surface-card)',
+                                    }}
+                                >
+                                    {filteredCategories.length > 0 ? (
+                                        filteredCategories.map(category => (
+                                            <button
+                                                key={category.id}
+                                                type="button"
+                                                className="btn btn-ghost"
+                                                onClick={() => handleCategorySelect(category)}
+                                                style={{
+                                                    display: 'block',
+                                                    width: '100%',
+                                                    textAlign: 'left',
+                                                    whiteSpace: 'normal',
+                                                }}
+                                            >
+                                                {category.name}
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <p style={{ margin: 8, color: 'var(--text-muted)' }}>
+                                            Категории не найдены
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <small
+                            id="transaction-category-hint"
+                            style={{ color: 'var(--text-muted)' }}
+                        >
+                            {categoryId
+                                ? 'Категория выбрана'
+                                : 'Введите название и выберите категорию из списка'}
+                        </small>
                     </div>
 
                     <div className="form-group">
